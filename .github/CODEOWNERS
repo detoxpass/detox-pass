@@ -1,0 +1,31 @@
+# CODEOWNERS — Detox Pass
+#
+# Garante que código sensível (pagamentos, Supabase, auth, CI) tenha revisão
+# obrigatória de Samuel ou Elias antes do merge. Não é para impedir ninguém de
+# trabalhar nessas áreas — é para que código de alto risco não seja aprovado por
+# acidente sem revisão experiente.
+#
+# Handles (organização azvor-team):
+#   Samuel  -> @samuasouza
+#   Elias   -> @develiasmacedo
+#   Anderson-> @andersonalves-stack (features/QA; não é owner das áreas críticas)
+#
+# Para ativar na prática: nas configurações do repositório, proteja a branch
+# `main` e marque "Require review from Code Owners".
+#
+# Obs.: os caminhos abaixo ainda não existem (o bootstrap técnico os criará).
+# As regras passam a valer automaticamente quando as pastas forem adicionadas.
+
+# Pagamentos
+/src/features/payments/        @samuasouza @develiasmacedo
+/src/integrations/payments/    @samuasouza @develiasmacedo
+
+# Banco de dados / backend (Supabase)
+/supabase/migrations/          @samuasouza @develiasmacedo
+/supabase/functions/           @samuasouza @develiasmacedo
+
+# Autenticação e segurança
+/src/features/auth/            @samuasouza @develiasmacedo
+
+# CI / configuração de workflows
+/.github/workflows/            @samuasouza @develiasmacedo
