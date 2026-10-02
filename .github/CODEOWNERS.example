@@ -1,0 +1,35 @@
+# CODEOWNERS (MODELO / NÃO ATIVO)
+#
+# ⚠️ Este arquivo é um MODELO e está propositalmente nomeado `CODEOWNERS.example`.
+# O GitHub NÃO o utiliza enquanto não for renomeado para `.github/CODEOWNERS`.
+#
+# Motivo: no momento da preparação do repositório não foi possível confirmar com
+# segurança os usernames reais do GitHub de Samuel e Elias. Um CODEOWNERS com
+# handles errados falha em silêncio (os reviewers não são adicionados), o que é
+# pior do que não ter o arquivo.
+#
+# COMO ATIVAR:
+# 1. Confirme os usernames reais do GitHub de Samuel e Elias na organização
+#    `azvor-team` (ex.: @username-do-samuel, @username-do-elias).
+# 2. Substitua os placeholders abaixo pelos handles reais.
+# 3. Renomeie este arquivo para `.github/CODEOWNERS`.
+# 4. Nas configurações do repositório, ative "Require review from Code Owners"
+#    na proteção da branch `main`.
+#
+# Objetivo: garantir que código sensível (pagamentos, Supabase, auth, CI) não
+# seja aprovado por acidente sem revisão experiente. Não é para impedir ninguém
+# de trabalhar nessas áreas.
+
+# Pagamentos
+# /src/features/payments/        @USERNAME_SAMUEL @USERNAME_ELIAS
+# /src/integrations/payments/    @USERNAME_SAMUEL @USERNAME_ELIAS
+
+# Banco de dados / backend (Supabase)
+# /supabase/migrations/          @USERNAME_SAMUEL @USERNAME_ELIAS
+# /supabase/functions/           @USERNAME_SAMUEL @USERNAME_ELIAS
+
+# Autenticação e segurança
+# /src/features/auth/            @USERNAME_SAMUEL @USERNAME_ELIAS
+
+# CI / configuração de workflows
+# /.github/workflows/            @USERNAME_SAMUEL @USERNAME_ELIAS
