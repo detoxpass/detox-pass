@@ -59,5 +59,6 @@ Toda a documentação do projeto está na pasta [`docs/`](./docs):
 Veja também:
 
 - [Como contribuir](./CONTRIBUTING.md) — regras de branches, commits e Pull Requests.
-- **Playbook de Desenvolvimento do Detox Pass** — documento oficial da Azvor
-  (compartilhado pela equipe; é a fonte de verdade do processo).
+- [Playbook de Desenvolvimento do Detox Pass](./docs/playbook/Detox_Pass_Playbook_Desenvolvimento_Azvor_PT_v1.2.pdf)
+  — documento oficial da Azvor, versionado no repositório. É a **fonte de verdade**
+  do processo.

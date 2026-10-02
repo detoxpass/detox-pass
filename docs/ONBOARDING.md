@@ -5,8 +5,10 @@ no projeto do jeito certo. Siga os passos na ordem.
 
 ## 1. Leia o playbook
 
-Leia o **Playbook de Desenvolvimento do Detox Pass** inteiro. Ele é a fonte de
-verdade sobre processo, Git, ambientes, segurança e responsabilidades do time.
+Leia o
+[Playbook de Desenvolvimento do Detox Pass](./playbook/Detox_Pass_Playbook_Desenvolvimento_Azvor_PT_v1.2.pdf)
+inteiro. Ele é a fonte de verdade sobre processo, Git, ambientes, segurança e
+responsabilidades do time.
 
 ## 2. Leia o README
 
