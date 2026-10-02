@@ -10,10 +10,14 @@ Leia o
 inteiro. Ele é a fonte de verdade sobre processo, Git, ambientes, segurança e
 responsabilidades do time.
 
-## 2. Leia o README
+## 2. Leia o README e o escopo do produto
 
 Leia o [`README.md`](../README.md) para entender o objetivo do produto, a stack
-de referência e como o Bubble/Figma são usados (apenas como referência).
+de referência e como o Bubble/Figma são usados (apenas como referência). Em
+seguida, leia o [`docs/PRODUCT_SCOPE.md`](./PRODUCT_SCOPE.md) para entender o
+**escopo vendido** (9 fases, 12 módulos, regras de pagamento, integrações e
+limites). A Proposta Comercial Final é a fonte de verdade do escopo; o Playbook é
+a fonte de verdade do processo.
 
 ## 3. Entenda o workflow
 

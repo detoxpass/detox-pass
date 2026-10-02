@@ -65,13 +65,16 @@ itens aplicáveis abaixo foram cumpridos:
 - [ ] PR aberto com explicação e passos de teste.
 - [ ] Revisão obrigatória concluída nas áreas de médio/alto risco.
 
-## Ambientes: local, staging e production
+## Ambientes: local, staging/demonstração e production
 
-| Ambiente       | Para que serve                                           | Credenciais        |
-| -------------- | -------------------------------------------------------- | ------------------ |
-| **Local**      | Desenvolvimento no computador de cada um.                | Teste              |
-| **Staging**    | Homologação e QA humano antes da produção.               | Teste              |
-| **Production** | Ambiente real, usado por usuários finais.                | Produção (secretos)|
+| Ambiente                   | Para que serve                                           | Credenciais        |
+| -------------------------- | -------------------------------------------------------- | ------------------ |
+| **Local**                  | Desenvolvimento no computador de cada um.                | Teste              |
+| **Staging / Demonstração** | Homologação, QA humano e demonstração antes da produção. | Teste              |
+| **Production**             | Ambiente real, usado por usuários finais.                | Produção (secretos)|
+
+> A Proposta Comercial Final exige um **ambiente de demonstração separado de
+> produção**. Nunca use produção para desenvolvimento ou testes comuns.
 
 Regras de deploy:
 

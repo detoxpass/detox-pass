@@ -4,15 +4,38 @@ Projeto desenvolvido pela **Azvor Tecnologia**.
 
 ## Sobre o projeto
 
-O Detox Pass é um sistema de agendamento e marketplace de serviços com
-pagamentos integrados. O objetivo é oferecer aos usuários uma forma simples de
-descobrir provedores, agendar sessões, pagar e acompanhar recompensas, enquanto
-os provedores gerenciam suas agendas e recebem através de uma estrutura de
-pagamentos confiável e auditável.
+O Detox Pass é um **marketplace de serviços** que conecta clientes a
+profissionais, com **reserva de horários** em agenda real (integrada a provedores
+externos), **pagamento no momento da reserva** com **liberação condicionada** do
+repasse à profissional, **confirmação de atendimento**, **recompensas (rewards)**
+e um **chat com agente de IA** que ajuda a cliente a encontrar serviço, cidade e
+profissional.
+
+O escopo completo (9 fases, 12 módulos, regras de pagamento, integrações e
+limites) está em [`docs/PRODUCT_SCOPE.md`](./docs/PRODUCT_SCOPE.md).
 
 O produto já existe hoje em uma versão feita no **Bubble** e possui telas no
 **Figma**. Esta é uma **reconstrução em high-code**: começamos do zero com uma
 base técnica profissional, usando o Bubble e o Figma apenas como referência.
+
+### Cronograma
+
+Contrato de **6 meses**: **3 meses de desenvolvimento** + **3 meses de garantia**.
+O desenvolvimento é organizado em 9 fases (ver escopo).
+
+## Fontes de verdade
+
+| Fonte                        | Define                                                  |
+| ---------------------------- | ------------------------------------------------------- |
+| **Proposta Comercial Final** | O escopo comercial e funcional (o que foi vendido).     |
+| **Playbook de Desenvolvimento** | O processo de engenharia (como o time desenvolve).   |
+| **Nova identidade visual**   | Prevalece sobre Bubble e Figma no visual.               |
+| **Bubble**                   | Referência funcional e histórica.                       |
+| **Figma**                    | Referência de UX, fluxos e telas.                       |
+
+Decisões posteriores aprovadas por Samuel/Elias prevalecem sobre as referências
+antigas. **Nunca** use Bubble ou Figma como justificativa para implementar algo
+fora do escopo final.
 
 ## Arquitetura planejada (alto nível)
 
@@ -22,8 +45,10 @@ base técnica profissional, usando o Bubble e o Figma apenas como referência.
 - **Frontend:** React + TypeScript
 - **Backend / Banco de dados:** Supabase / PostgreSQL (sujeito ao setup técnico inicial)
 - **Mobile:** Capacitor para Android e iOS
-- **Integrações externas:** APIs de agenda (Acuity, Square, Wix, Zenoti, Mindbody),
-  Stripe / Stripe Connect e demais integrações definidas no projeto
+- **Hospedagem/Deploy:** Vercel
+- **Pagamentos:** Stripe / Stripe Connect (arquitetura final definida após a POC)
+- **Integrações de agenda:** Acuity, Square, Wix, Zenoti, Mindbody (isoladas em adapters)
+- **Agente de IA:** chat de descoberta (provedor/modelo ainda não definido)
 
 ## Referências do produto antigo
 
@@ -51,10 +76,11 @@ abaixo.
 
 Toda a documentação do projeto está na pasta [`docs/`](./docs):
 
+- [Escopo do produto](./docs/PRODUCT_SCOPE.md) — resumo técnico do que foi vendido (fases, módulos, regras).
 - [Workflow de desenvolvimento](./docs/DEVELOPMENT_WORKFLOW.md) — o fluxo oficial do dia a dia.
 - [Arquitetura](./docs/ARCHITECTURE.md) — o que já sabemos e o que ainda está pendente.
 - [Onboarding](./docs/ONBOARDING.md) — como um novo desenvolvedor entra no projeto.
-- [Decisões técnicas](./docs/DECISIONS.md) — registro das decisões já tomadas.
+- [Decisões técnicas](./docs/DECISIONS.md) — decisões tomadas, pendentes e ownership/handover.
 
 Veja também:
 

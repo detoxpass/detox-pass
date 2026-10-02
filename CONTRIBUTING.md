@@ -4,9 +4,15 @@ Este guia vale para **todo mundo** que escreve código no Detox Pass: Samuel,
 Elias, Anderson e qualquer agente de IA (Cursor). Ele é propositalmente simples,
 então também serve para quem está começando.
 
-A fonte de verdade completa é o
-[Playbook de Desenvolvimento do Detox Pass](./docs/playbook/Detox_Pass_Playbook_Desenvolvimento_Azvor_PT_v1.2.pdf).
-Este arquivo é um resumo prático das regras mais importantes.
+Fontes de verdade:
+
+- O **processo de engenharia** segue o
+  [Playbook de Desenvolvimento do Detox Pass](./docs/playbook/Detox_Pass_Playbook_Desenvolvimento_Azvor_PT_v1.2.pdf).
+- O **escopo funcional** (o que faz parte do produto) segue a Proposta Comercial
+  Final, resumida em [`docs/PRODUCT_SCOPE.md`](./docs/PRODUCT_SCOPE.md).
+
+Este arquivo é um resumo prático das regras mais importantes. Nunca use Bubble ou
+Figma como justificativa para implementar algo fora do escopo final.
 
 ## As regras principais
 
