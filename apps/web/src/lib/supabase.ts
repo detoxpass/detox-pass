@@ -1,7 +1,12 @@
 import type { Role } from '../shell/nav'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+declare const __SUPABASE_URL__: string
+declare const __SUPABASE_PUBLISHABLE_KEY__: string
+
+const url = __SUPABASE_URL__
+const key = __SUPABASE_PUBLISHABLE_KEY__
+
+export const supabaseConfigured = Boolean(url && key)
 const storageKey = 'detox-pass-session'
 
 export type SessionUser = {
@@ -65,13 +70,23 @@ function fromToken(body: TokenResponse): Session {
   }
 }
 
+async function readBody(response: Response) {
+  const text = await response.text()
+  try {
+    return JSON.parse(text) as TokenResponse
+  } catch {
+    throw new Error('Sign in did not reach Supabase. Check SUPABASE_URL on the deploy.')
+  }
+}
+
 async function token(grant: string, payload: Record<string, string>) {
+  if (!supabaseConfigured) throw new Error('This deploy is missing the Supabase environment variables.')
   const response = await fetch(`${url}/auth/v1/token?grant_type=${grant}`, {
     method: 'POST',
     headers: { apikey: key, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  const body = (await response.json()) as TokenResponse
+  const body = await readBody(response)
   if (!response.ok) throw new Error(body.error_description || body.msg || body.error || 'Sign in failed.')
   return fromToken(body)
 }
@@ -97,12 +112,13 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signUp(email: string, password: string) {
+  if (!supabaseConfigured) throw new Error('This deploy is missing the Supabase environment variables.')
   const response = await fetch(`${url}/auth/v1/signup`, {
     method: 'POST',
     headers: { apikey: key, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
-  const body = (await response.json()) as TokenResponse & { access_token?: string }
+  const body = await readBody(response)
   if (!response.ok) throw new Error(body.error_description || body.msg || body.error || 'Could not create the account.')
   if (body.access_token && body.refresh_token && body.user) {
     const session = fromToken(body)
@@ -113,13 +129,14 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function recover(email: string) {
+  if (!supabaseConfigured) throw new Error('This deploy is missing the Supabase environment variables.')
   const response = await fetch(`${url}/auth/v1/recover`, {
     method: 'POST',
     headers: { apikey: key, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   })
   if (!response.ok) {
-    const body = (await response.json()) as TokenResponse
+    const body = await readBody(response)
     throw new Error(body.error_description || body.msg || 'Could not send the recovery email.')
   }
 }
@@ -149,7 +166,8 @@ export async function catalog(session: Session) {
     },
   })
   if (!response.ok) throw new Error('Could not load the catalog.')
-  return (await response.json()) as ProfessionalRow[]
+  const body = await readBody(response)
+  return body as unknown as ProfessionalRow[]
 }
 
 export type ProfessionalRow = {

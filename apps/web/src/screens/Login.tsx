@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { recover, signIn, signUp } from '../lib/supabase'
+import { recover, signIn, signUp, supabaseConfigured } from '../lib/supabase'
 import { Button, Field, Logo } from '../ui'
 
 type Mode = 'login' | 'signup' | 'recover' | 'sent'
@@ -38,7 +38,7 @@ export function Login({ onEnter }: { onEnter: () => void }) {
     }
   }
 
-  const configured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+  const configured = supabaseConfigured
 
   return (
     <div className="auth">
