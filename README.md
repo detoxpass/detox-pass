@@ -1,4 +1,4 @@
-# Detox Pass
+# Detox Pass - 2026
 
 Projeto desenvolvido pela **Azvor Tecnologia**.
 
