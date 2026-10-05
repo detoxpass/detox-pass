@@ -23,8 +23,9 @@ a fonte de verdade do processo.
 
 Leia [`docs/DEVELOPMENT_WORKFLOW.md`](./DEVELOPMENT_WORKFLOW.md) e
 [`CONTRIBUTING.md`](../CONTRIBUTING.md). Você precisa entender o fluxo
-`Task → Branch → PR → CI → Review → Staging → QA → Produção` **antes** de
-escrever qualquer código.
+`commit → push → supabase db push → functions deploy → prova em https://detox-pass.vercel.app`
+antes de tratar uma entrega como aceita. A decisão está em
+[`DECISIONS.md`](./DECISIONS.md).
 
 ## 4. Instale as ferramentas necessárias
 
@@ -45,16 +46,11 @@ git clone <URL-do-repositorio-detox-pass>
 cd detox-pass
 ```
 
-## 6. Configure as variáveis de ambiente
+## 6. O app publicado já aponta para o Supabase
 
-- Copie o arquivo de exemplo:
-
-  ```bash
-  cp .env.example .env
-  ```
-
-- Preencha o `.env` com valores de **teste/desenvolvimento**.
-- Nunca use credenciais de produção em local.
+O Vercel do projeto `detox-pass` lê `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
+A prova abre `https://detox-pass.vercel.app`. Não monte um `.env` local para
+substituir esse teste.
 
 ## 7. Nunca compartilhe secrets
 

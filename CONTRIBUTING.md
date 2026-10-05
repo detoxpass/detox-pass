@@ -53,16 +53,17 @@ Figma como justificativa para implementar algo fora do escopo final.
 8. **Código gerado por IA (Cursor) também precisa de revisão humana.** A IA pode
    escrever o código, mas **não aprova o próprio código**. Velocidade de geração
    não substitui responsabilidade técnica.
-9. **QA humano é liderado pelo Anderson**, feito em **staging**. Ele usa a
-   funcionalidade como um usuário real e registra o resultado antes do aceite.
-10. **Nunca use produção para testes.** Local e staging usam credenciais de
-    teste. Pagamentos reais (payout/refund) nunca são testados pela primeira vez
-    em produção.
+9. **A prova é o app publicado.** Abra `https://detox-pass.vercel.app` depois
+   do push, com a migration e a função já aplicadas no projeto `detoxpass`.
+   `127.0.0.1`, Docker e `supabase start` não contam como aceite.
+10. **Pagamento, estorno e repasse continuam desligados.** Não criar cobrança
+    para simular um teste.
 
 ## Antes de abrir um PR
 
-- Trabalhe na sua branch, criada a partir da `main` atualizada.
-- Rode as verificações locais que existirem (lint, typecheck, testes, build).
+- Faça commit, push em `detoxpass/main`, `supabase db push --linked` e
+  `supabase functions deploy` do que mudou.
+- Confirme o fluxo em `https://detox-pass.vercel.app`.
 - Confirme que **nenhum secret** (chave, token, senha, `.env`) foi incluído.
 - Preencha o template de PR com o que foi feito, por que, como testar e os riscos.
 

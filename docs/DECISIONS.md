@@ -431,6 +431,32 @@ Responsável: Elias.
 
 ---
 
+## 2026-10-05 — A prova desta fase é o app publicado
+
+Contexto: não existe ambiente local de aceite nem staging. O relatório que citava
+Docker, `supabase start` ou `http://127.0.0.1:5173` não vale como prova.
+
+Decisão: a prova de uma entrega é esta sequência, no projeto `detoxpass`
+(`otddminugslmacdirual`) e no app `https://detox-pass.vercel.app`:
+
+1. Commit e push em `detoxpass/main`.
+2. `supabase db push --linked` quando houver migration.
+3. `supabase functions deploy` da função alterada.
+4. Exercitar o fluxo no app publicado, já com esse commit no ar.
+
+`config.toml` continua com `site_url` local e não é copiado para produção.
+
+Motivo: Elias pediu que o teste aconteça no ambiente que o cliente abre, não
+num stack local.
+
+Impacto: o workflow, o guia de contribuição e o checklist de PR seguem esta
+prova. O job de banco do CI não sobe um Postgres local. Pagamento, estorno e
+repasse continuam fora até existir provedor de cobrança.
+
+Responsável: Elias.
+
+---
+
 # Pendência de transferência / handover
 
 > A **propriedade** dos ativos já está decidida (pertence à Detox Pass/cliente —

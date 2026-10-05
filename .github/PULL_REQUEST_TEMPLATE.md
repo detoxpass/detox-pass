@@ -8,7 +8,7 @@
 
 ## Como testar?
 
-<!-- Passos para testar manualmente. Inclua ambiente (local/staging). -->
+<!-- Passos no app publicado https://detox-pass.vercel.app, depois do push e do deploy no Supabase. -->
 
 ## Prints / evidências
 
@@ -22,7 +22,7 @@
 ## Checklist
 
 - [ ] Trabalhei em uma branch própria
-- [ ] Testei localmente
+- [ ] Exercitei o fluxo em https://detox-pass.vercel.app
 - [ ] Não incluí secrets
 - [ ] Não alterei arquivos fora do escopo sem necessidade
 - [ ] Build/testes aplicáveis passaram

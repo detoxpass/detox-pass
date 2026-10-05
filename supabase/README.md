@@ -1,6 +1,6 @@
 # Banco portátil
 
-As migrations em `migrations/` são a fonte do schema. Elas não carregam segredo, project ref nem usuário fixo. O mesmo conjunto sobe em local, staging e produção.
+As migrations em `migrations/` são a fonte do schema. Elas não carregam segredo, project ref nem usuário fixo. A prova aplica esse conjunto no projeto publicado `detoxpass`.
 
 `private` fica de fora da Data API. Não adicione esse schema em `config.toml`.
 
@@ -11,16 +11,9 @@ supabase link --project-ref <ref-da-conta>
 supabase db push
 ```
 
-`db push` aplica só o que ainda não entrou naquela conta. Não rode SQL solto no editor como substituto disto.
+`db push` aplica só o que ainda não entrou naquela conta. Não rode SQL solto no editor como substituto disto. `supabase start` não é a prova: o aceite acontece no app publicado depois deste push.
 
-Local:
-
-```bash
-supabase start
-supabase db reset
-```
-
-O reset também roda `seed.sql`, que de propósito não insere dado de negócio. A comissão inicial de 20% está na migration, então toda conta nova já nasce com ela.
+`seed.sql` de propósito não insere dado de negócio. A comissão inicial de 20% está na migration, então toda conta nova já nasce com ela.
 
 ## Primeira operação
 

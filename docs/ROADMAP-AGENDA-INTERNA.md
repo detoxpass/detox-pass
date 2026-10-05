@@ -48,13 +48,13 @@ bloqueio e não cruza outra reserva.
 
 | # | Parâmetro | Prova |
 | - | --------- | ----- |
-| 1 | Modal da profissional até ela definir o modo ou pedir para não mostrar de novo. | Navegador, conta profissional sem escolha. |
-| 2 | Definir interna fecha o modal e a agenda mostra a grade. | A mesma sessão, depois da escolha. |
-| 3 | Cliente não vê horário enquanto o modo está vazio. | Página da profissional. |
-| 4 | Com janela publicada, a cliente vê só instantes gerados por essa janela. | Função `scheduling-internal`, um dia coberto e um dia fora. |
+| 1 | Modal da profissional até ela definir o modo ou pedir para não mostrar de novo. | `https://detox-pass.vercel.app`, conta profissional sem escolha. |
+| 2 | Definir interna fecha o modal e a agenda mostra a grade. | A mesma sessão publicada, depois da escolha. |
+| 3 | Cliente não vê horário enquanto o modo está vazio. | Página publicada da profissional. |
+| 4 | Com janela publicada, a cliente vê só instantes gerados por essa janela. | Função `scheduling-internal` no projeto `detoxpass`, um dia coberto e um dia fora. |
 | 5 | Reservar grava `provider = internal`, `provider_confirmed`, id interno e `amount_cents` nulo. | Reserva criada no projeto `detoxpass`. |
-| 6 | Segundo pedido no mesmo intervalo não cria outra reserva ativa. | Duas chamadas no mesmo instante. |
-| 7 | Bloqueio sobre reserva ativa é recusado. | Insert do bloqueio. |
-| 8 | Profissional não cancela a reserva da cliente. | Chamada com o papel profissional. |
-| 9 | Externa não usa a grade interna. Sem token daquela ficha, a página continua pendente. | Profissional em modo externo, sem conexão. |
-| 10 | Preço do serviço não entra no corpo da reserva. | Resposta do `book` sem valor cobrado. |
+| 6 | Segundo pedido no mesmo intervalo não cria outra reserva ativa. | Duas chamadas no mesmo instante, na função publicada. |
+| 7 | Bloqueio sobre reserva ativa é recusado. | Insert do bloqueio no projeto `detoxpass`. |
+| 8 | Profissional não cancela a reserva da cliente. | App publicado, papel profissional. |
+| 9 | Externa não usa a grade interna. Sem token daquela ficha, a página continua pendente. | Profissional em modo externo, sem conexão, no app publicado. |
+| 10 | Preço do serviço não entra no corpo da reserva. | Resposta do `book` publicado, sem valor cobrado. |

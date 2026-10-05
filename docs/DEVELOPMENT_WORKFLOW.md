@@ -8,37 +8,26 @@ Pass, o playbook vence.
 
 ```
 Task
-  → Branch (a partir da main atualizada)
-  → Desenvolvimento com Cursor
-  → Testes locais (lint, typecheck, test, build)
+  → Implementação
   → Commit
-  → Push
-  → Pull Request
-  → CI (verificações automáticas)
-  → Code Review (revisão humana)
-  → Merge na main protegida
-  → Staging
-  → QA humano (Anderson)
-  → Aprovação
-  → Production
+  → Push em detoxpass/main
+  → supabase db push --linked, se houve migration
+  → supabase functions deploy, se houve função
+  → Prova em https://detox-pass.vercel.app
 ```
 
-Cada passo existe por um motivo: a branch isola o trabalho, o CI pega erros
-mecânicos, a revisão pega problemas de lógica e segurança, o staging evita que a
-produção vire laboratório e o QA humano confirma que o produto realmente
-funciona para uma pessoa.
+A decisão de 2026-10-05 em [`DECISIONS.md`](./DECISIONS.md) vale: não há stack
+local nem staging para aceite. Docker, `supabase start` e `127.0.0.1` não
+entram no relatório.
 
 ## Ciclo de uma tarefa (passo a passo)
 
-1. Atualize a `main` local e busque a versão mais recente do GitHub.
-2. Crie uma branch curta para uma tarefa coerente e pequena (veja padrões em
-   [`CONTRIBUTING.md`](../CONTRIBUTING.md)).
-3. Implemente e faça commits lógicos e pequenos.
-4. Rode as verificações locais disponíveis.
-5. Faça push da branch e abra um Pull Request.
-6. Corrija erros do CI e responda às revisões.
-7. Valide em staging quando a mudança altera comportamento.
-8. Faça o merge (squash quando apropriado) e apague a branch.
+1. Implemente a tarefa.
+2. Faça o commit e o push em `detoxpass/main`.
+3. Aplique a migration com `supabase db push --linked` no projeto `detoxpass`.
+4. Publique a função alterada com `supabase functions deploy`.
+5. Espere o deploy do Vercel desse commit ficar pronto.
+6. Exercite o fluxo em `https://detox-pass.vercel.app` e registre o que aconteceu.
 
 > **Tamanho de PR:** prefira PRs que alguém entenda em ~20-30 minutos. Se a
 > tarefa está enorme, divida verticalmente.
@@ -52,36 +41,31 @@ itens aplicáveis abaixo foram cumpridos:
 - [ ] Código revisável, sem mudanças aleatórias fora da tarefa.
 - [ ] TypeScript sem erros conhecidos.
 - [ ] Lint aprovado.
-- [ ] Testes relevantes executados.
-- [ ] Build concluído.
-- [ ] Migration criada quando houve mudança de banco.
+- [ ] Migration aplicada com `supabase db push --linked` quando houve mudança de banco.
+- [ ] Função publicada no projeto `detoxpass` quando houve mudança de função.
+- [ ] Fluxo exercitado em `https://detox-pass.vercel.app` no commit que está no ar.
 - [ ] RLS/permissões revisadas quando aplicável.
 - [ ] Env vars/configurações documentadas (sem revelar valores secretos).
-- [ ] Fluxo validado em staging quando aplicável.
-- [ ] QA humano do Anderson executado quando a tarefa altera comportamento
-      visível, booking, integração ou fluxo de negócio.
-- [ ] Falhas do QA humano corrigidas e retestadas.
 - [ ] Nenhum secret ou dado real sensível no repositório.
 - [ ] PR aberto com explicação e passos de teste.
 - [ ] Revisão obrigatória concluída nas áreas de médio/alto risco.
 
-## Ambientes: local, staging/demonstração e production
+## Onde a prova acontece
 
-| Ambiente                   | Para que serve                                           | Credenciais        |
-| -------------------------- | -------------------------------------------------------- | ------------------ |
-| **Local**                  | Desenvolvimento no computador de cada um.                | Teste              |
-| **Staging / Demonstração** | Homologação, QA humano e demonstração antes da produção. | Teste              |
-| **Production**             | Ambiente real, usado por usuários finais.                | Produção (secretos)|
+| Peça | Endereço |
+| ---- | -------- |
+| App | `https://detox-pass.vercel.app` |
+| Banco e funções | projeto Supabase `detoxpass`, ref `otddminugslmacdirual` |
+| Git que o Vercel publica | `https://github.com/detoxpass/detox-pass`, branch `main` |
 
-> A Proposta Comercial Final exige um **ambiente de demonstração separado de
-> produção**. Nunca use produção para desenvolvimento ou testes comuns.
+Não há segundo ambiente. A prova usa essas três peças depois do push.
 
 Regras de deploy:
 
-- Deploy de produção sai da `main`, nunca de uma branch aleatória.
-- Mudanças de alto risco passam por staging antes da produção.
-- Nunca testar payout/refund real pela primeira vez em produção.
-- Crie tags/releases nos marcos importantes para ter um ponto de rollback.
+- O deploy do app sai do push em `detoxpass/main`.
+- A migration entra com `supabase db push --linked`.
+- A função entra com `supabase functions deploy`.
+- Pagamento, estorno e repasse continuam desligados. Não inventar uma cobrança para “testar”.
 
 ## Classificação de risco (define a profundidade da revisão)
 
@@ -120,5 +104,5 @@ ser usado. Mas:
 - Quando o agente diz "todos os testes passaram", isso significa apenas que os
   checks executados passaram — **não** que uma pessoa testou o produto ponta a
   ponta.
-- Quando uma mudança exigir validação funcional, o resumo deve sinalizar
-  explicitamente: **"Aguardando QA humano do Anderson em staging"**.
+- O resumo da entrega diz o que foi visto em `https://detox-pass.vercel.app`
+  e o que o Supabase de produção respondeu.
