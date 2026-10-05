@@ -30,8 +30,8 @@ export function Icon({ name }: { name: string }) {
   return null
 }
 
-export function Button({ children, kind = 'primary', onClick, type = 'button' }: { children: ReactNode; kind?: 'primary' | 'ghost' | 'soft'; onClick?: () => void; type?: 'button' | 'submit' }) {
-  return <button type={type} className={`btn ${kind}`} onClick={onClick}>{children}</button>
+export function Button({ children, kind = 'primary', onClick, type = 'button', disabled = false }: { children: ReactNode; kind?: 'primary' | 'ghost' | 'soft'; onClick?: () => void; type?: 'button' | 'submit'; disabled?: boolean }) {
+  return <button type={type} className={`btn ${kind}`} onClick={onClick} disabled={disabled}>{children}</button>
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -65,4 +65,45 @@ export function PageHead({ title, text, onBack, back }: { title: string; text?: 
 
 export function Status({ value }: { value: string }) {
   return <span className={`status-pill ${value.toLowerCase()}`}>{value}</span>
+}
+
+export function LoadingBlock({ text = 'Loading…' }: { text?: string }) {
+  return <p className="state" role="status">{text}</p>
+}
+
+export function EmptyBlock({ title, text }: { title: string; text: string }) {
+  return <section className="state"><h2>{title}</h2><p>{text}</p></section>
+}
+
+export function ErrorBlock({ text, onRetry }: { text: string; onRetry?: () => void }) {
+  return (
+    <section className="state bad" role="alert">
+      <h2>Something went wrong</h2>
+      <p>{text}</p>
+      {onRetry ? <Button kind="ghost" onClick={onRetry}>Try again</Button> : null}
+    </section>
+  )
+}
+
+export function ForbiddenBlock() {
+  return <section className="state"><h2>You can’t open this</h2><p>This page belongs to another role.</p></section>
+}
+
+export function PendingBlock({ text }: { text: string }) {
+  return <section className="state pending"><h2>Calendar not connected</h2><p>{text}</p></section>
+}
+
+export function Notice({ text }: { text: string }) {
+  return <p className="notice" role="status">{text}</p>
+}
+
+const sagaLabels: Record<string, string> = {
+  intent: 'Checking the time',
+  provider_confirmed: 'Reserved',
+  cancelled: 'Cancelled',
+  compensation_required: 'Needs review',
+}
+
+export function SagaStatus({ status }: { status: string }) {
+  return <Status value={sagaLabels[status] ?? status} />
 }

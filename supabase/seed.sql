@@ -1,0 +1,3 @@
+-- Roda só no `supabase db reset` local. `supabase db push` não executa este arquivo.
+-- Não coloque segredo, usuário real nem dado de produção aqui.
+-- A comissão de 20% já entra na migration do ledger, em todo ambiente.

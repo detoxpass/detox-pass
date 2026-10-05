@@ -503,6 +503,34 @@ td { padding: 12px 8px; border-top: 1px solid var(--line); }
 .delete-email { text-align: center; font-weight: 800; color: var(--ink); }
 .delete-card .account-note a { color: var(--ink); }
 
+.btn:disabled { opacity: 0.55; cursor: progress; }
+.state { background: white; border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 8px; }
+.state h2 { font-size: 22px; letter-spacing: -0.03em; }
+.state p, .notice { color: #3f3f3f; }
+.state.bad { border-color: #f0c2c8; }
+.state.pending { background: var(--pink-soft); }
+.notice { margin-top: 8px; font-weight: 700; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.catalog-card, .session-card { background: white; border: 0; border-radius: 18px; padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 44px; }
+.catalog-card strong, .session-card strong { font-size: 16px; }
+.check-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.check-row label { min-height: 44px; display: flex; align-items: center; gap: 8px; background: white; border-radius: 999px; padding: 0 12px; }
+.slot-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.slot-list button, .day-list button { min-height: 44px; border: 0; border-radius: 999px; background: white; padding: 0 14px; font-weight: 700; }
+.slot-list button.on, .day-list button.on { background: #161616; color: white; }
+.day-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.portrait-pick { display: flex; gap: 8px; overflow-x: auto; }
+.portrait-pick button { border: 2px solid transparent; border-radius: 16px; padding: 0; background: white; }
+.portrait-pick button.on { border-color: #161616; }
+.portrait-pick img { width: 72px; height: 96px; object-fit: cover; border-radius: 14px; display: block; }
+.shortcuts { display: flex; flex-wrap: wrap; gap: 8px; }
+.shortcuts a, .text-link { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: white; color: var(--ink); text-decoration: none; font-weight: 700; }
+
+@media (max-width: 640px) {
+  .catalog-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 420px) {
   .stats, .stats.four { grid-template-columns: 1fr; }
 }

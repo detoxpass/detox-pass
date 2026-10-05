@@ -1,11 +1,12 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { recover, signIn, signUp, supabaseConfigured } from '../lib/supabase'
 import { Button, Field, Logo } from '../ui'
 
 type Mode = 'login' | 'signup' | 'recover' | 'sent'
 
-export function Login({ onEnter }: { onEnter: () => void }) {
-  const [mode, setMode] = useState<Mode>('login')
+export function Login({ onEnter, initial = 'login', onMode }: { onEnter: () => void; initial?: Mode; onMode?: (mode: Mode) => void }) {
+  const [mode, setMode] = useState<Mode>(initial)
+  useEffect(() => { setMode(initial) }, [initial])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -70,14 +71,14 @@ export function Login({ onEnter }: { onEnter: () => void }) {
               {mode === 'login' ? (
                 <div className="row-between">
                   <span />
-                  <button type="button" className="link" onClick={() => { setError(''); setMode('recover') }}>Forgot your password?</button>
+                  <button type="button" className="link" onClick={() => { setError(''); setMode('recover'); onMode?.('recover') }}>Forgot your password?</button>
                 </div>
               ) : null}
               <Button type="submit">{pending ? 'Please wait' : mode === 'login' ? 'Sign in' : 'Create account'}</Button>
               {mode === 'login' ? (
-                <p className="center">Don't have an account yet? <button type="button" className="link" onClick={() => { setError(''); setMode('signup') }}>Sign up</button></p>
+                <p className="center">Don't have an account yet? <button type="button" className="link" onClick={() => { setError(''); setMode('signup'); onMode?.('signup') }}>Sign up</button></p>
               ) : (
-                <p className="center">Already have an account? <button type="button" className="link" onClick={() => { setError(''); setMode('login') }}>Sign in</button></p>
+                <p className="center">Already have an account? <button type="button" className="link" onClick={() => { setError(''); setMode('login'); onMode?.('login') }}>Sign in</button></p>
               )}
             </>
           ) : null}

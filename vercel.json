@@ -4,7 +4,7 @@
   "buildCommand": "npm run build --prefix apps/web",
   "outputDirectory": "apps/web/dist",
   "rewrites": [
-    { "source": "/delete-account", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

@@ -1,10 +1,14 @@
+import type { ReactNode } from 'react'
 import { Icon } from '../ui'
 
 export type Offer = {
+  id: string
   name: string
   price: number | null
   currency: string | null
 }
+
+export type Place = { id: string; name: string }
 
 export type Therapist = {
   id: string
@@ -12,6 +16,7 @@ export type Therapist = {
   photo: string
   city: string
   offers: Offer[]
+  places: Place[]
 }
 
 export function money(cents: number, currency: string) {
@@ -37,6 +42,7 @@ export function Professional({
   onBack,
   onOpen,
   onToggleLove,
+  schedule,
 }: {
   therapist: Therapist
   others: Therapist[]
@@ -44,6 +50,7 @@ export function Professional({
   onBack: () => void
   onOpen: (id: string) => void
   onToggleLove: () => void
+  schedule?: ReactNode
 }) {
   const offers = therapist.offers
 
@@ -66,20 +73,22 @@ export function Professional({
             {offers.length === 0 ? <p className="muted">No service is linked to this professional yet.</p> : null}
             <ul className="pro-offers">
               {offers.map((offer) => (
-                <li key={offer.name}>
+                <li key={offer.id}>
                   <strong>{offer.name}</strong>
                   <span>{offer.price != null && offer.currency ? money(offer.price, offer.currency) : 'Price pending'}</span>
                 </li>
               ))}
             </ul>
           </section>
-          <section className="pro-schedule">
-            <span className="pro-cal"><Icon name="calendar" /></span>
-            <div>
-              <h2>Availability</h2>
-              <p>This comes from the professional's calendar. None is connected, so no time is offered here.</p>
-            </div>
-          </section>
+          {schedule ?? (
+            <section className="pro-schedule">
+              <span className="pro-cal"><Icon name="calendar" /></span>
+              <div>
+                <h2>Availability</h2>
+                <p>This comes from the professional's calendar. None is connected, so no time is offered here.</p>
+              </div>
+            </section>
+          )}
         </div>
       </div>
       {others.length > 0 ? (

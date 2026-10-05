@@ -25,7 +25,8 @@
 /supabase/functions/           @samuasouza @develiasmacedo
 
 # Autenticação e segurança
-/src/features/auth/            @samuasouza @develiasmacedo
+/apps/web/src/lib/             @samuasouza @develiasmacedo
+/apps/web/src/features/booking/ @samuasouza @develiasmacedo
 
 # CI / configuração de workflows
 /.github/workflows/            @samuasouza @develiasmacedo

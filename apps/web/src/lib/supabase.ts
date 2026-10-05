@@ -111,9 +111,15 @@ export async function signIn(email: string, password: string) {
   return session
 }
 
+export function authRedirect() {
+  return `${window.location.origin}/auth/callback`
+}
+
 export async function signUp(email: string, password: string) {
   if (!supabaseConfigured) throw new Error('This deploy is missing the Supabase environment variables.')
-  const response = await fetch(`${url}/auth/v1/signup`, {
+  const endpoint = new URL(`${url}/auth/v1/signup`)
+  endpoint.searchParams.set('redirect_to', authRedirect())
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { apikey: key, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -133,7 +139,7 @@ export async function recover(email: string) {
   const response = await fetch(`${url}/auth/v1/recover`, {
     method: 'POST',
     headers: { apikey: key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, redirect_to: authRedirect() }),
   })
   if (!response.ok) {
     const body = await readBody(response)
@@ -282,8 +288,8 @@ export async function catalog(session: Session) {
     'id',
     'display_name',
     'portrait_path',
-    'professional_services(services(name,price_cents,currency))',
-    'professional_cities(cities(name))',
+    'professional_services(service_id,services(id,name,price_cents,currency))',
+    'professional_cities(city_id,cities(id,name))',
   ].join(',')
   const response = await fetch(`${url}/rest/v1/professionals?select=${encodeURIComponent(select)}&active=eq.true&order=display_name.asc`, {
     headers: {
@@ -300,6 +306,198 @@ export type ProfessionalRow = {
   id: string
   display_name: string
   portrait_path: string | null
-  professional_services: { services: { name: string; price_cents: number | null; currency: string | null } | null }[] | null
-  professional_cities: { cities: { name: string } | null }[] | null
+  professional_services: { service_id: string; services: { id: string; name: string; price_cents: number | null; currency: string | null } | null }[] | null
+  professional_cities: { city_id: string; cities: { id: string; name: string } | null }[] | null
+}
+
+export async function completeAuthCallback() {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const query = new URLSearchParams(window.location.search)
+  const access = hash.get('access_token')
+  const refresh = hash.get('refresh_token')
+  if (access && refresh) {
+    const session = await sessionFromAccess(access, refresh, Number(hash.get('expires_in') || 3600))
+    save(session)
+    window.history.replaceState(null, '', '/auth/callback')
+    return session
+  }
+  const tokenHash = query.get('token_hash')
+  const type = query.get('type')
+  if (!tokenHash || !type) throw new Error('This link is invalid or expired.')
+  const response = await fetch(`${url}/auth/v1/verify`, {
+    method: 'POST',
+    headers: { apikey: key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token_hash: tokenHash, type }),
+  })
+  const body = await readBody(response)
+  if (!response.ok) throw new Error(body.error_description || body.msg || body.error || 'This link is invalid or expired.')
+  const session = fromToken(body)
+  save(session)
+  window.history.replaceState(null, '', '/auth/callback')
+  return session
+}
+
+async function sessionFromAccess(access: string, refresh: string, expiresIn: number) {
+  const response = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: key, Authorization: `Bearer ${access}` },
+  })
+  const body = await readJson(response)
+  if (!response.ok || !body || typeof body !== 'object') throw new Error('This link is invalid or expired.')
+  return fromToken({
+    access_token: access,
+    refresh_token: refresh,
+    expires_in: expiresIn,
+    user: body as SessionUser,
+  })
+}
+
+export async function callFunction(session: Session, name: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${url}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  })
+  const body = await readJson(response)
+  if (!response.ok && response.status !== 422) throw new Error(messageOf(body) || 'The request failed.')
+  return { status: response.status, body }
+}
+
+async function rest(session: Session, path: string, init?: RequestInit) {
+  const extra: Record<string, string> = { 'Content-Type': 'application/json', Prefer: 'return=representation' }
+  const response = await fetch(`${url}/rest/v1/${path}`, {
+    ...init,
+    headers: authHeaders(session, extra),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not save.')
+  return body
+}
+
+export type AccountRow = { id: string; email: string; full_name: string | null; role: string }
+
+export async function listAccounts(session: Session) {
+  const response = await fetch(`${url}/rest/v1/rpc/list_accounts`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: '{}',
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not load accounts.')
+  return (Array.isArray(body) ? body : []) as AccountRow[]
+}
+
+export async function setAppRole(session: Session, userId: string, role: string) {
+  const result = await callFunction(session, 'commands', { action: 'set_app_role', user_id: userId, role })
+  if (result.status >= 400) throw new Error(messageOf(result.body) || 'Could not change the role.')
+}
+
+export const portraits = [
+  '/people/alex.jpg',
+  '/people/arena.jpg',
+  '/people/fresh.jpg',
+  '/people/hale.jpg',
+  '/people/jacob.jpg',
+  '/people/merrill.jpg',
+  '/people/naomi.jpg',
+  '/people/nathana.jpg',
+  '/people/sparkle.jpg',
+  '/people/splash.jpg',
+  '/people/surgical.jpg',
+]
+
+export type CatalogService = { id: string; name: string; slug: string; price_cents: number | null; currency: string | null }
+export type CatalogCity = { id: string; name: string; slug: string }
+export type CatalogSpecialty = { id: string; name: string; slug: string }
+
+async function rows<T>(session: Session, path: string) {
+  const response = await fetch(`${url}/rest/v1/${path}`, { headers: authHeaders(session) })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not load this list.')
+  return (Array.isArray(body) ? body : []) as T[]
+}
+
+export function loadServices(session: Session) {
+  return rows<CatalogService>(session, 'services?select=id,name,slug,price_cents,currency&order=name.asc')
+}
+export function loadCities(session: Session) {
+  return rows<CatalogCity>(session, 'cities?select=id,name,slug&order=name.asc')
+}
+export function loadSpecialties(session: Session) {
+  return rows<CatalogSpecialty>(session, 'specialties?select=id,name,slug&order=name.asc')
+}
+
+export type AdminProfessional = {
+  id: string
+  profile_id: string
+  display_name: string
+  active: boolean
+  portrait_path: string | null
+  professional_services: { service_id: string }[] | null
+  professional_cities: { city_id: string }[] | null
+  professional_specialties: { specialty_id: string }[] | null
+  schedule_connections: { id: string; provider: string; external_resource_id: string | null; status: string }[] | null
+}
+
+export function loadAdminProfessionals(session: Session) {
+  const select = 'id,profile_id,display_name,active,portrait_path,professional_services(service_id),professional_cities(city_id),professional_specialties(specialty_id),schedule_connections(id,provider,external_resource_id,status)'
+  return rows<AdminProfessional>(session, `professionals?select=${encodeURIComponent(select)}&order=display_name.asc`)
+}
+
+export async function insertRow(session: Session, table: string, payload: Record<string, unknown>) {
+  const body = await rest(session, table, { method: 'POST', body: JSON.stringify(payload) })
+  if (!Array.isArray(body) || body.length === 0) throw new Error('Nothing was saved.')
+  return body[0] as { id: string }
+}
+
+export async function patchRow(session: Session, table: string, id: string, payload: Record<string, unknown>) {
+  const body = await rest(session, `${table}?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) })
+  if (!Array.isArray(body) || body.length === 0) throw new Error('Nothing was saved.')
+}
+
+export async function replaceLinks(session: Session, table: string, column: string, professionalId: string, ids: string[]) {
+  const clear = await fetch(`${url}/rest/v1/${table}?professional_id=eq.${encodeURIComponent(professionalId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(session),
+  })
+  if (!clear.ok) {
+    const body = await readJson(clear)
+    throw new Error(messageOf(body) || 'Could not update the links.')
+  }
+  if (ids.length === 0) return
+  await rest(session, table, {
+    method: 'POST',
+    body: JSON.stringify(ids.map((id) => ({ professional_id: professionalId, [column]: id }))),
+  })
+}
+
+export type BookingRow = {
+  id: string
+  professional_id: string
+  starts_at: string
+  saga_status: string
+  external_booking_id: string | null
+  amount_cents: number | null
+  services: { name: string } | null
+  professionals: { display_name: string } | null
+  cities: { name: string } | null
+}
+
+export function loadBookings(session: Session) {
+  const select = 'id,professional_id,starts_at,saga_status,external_booking_id,amount_cents,services(name),professionals(display_name),cities(name)'
+  return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
+}
+
+export type BookingEvent = {
+  id: string
+  event_type: string
+  from_status: string | null
+  to_status: string | null
+  from_starts_at: string | null
+  to_starts_at: string | null
+  origin: string | null
+  created_at: string
+}
+
+export function loadBookingEvents(session: Session, bookingId: string) {
+  return rows<BookingEvent>(session, `booking_events?select=id,event_type,from_status,to_status,from_starts_at,to_starts_at,origin,created_at&booking_id=eq.${encodeURIComponent(bookingId)}&order=created_at.asc`)
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { catalog, type ProfessionalRow, type Session } from '../lib/supabase'
-import { Professional, money, type Offer, type Therapist } from './Professional'
+import { money, type Offer, type Therapist } from './Professional'
 import { Button, Icon } from '../ui'
 
 type Portrait = { id: string; photo: string }
@@ -35,19 +35,20 @@ function HeroReel({ photos }: { photos: Portrait[] }) {
 }
 
 function toCard(row: ProfessionalRow): Therapist {
-  const services = (row.professional_services ?? []).map((item) => item.services).filter((item): item is NonNullable<typeof item> => Boolean(item))
-  const offers: Offer[] = services.map((item) => ({
-    name: item.name,
-    price: item.price_cents,
-    currency: item.currency,
-  }))
-  const city = (row.professional_cities ?? []).map((item) => item.cities?.name).find(Boolean) ?? ''
+  const offers: Offer[] = (row.professional_services ?? []).flatMap((item) => item.services ? [{
+    id: item.services.id,
+    name: item.services.name,
+    price: item.services.price_cents,
+    currency: item.services.currency,
+  }] : [])
+  const places = (row.professional_cities ?? []).flatMap((item) => item.cities ? [{ id: item.cities.id, name: item.cities.name }] : [])
   return {
     id: row.id,
     name: row.display_name,
     photo: row.portrait_path || '/people/splash.jpg',
     offers,
-    city,
+    places,
+    city: places.map((place) => place.name).join(', '),
   }
 }
 
@@ -58,11 +59,21 @@ function fromPrice(offers: Offer[]) {
   return amounts.length > 1 ? `From ${money(lowest.price ?? 0, lowest.currency ?? 'USD')}` : money(lowest.price ?? 0, lowest.currency ?? 'USD')
 }
 
-export function Home({ session }: { session: Session }) {
+const lovedKey = 'detox-pass-loved'
+
+function readLoved() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(lovedKey) || '[]') as unknown
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function Home({ session, onOpen }: { session: Session; onOpen: (id: string) => void }) {
   const [cards, setCards] = useState<Therapist[]>([])
-  const [loved, setLoved] = useState<string[]>([])
+  const [loved, setLoved] = useState<string[]>(readLoved)
   const [query, setQuery] = useState('')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [services, setServices] = useState<string[]>([])
@@ -89,7 +100,7 @@ export function Home({ session }: { session: Session }) {
 
   const portraits = cards.filter((item, index) => item.photo && cards.findIndex((other) => other.photo === item.photo) === index)
   const serviceOptions = [...new Set(cards.flatMap((item) => item.offers.map((offer) => offer.name)))].sort()
-  const cityOptions = [...new Set(cards.map((item) => item.city).filter(Boolean))].sort()
+  const cityOptions = [...new Set(cards.flatMap((item) => item.places.map((place) => place.name)))].sort()
   const priceValues = cards.flatMap((item) => item.offers.map((offer) => offer.price)).filter((price): price is number => price != null).map((cents) => Math.round(cents / 100))
   const priceFloor = priceValues.length ? Math.min(...priceValues) : 0
   const priceCeil = priceValues.length ? Math.max(...priceValues) : 0
@@ -103,7 +114,7 @@ export function Home({ session }: { session: Session }) {
   const visible = cards.filter((item) => {
     const blob = `${item.name} ${item.offers.map((offer) => offer.name).join(' ')} ${item.city}`.toLowerCase()
     if (query.trim() && !blob.includes(query.trim().toLowerCase())) return false
-    if (cities.length > 0 && !cities.includes(item.city)) return false
+    if (cities.length > 0 && !item.places.some((place) => cities.includes(place.name))) return false
     if (services.length > 0 && !item.offers.some((offer) => services.includes(offer.name))) return false
     if (savedOnly && !loved.includes(item.id)) return false
     if (priceValues.length > 1 && lowest(item) / 100 > priceCap) return false
@@ -138,23 +149,12 @@ export function Home({ session }: { session: Session }) {
     setSavedOnly(false)
   }
 
-  function open(id: string) {
-    setSelectedId(id)
-    document.querySelector('.shell-scroll')?.scrollTo({ top: 0 })
-  }
-
-  const selected = cards.find((item) => item.id === selectedId) ?? null
-  if (selected) {
-    return (
-      <Professional
-        therapist={selected}
-        others={cards.filter((item) => item.id !== selected.id)}
-        loved={loved.includes(selected.id)}
-        onBack={() => setSelectedId(null)}
-        onOpen={open}
-        onToggleLove={() => setLoved((current) => current.includes(selected.id) ? current.filter((id) => id !== selected.id) : [...current, selected.id])}
-      />
-    )
+  function toggleLove(id: string) {
+    setLoved((current) => {
+      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      localStorage.setItem(lovedKey, JSON.stringify(next))
+      return next
+    })
   }
 
   return (
@@ -214,9 +214,9 @@ export function Home({ session }: { session: Session }) {
         ) : null}
         <div className="cards">
           {visible.map((item) => (
-            <article key={item.id} className="tcard" onClick={() => open(item.id)}>
+            <article key={item.id} className="tcard" onClick={() => onOpen(item.id)}>
               <img src={item.photo} alt="" />
-              <button type="button" className={loved.includes(item.id) ? 'heart on' : 'heart'} aria-label="Favorite" onClick={(event) => { event.stopPropagation(); setLoved((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id]) }}>
+              <button type="button" className={loved.includes(item.id) ? 'heart on' : 'heart'} aria-label="Favorite" onClick={(event) => { event.stopPropagation(); toggleLove(item.id) }}>
                 <Icon name="heart" />
               </button>
               <div className="tmeta">
