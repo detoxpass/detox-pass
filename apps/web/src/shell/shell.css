@@ -1,24 +1,27 @@
 .app-shell {
+  height: 100dvh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--bg);
 }
 
 .shell-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: none;
   min-height: 56px;
   padding: env(safe-area-inset-top) 16px 0;
-  background: var(--black);
-  color: white;
+  background: var(--card);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
 }
 
 .shell-header .logo { height: 22px; max-width: 132px; }
+.shell-title { display: none; margin: 0; min-width: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .shell-tools {
   margin-left: auto;
@@ -31,7 +34,7 @@
 .shell-tools > button {
   border: 0;
   background: transparent;
-  color: #f3d7dc;
+  color: var(--ink);
   min-width: 44px;
   min-height: 44px;
   padding: 0 8px;
@@ -41,29 +44,34 @@
   gap: 8px;
 }
 
-.shell-tools > button.on { color: white; box-shadow: inset 0 -2px 0 var(--pink); }
-.shell-tools .who { color: white; }
+.shell-tools > button.on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--pink-2); }
+.shell-tools .who { color: var(--ink); }
 
-.shell-main {
+.shell-scroll {
   flex: 1;
   min-width: 0;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  min-height: 0;
+  overflow: auto;
+}
+
+.shell-main {
+  min-width: 0;
 }
 
 .shell-side { display: none; }
 
 .shell-nav {
-  position: sticky;
-  bottom: 0;
+  position: static;
   z-index: 30;
   display: flex;
   align-items: stretch;
   justify-content: space-around;
   gap: 2px;
-  margin-top: auto;
+  flex: none;
   padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
-  background: var(--black);
-  color: #f3d7dc;
+  background: var(--card);
+  color: #6b6b6b;
+  border-top: 1px solid var(--line);
 }
 
 .shell-nav > button {
@@ -90,14 +98,14 @@
   white-space: nowrap;
 }
 
-.shell-nav > button.on { color: white; box-shadow: inset 0 2px 0 var(--pink); }
+.shell-nav > button.on { color: var(--ink); box-shadow: inset 0 2px 0 var(--pink-2); }
 
 .shell-more-scrim {
   position: fixed;
   inset: 0;
   z-index: 0;
   border: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(17, 17, 17, 0.28);
 }
 
 .shell-nav > button { position: relative; z-index: 1; }
@@ -112,16 +120,18 @@
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  background: #1b1b1b;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 16px 40px rgba(17, 17, 17, 0.12);
 }
 
 .shell-more button {
   min-height: 44px;
   border: 0;
   background: transparent;
-  color: #f3d7dc;
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -131,13 +141,13 @@
   font-weight: 700;
 }
 
-.shell-more button.on { color: white; background: #111; box-shadow: inset 3px 0 0 var(--pink); }
+.shell-more button.on { color: var(--ink); background: var(--pink-soft); box-shadow: inset 3px 0 0 var(--pink-2); }
 
 .shell-side button:focus-visible,
 .shell-nav button:focus-visible,
 .shell-header button:focus-visible,
 .shell-more button:focus-visible {
-  outline: 2px solid var(--pink);
+  outline: 2px solid var(--pink-2);
   outline-offset: 2px;
 }
 
@@ -148,28 +158,36 @@
 @media (min-width: 768px) {
   .app-shell {
     display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    grid-template-areas:
-      "side header"
-      "side main";
+    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "side scroll";
   }
+
+  .app-shell.is-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
 
   .shell-side {
     grid-area: side;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    position: sticky;
-    top: 0;
-    height: 100dvh;
-    padding: calc(12px + env(safe-area-inset-top)) 8px 12px;
-    background: var(--black);
-    color: #f3d7dc;
+    position: static;
+    height: auto;
+    min-height: 0;
+    padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+    background: var(--card);
+    color: var(--ink);
+    border-right: 1px solid var(--line);
     overflow: auto;
   }
 
-  .shell-side .logo { display: none; }
+  .shell-side .logo {
+    display: block;
+    align-self: flex-start;
+    height: 28px;
+    width: auto;
+    max-width: 168px;
+    margin: 4px 8px 12px;
+  }
 
   .shell-side nav {
     display: flex;
@@ -181,33 +199,12 @@
     min-height: 48px;
     border: 0;
     background: transparent;
-    color: inherit;
+    color: #3a3a3a;
     border-radius: 12px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 0;
-  }
-
-  .shell-side button span { display: none; }
-  .shell-side button.on { color: white; background: #1c1c1c; box-shadow: inset 3px 0 0 var(--pink); }
-
-  .shell-header { grid-area: header; min-height: 64px; padding-left: 20px; padding-right: 20px; }
-  .shell-header .logo { height: 26px; max-width: 150px; }
-  .shell-main { grid-area: main; padding-bottom: 0; }
-  .shell-nav { display: none; }
-}
-
-@media (min-width: 1100px) {
-  .app-shell { grid-template-columns: 248px minmax(0, 1fr); }
-
-  .shell-side { padding-left: 14px; padding-right: 14px; }
-  .shell-side .logo { display: block; align-self: flex-start; height: 28px; width: auto; max-width: 168px; margin: 4px 8px 12px; }
-  .shell-header .logo { display: none; }
-
-  .shell-side button {
     justify-content: flex-start;
+    gap: 10px;
     padding: 0 12px;
   }
 
@@ -216,4 +213,25 @@
     font-weight: 700;
     font-size: 14px;
   }
+
+  .shell-side button.on { color: var(--ink); background: var(--pink-soft); box-shadow: inset 3px 0 0 var(--pink-2); }
+
+  .shell-collapse {
+    margin-top: auto;
+    color: #6b6b6b;
+  }
+
+  .shell-collapse svg { transform: rotate(0deg); }
+
+  .shell-scroll { grid-area: scroll; }
+  .shell-header { min-height: 64px; padding-left: 20px; padding-right: 20px; }
+  .shell-header .logo { display: none; }
+  .shell-title { display: block; }
+  .shell-nav { display: none; }
+
+  .app-shell.is-collapsed .shell-side { padding-left: 8px; padding-right: 8px; }
+  .app-shell.is-collapsed .shell-side .logo { display: none; }
+  .app-shell.is-collapsed .shell-side button { justify-content: center; padding: 0; }
+  .app-shell.is-collapsed .shell-side button span { display: none; }
+  .app-shell.is-collapsed .shell-collapse svg { transform: rotate(180deg); }
 }

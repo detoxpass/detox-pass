@@ -35,6 +35,17 @@ export const navigation: Record<Role, NavItem[]> = {
   ],
 }
 
+const accountTitles: Record<string, string> = {
+  profile: 'Profile',
+  favorites: 'Favorites',
+  notifications: 'Notifications',
+  support: 'Support',
+}
+
+export function screenTitle(role: Role, screen: string) {
+  return navigation[role].find((item) => item.id === screen)?.label ?? accountTitles[screen] ?? 'Detox Pass'
+}
+
 export function mobileItems(items: NavItem[]) {
   if (items.length <= 4) return { bar: items, more: [] as NavItem[] }
   return { bar: items.slice(0, 4), more: items.slice(4) }

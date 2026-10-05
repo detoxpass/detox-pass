@@ -4,6 +4,8 @@ import type { Role } from './nav'
 export function Header({
   role,
   name,
+  avatar,
+  title,
   screen,
   accountOpen,
   onToggleAccount,
@@ -13,6 +15,8 @@ export function Header({
 }: {
   role: Role
   name: string
+  avatar?: string
+  title: string
   screen: string
   accountOpen: boolean
   onToggleAccount: () => void
@@ -22,7 +26,8 @@ export function Header({
 }) {
   return (
     <header className="shell-header">
-      <Logo />
+      <Logo onDark={false} />
+      <p className="shell-title">{title}</p>
       <div className="shell-tools">
         {role === 'client' ? (
           <>
@@ -32,7 +37,7 @@ export function Header({
         ) : null}
         <button type="button" aria-label="Notifications" className={screen === 'notifications' ? 'on' : ''} onClick={() => onNavigate('notifications')}><Icon name="bell" /></button>
         <button type="button" className="who" aria-expanded={accountOpen} aria-haspopup="menu" onClick={onToggleAccount}>
-          <span className="avatar">{name.slice(0, 1).toUpperCase()}</span>
+          <span className="avatar">{avatar ? <img src={avatar} alt="" /> : name.slice(0, 1).toUpperCase()}</span>
           <span className="who-name">{name}</span>
         </button>
         {accountOpen ? (

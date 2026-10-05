@@ -141,6 +141,132 @@ export async function recover(email: string) {
   }
 }
 
+export type AccountProfile = {
+  full_name: string | null
+  role: string
+  avatar_path: string | null
+  created_at: string
+  updated_at: string
+}
+
+function authHeaders(session: Session, extra?: Record<string, string>) {
+  return {
+    apikey: key,
+    Authorization: `Bearer ${session.access_token}`,
+    ...extra,
+  }
+}
+
+async function readJson(response: Response) {
+  const text = await response.text()
+  if (!text) return null
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    throw new Error('The server did not return JSON.')
+  }
+}
+
+function messageOf(body: unknown) {
+  if (!body || typeof body !== 'object') return ''
+  const record = body as { message?: string; error_description?: string; msg?: string; error?: string }
+  return record.message || record.error_description || record.msg || record.error || ''
+}
+
+export function avatarUrl(path: string | null, version?: string) {
+  if (!path) return ''
+  const stamp = version ? `?v=${encodeURIComponent(version)}` : ''
+  return `${url}/storage/v1/object/public/avatars/${path}${stamp}`
+}
+
+export async function loadProfile(session: Session) {
+  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(session.user.id)}&select=full_name,role,avatar_path,created_at,updated_at`, {
+    headers: authHeaders(session),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not load the profile.')
+  const row = Array.isArray(body) ? body[0] as AccountProfile | undefined : null
+  if (!row) throw new Error('This account has no profile yet.')
+  return row
+}
+
+export async function saveProfile(session: Session, fullName: string) {
+  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(session.user.id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(session, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+    body: JSON.stringify({ full_name: fullName.trim() || null }),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not save the profile.')
+  const row = Array.isArray(body) ? body[0] as AccountProfile | undefined : null
+  if (!row) throw new Error('Could not save the profile.')
+  return row
+}
+
+export async function uploadAvatar(session: Session, file: Blob) {
+  const path = `${session.user.id}/photo.jpg`
+  const response = await fetch(`${url}/storage/v1/object/avatars/${path}`, {
+    method: 'POST',
+    headers: authHeaders(session, {
+      'Content-Type': 'image/jpeg',
+      'x-upsert': 'true',
+      'cache-control': '3600',
+    }),
+    body: file,
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not upload the photo.')
+  return saveProfilePhoto(session, path)
+}
+
+async function saveProfilePhoto(session: Session, path: string) {
+  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(session.user.id)}`, {
+    method: 'PATCH',
+    headers: authHeaders(session, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+    body: JSON.stringify({ avatar_path: path }),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not save the photo.')
+  const row = Array.isArray(body) ? body[0] as AccountProfile | undefined : null
+  if (!row) throw new Error('Could not save the photo.')
+  return row
+}
+
+export async function updateEmail(session: Session, email: string) {
+  const response = await fetch(`${url}/auth/v1/user`, {
+    method: 'PUT',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ email }),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not update the email.')
+}
+
+export async function changePassword(session: Session, email: string, current: string, next: string) {
+  const fresh = await signIn(email, current)
+  const response = await fetch(`${url}/auth/v1/user`, {
+    method: 'PUT',
+    headers: authHeaders(fresh, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ password: next }),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not update the password.')
+  return signIn(email, next)
+}
+
+export async function deleteOwnAccount(session: Session) {
+  const response = await fetch(`${url}/rest/v1/rpc/delete_own_account`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: '{}',
+  })
+  if (!response.ok) {
+    const body = await readJson(response)
+    throw new Error(messageOf(body) || 'Could not delete the account.')
+  }
+  signOut()
+}
+
 export function signOut() {
   const current = read()
   save(null)

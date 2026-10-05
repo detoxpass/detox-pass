@@ -9,6 +9,8 @@ export function AppShell({
   role,
   screen,
   name,
+  avatar,
+  title,
   onNavigate,
   onSignOut,
   children,
@@ -16,11 +18,14 @@ export function AppShell({
   role: Role
   screen: string
   name: string
+  avatar?: string
+  title: string
   onNavigate: (id: string) => void
   onSignOut: () => void
   children: ReactNode
 }) {
   const [account, setAccount] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const items = navigation[role]
 
   function go(id: string) {
@@ -29,19 +34,23 @@ export function AppShell({
   }
 
   return (
-    <div className="app-shell">
-      <Sidebar items={items} screen={screen} onNavigate={go} />
-      <Header
-        role={role}
-        name={name}
-        screen={screen}
-        accountOpen={account}
-        onToggleAccount={() => setAccount((value) => !value)}
-        onCloseAccount={() => setAccount(false)}
-        onNavigate={go}
-        onSignOut={() => { setAccount(false); onSignOut() }}
-      />
-      <main className="shell-main">{children}</main>
+    <div className={collapsed ? 'app-shell is-collapsed' : 'app-shell'}>
+      <Sidebar items={items} screen={screen} collapsed={collapsed} onToggle={() => setCollapsed((value) => !value)} onNavigate={go} />
+      <div className="shell-scroll">
+        <Header
+          role={role}
+          name={name}
+          avatar={avatar}
+          title={title}
+          screen={screen}
+          accountOpen={account}
+          onToggleAccount={() => setAccount((value) => !value)}
+          onCloseAccount={() => setAccount(false)}
+          onNavigate={go}
+          onSignOut={() => { setAccount(false); onSignOut() }}
+        />
+        <main className="shell-main">{children}</main>
+      </div>
       <MobileNav items={items} screen={screen} onNavigate={go} />
     </div>
   )

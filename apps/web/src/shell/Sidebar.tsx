@@ -4,15 +4,19 @@ import type { NavItem } from './nav'
 export function Sidebar({
   items,
   screen,
+  collapsed,
+  onToggle,
   onNavigate,
 }: {
   items: NavItem[]
   screen: string
+  collapsed: boolean
+  onToggle: () => void
   onNavigate: (id: string) => void
 }) {
   return (
     <aside className="shell-side" aria-label="Primary">
-      <Logo />
+      <Logo onDark={false} />
       <nav>
         {items.map((item) => (
           <button
@@ -27,6 +31,10 @@ export function Sidebar({
           </button>
         ))}
       </nav>
+      <button type="button" className="shell-collapse" aria-expanded={!collapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={onToggle}>
+        <Icon name="back" />
+        <span>{collapsed ? 'Expand' : 'Collapse'}</span>
+      </button>
     </aside>
   )
 }

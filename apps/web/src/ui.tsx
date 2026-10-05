@@ -7,6 +7,7 @@ export function Logo({ onDark = true }: { onDark?: boolean }) {
 export function Icon({ name }: { name: string }) {
   const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
   if (name === 'search') return <svg {...common}><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>
+  if (name === 'camera') return <svg {...common}><path d="M8 7.5 9.2 5.5h5.6L16 7.5h2.2A1.8 1.8 0 0 1 20 9.3v7.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 16.7V9.3a1.8 1.8 0 0 1 1.8-1.8H8Z" /><circle cx="12" cy="12.2" r="3" /></svg>
   if (name === 'bell') return <svg {...common}><path d="M6 16V11a6 6 0 1 1 12 0v5l1.2 1.5H4.8L6 16Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
   if (name === 'heart') return <svg {...common}><path d="M12 19s-7-4.2-7-8.2A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.8C19 14.8 12 19 12 19Z" /></svg>
   if (name === 'gift') return <svg {...common}><rect x="4" y="10" width="16" height="9" rx="1.5" /><path d="M12 10v9M4 14h16M12 10c-2-4-6-3-6-1s4 1 6 1 6-4 6-1-4 1-6 1Z" /></svg>

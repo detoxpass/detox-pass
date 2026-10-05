@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
-import { displayName, loadSession, roleOf, signOut, type Session } from './lib/supabase'
+import { avatarUrl, displayName, loadProfile, loadSession, roleOf, signOut, type Session } from './lib/supabase'
+import { Account } from './screens/Account'
 import { Area } from './screens/Area'
+import { DeleteAccount } from './screens/DeleteAccount'
 import { Home } from './screens/Home'
 import { Login } from './screens/Login'
 import { AppShell } from './shell/AppShell'
-import { homeOf, navigation, type Role } from './shell/nav'
+import { homeOf, screenTitle, type Role } from './shell/nav'
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [ready, setReady] = useState(false)
   const [role, setRole] = useState<Role>('client')
   const [screen, setScreen] = useState('find')
+  const [profileName, setProfileName] = useState('')
+  const [avatar, setAvatar] = useState('')
 
   useEffect(() => {
     loadSession().then((next) => {
@@ -24,6 +28,17 @@ export function App() {
     })
   }, [])
 
+  useEffect(() => {
+    if (!session) return
+    let alive = true
+    loadProfile(session).then((profile) => {
+      if (!alive) return
+      if (profile.full_name) setProfileName(profile.full_name)
+      if (profile.avatar_path) setAvatar(avatarUrl(profile.avatar_path, profile.updated_at))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [session])
+
   function enter() {
     loadSession().then((next) => {
       if (!next) return
@@ -34,20 +49,25 @@ export function App() {
     })
   }
 
+  if (window.location.pathname === '/delete-account') return <DeleteAccount />
   if (!ready) return null
   if (!session) return <Login onEnter={enter} />
 
-  const label = navigation[role].find((item) => item.id === screen)?.label ?? 'Detox Pass'
+  const label = screenTitle(role, screen)
 
   return (
     <AppShell
       role={role}
       screen={screen}
-      name={displayName(session)}
+      name={profileName || displayName(session)}
+      avatar={avatar}
+      title={label}
       onNavigate={setScreen}
-      onSignOut={() => { signOut(); setSession(null); setScreen('find') }}
+      onSignOut={() => { signOut(); setSession(null); setProfileName(''); setAvatar(''); setScreen('find') }}
     >
-      {role === 'client' && screen === 'find' ? <Home session={session} /> : <Area title={label} />}
+      {screen === 'profile' ? (
+        <Account session={session} onSession={setSession} onName={setProfileName} onAvatar={setAvatar} />
+      ) : role === 'client' && screen === 'find' ? <Home session={session} /> : <Area title={label} />}
     </AppShell>
   )
 }
