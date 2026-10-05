@@ -169,7 +169,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, on
           <h2>Book a session</h2>
           <p>Choose a service and an open time. The price stays on the service. This step does not take payment.</p>
         </div>
-        <Button onClick={() => setOpen(true)}>Reserve</Button>
+        <Button onClick={() => { setLoading(true); setDates([]); setOpen(true) }}>Reserve</Button>
       </section>
       {open ? (
         <div className="book-back" role="presentation" onClick={close}>
