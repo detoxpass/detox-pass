@@ -288,6 +288,7 @@ export async function catalog(session: Session) {
     'id',
     'display_name',
     'portrait_path',
+    'schedule_mode',
     'professional_services(service_id,services(id,name,price_cents,currency))',
     'professional_cities(city_id,cities(id,name))',
   ].join(',')
@@ -306,6 +307,7 @@ export type ProfessionalRow = {
   id: string
   display_name: string
   portrait_path: string | null
+  schedule_mode: 'internal' | 'external' | null
   professional_services: { service_id: string; services: { id: string; name: string; price_cents: number | null; currency: string | null } | null }[] | null
   professional_cities: { city_id: string; cities: { id: string; name: string } | null }[] | null
 }
@@ -470,6 +472,83 @@ export async function replaceLinks(session: Session, table: string, column: stri
   })
 }
 
+export async function setScheduleChoice(session: Session, mode: 'internal' | 'external' | null, dismiss: boolean) {
+  const response = await fetch(`${url}/rest/v1/rpc/set_my_schedule_choice`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ p_mode: mode, p_dismiss: dismiss }),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not save the calendar choice.')
+}
+
+export async function setScheduleGrid(session: Session, timezone: string, slotMinutes: number) {
+  const response = await fetch(`${url}/rest/v1/rpc/set_my_schedule_grid`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ p_timezone: timezone, p_slot_minutes: slotMinutes }),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not save the calendar settings.')
+}
+
+export type MySchedule = {
+  id: string
+  schedule_mode: 'internal' | 'external' | null
+  schedule_prompt_dismissed: boolean
+  schedule_timezone: string
+  slot_minutes: number
+}
+
+export function loadMySchedule(session: Session) {
+  return rows<MySchedule>(session, `professionals?select=id,schedule_mode,schedule_prompt_dismissed,schedule_timezone,slot_minutes&profile_id=eq.${encodeURIComponent(session.user.id)}`)
+}
+
+export type HourWindow = { id: string; weekday: number; start_minute: number; end_minute: number }
+export type TimeBlock = { id: string; starts_at: string; ends_at: string }
+
+export function loadHours(session: Session, professionalId: string) {
+  return rows<HourWindow>(session, `professional_hours?select=id,weekday,start_minute,end_minute&professional_id=eq.${encodeURIComponent(professionalId)}&order=weekday.asc,start_minute.asc`)
+}
+
+export function loadBlocks(session: Session, professionalId: string) {
+  return rows<TimeBlock>(session, `professional_blocks?select=id,starts_at,ends_at&professional_id=eq.${encodeURIComponent(professionalId)}&order=starts_at.asc`)
+}
+
+export async function replaceHours(session: Session, professionalId: string, windows: { weekday: number; start_minute: number; end_minute: number }[]) {
+  const clear = await fetch(`${url}/rest/v1/professional_hours?professional_id=eq.${encodeURIComponent(professionalId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(session),
+  })
+  if (!clear.ok) {
+    const body = await readJson(clear)
+    throw new Error(messageOf(body) || 'Could not update the weekly hours.')
+  }
+  if (windows.length === 0) return
+  await rest(session, 'professional_hours', {
+    method: 'POST',
+    body: JSON.stringify(windows.map((window) => ({ professional_id: professionalId, ...window }))),
+  })
+}
+
+export async function addBlock(session: Session, professionalId: string, startsAt: string, endsAt: string) {
+  await rest(session, 'professional_blocks', {
+    method: 'POST',
+    body: JSON.stringify({ professional_id: professionalId, starts_at: startsAt, ends_at: endsAt }),
+  })
+}
+
+export async function removeBlock(session: Session, id: string) {
+  const response = await fetch(`${url}/rest/v1/professional_blocks?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(session),
+  })
+  if (!response.ok) {
+    const body = await readJson(response)
+    throw new Error(messageOf(body) || 'Could not remove the block.')
+  }
+}
+
 export type BookingRow = {
   id: string
   professional_id: string
@@ -480,10 +559,11 @@ export type BookingRow = {
   services: { name: string } | null
   professionals: { display_name: string } | null
   cities: { name: string } | null
+  provider: string
 }
 
 export function loadBookings(session: Session) {
-  const select = 'id,professional_id,starts_at,saga_status,external_booking_id,amount_cents,services(name),professionals(display_name),cities(name)'
+  const select = 'id,professional_id,starts_at,saga_status,external_booking_id,amount_cents,provider,services(name),professionals(display_name),cities(name)'
   return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
 }
 

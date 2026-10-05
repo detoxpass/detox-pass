@@ -312,6 +312,78 @@ Responsável: Samuel.
 
 ---
 
+## 2026-10-05 — Três portas no Supabase
+
+Contexto: o app é Vite + Capacitor, sem servidor Node próprio. Pagamento,
+agenda e chat precisam de segredo e de invariante transacional. A spec de
+produto já exigia RLS, `service_role` só no servidor e webhook idempotente, e
+deixava o desenho em aberto.
+
+Decisão: usar o Supabase em três portas, como norma em
+[`spec/15-supabase.md`](../spec/15-supabase.md).
+
+- Data API com RLS para leitura e edição do próprio usuário, sem efeito financeiro.
+- Funções SQL no schema `private` para invariantes (pago e pendente juntos, repasse único, reward após confirmação).
+- Uma Edge Function por sistema externo (agenda, Stripe, chat, Gusto), com código comum em `_shared`. A função faz entrada e saída e chama uma função SQL. Ela não encadeia updates soltos.
+- Papel dos três perfis em `app_metadata`, nunca em `user_metadata`.
+- Ledger append-only. `authenticated` não escreve tabela financeira, nem a operação.
+- Agenda e Stripe formam uma saga. O webhook é o marco do pago. Compensação é passo explícito. Trigger SQL não chama HTTP.
+- Segredo de plataforma nos secrets da Edge Function. Token de agenda por profissional no Vault ou em tabela `private`.
+- Cron de reconciliação de evento recebido e não aplicado entra na POC da Fase 05.
+- Realtime, Storage, Vectors, Queues e Foreign Data Wrapper do Stripe ficam fora da fundação.
+
+Motivo: concentrar a regra que não pode falhar pela metade no Postgres e isolar
+segredo e HTTP na borda, sem abrir um segundo backend.
+
+Impacto: a fundação (Fase 01) cria os schemas, o papel e a RLS nesse formato. A
+Fase 05 ainda precisa fechar os objetos do Stripe. Provedor de IA, texto final
+de cada policy e nomes físicos de tabela continuam para o bootstrap.
+
+Responsável: Elias.
+
+---
+
+## 2026-10-05 — Preço cobrado sai do catálogo
+
+Contexto: a sessão de checkout aceitava `amount_cents` e `currency` enviados
+pela cliente. Isso permitia cobrar um valor diferente do serviço.
+
+Decisão: a operação grava preço e moeda no serviço. A cobrança lê esse par no
+servidor e a função SQL recusa qualquer valor diferente. Serviço sem preço não
+abre checkout.
+
+Motivo: o valor pago precisa ser o valor configurado pela operação, não o que
+o aplicativo escolhe.
+
+Impacto: `public.services` ganha `price_cents` e `currency`. Stripe Connect
+continua em aberto. A moeda padrão do marketplace continua opcional.
+
+Responsável: Elias.
+
+---
+
+## 2026-10-05 — Comunicação Detox Pass e shell do app
+
+Contexto: o protótipo de referência ainda falava "Brazilian Beauty Formula" e
+"BBF", e a navegação era uma barra no topo. O app precisa servir web e, depois,
+Capacitor no Android e no iOS.
+
+Decisão: nenhuma tela, código de exemplo nem nome de conta usa "Brazilian
+Beauty", "BBF" ou o wordmark desse protótipo. A navegação principal é uma
+sidebar no tablet e no desktop. No mobile essa sidebar vira a navbar inferior.
+O header fica em todos os tamanhos, com a conta e os atalhos. O mapa, os
+critérios de aceite e a estrutura de pastas estão em `spec/17-frontend.md`.
+
+Motivo: a marca do produto é Detox Pass, e o mesmo shell precisa caber num
+webview nativo sem depender do chrome do navegador.
+
+Impacto: o protótipo continua como referência de fluxo. Ele não define mais a
+comunicação nem o chrome. A biblioteca visual definitiva segue em aberto.
+
+Responsável: Elias.
+
+---
+
 # Decisões pendentes
 
 > Itens ainda **não definidos**. Não implementar/escolher sem aprovação de
@@ -322,15 +394,40 @@ Responsável: Samuel.
 - [ ] **Arquitetura definitiva do Stripe / payout** (só fecha após a POC da Fase 05).
 - [ ] **Estrutura final do Gusto** (Fase 08, opcional) e tratamento fiscal (W-9/1099) com a cliente/contador.
 - [ ] **Ferramenta de build/dev** (ex.: Vite) e versões de React/TypeScript/Node.
-- [ ] **Projetos/contas Supabase por ambiente** e estratégia de secrets.
-- [ ] **Hospedagem/deploy (Vercel)** por ambiente.
-- [ ] **Modelo de autenticação e políticas de RLS** iniciais.
+- [ ] **Qual conta hospeda cada projeto Supabase e o deploy Vercel** de cada ambiente. O padrão de três projetos, de segredos e de acesso já está decidido acima.
+- [ ] **Texto SQL de cada policy** e nomes físicos de tabela. O modelo (papel em `app_metadata`, RLS, escrita financeira só por função) já está decidido.
 
 > A **estrutura de repositório** não é pendência: a decisão desta fase é
 > **repositório único, estrutura simples, sem monorepo, sem branch `develop`
 > permanente, branches curtas por tarefa e `main` protegida** (ver decisão
 > "Repositório único" acima). Monorepo só será reavaliado se surgir necessidade
 > técnica real, com registro aqui.
+
+---
+
+## 2026-10-05 — A profissional escolhe agenda interna ou externa
+
+Contexto: a spec tratava horário digitado na plataforma como calendário interno
+inventado e exigia agenda de origem externa. Elias pediu que cada profissional
+tenha agenda individual, sem compartilhar login, e que quem não usa Acuity,
+Square, Wix, Zenoti ou Mindbody possa atender pela agenda da própria plataforma.
+
+Decisão: a profissional escolhe **interna** ou **externa**. A escolha aparece
+num modal até ela definir o modo ou pedir para não mostrar de novo. A agenda
+interna é a grade que ela publica (janelas semanais, duração do horário, fuso
+e bloqueios). A cliente só reserva um instante que essa grade devolveu. Dois
+pedidos no mesmo intervalo não criam duas reservas. A agenda externa continua
+com um token por profissional, no Vault, no provedor daquela ficha. Login e
+senha da Acuity não são compartilhados.
+
+Motivo: a profissional que não tem conta externa precisa receber a reserva na
+própria agenda, e a que tem conta externa continua recebendo o evento na conta
+dela.
+
+Impacto: profissional sem modo definido não oferece horário. A interna não é
+fallback da Acuity fora do ar. Preço, pagamento, estorno e repasse não mudam.
+
+Responsável: Elias.
 
 ---
 

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { AgendaManager } from './features/scheduling/Agenda'
+import { SchedulePrompt } from './features/scheduling/SchedulePrompt'
 import { BookingPanel } from './features/booking/BookingPanel'
 import { SessionDetail, SessionList } from './features/booking/Sessions'
 import { ServicesScreen, SpecialtiesScreen, CitiesScreen, TherapistEditor, TherapistsScreen, UsersScreen } from './features/catalog/Admin'
@@ -98,6 +100,7 @@ export function App() {
       onNavigate={(id) => go(pathFor(role, id))}
       onSignOut={() => { signOut(); setSession(null); setProfileName(''); setAvatar(''); go('/') }}
     >
+      {role === 'therapist' ? <SchedulePrompt session={session} /> : null}
       {allows(role, path) ? <Screen path={path} role={role} session={session} go={go} onSession={setSession} onName={setProfileName} onAvatar={setAvatar} /> : <ForbiddenBlock />}
     </AppShell>
   )
@@ -132,7 +135,12 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
   if (path.startsWith('/therapists/')) return <TherapistPage session={session} id={path.split('/')[2]} onBack={() => go('/find')} onOpen={(id) => go(`/therapists/${id}`)} />
   if (path === '/sessions') return <SessionList session={session} readOnly={false} onOpen={(id) => go(`/sessions/${id}`)} />
   if (path.startsWith('/sessions/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange canRead={false} onBack={() => go('/sessions')} />
-  if (path === '/agenda') return <SessionList session={session} readOnly onOpen={(id) => go(`/agenda/${id}`)} />
+  if (path === '/agenda') return (
+    <div className="stack">
+      <AgendaManager session={session} />
+      <SessionList session={session} readOnly onOpen={(id) => go(`/agenda/${id}`)} />
+    </div>
+  )
   if (path.startsWith('/agenda/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange={false} canRead={false} onBack={() => go('/agenda')} />
   if (path === '/rewards') return <EmptyBlock title="Rewards" text="Points show up only after a confirmed visit. Nothing here is a reward yet." />
   if (path === '/payments') return <EmptyBlock title="Payments" text="There is no payout to release from this account." />
@@ -242,7 +250,7 @@ function TherapistPage({ session, id, onBack, onOpen }: {
         localStorage.setItem('detox-pass-loved', JSON.stringify(next))
         setLoved(next)
       }}
-      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} />}
+      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} />}
     />
   )
 }

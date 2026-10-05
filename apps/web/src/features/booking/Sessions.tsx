@@ -77,6 +77,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   useEffect(() => { void refresh() }, [session, id])
 
   const booking = rows.find((row) => row.id === id)
+  const door = booking?.provider === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
   if (loading) return <LoadingBlock />
   if (error) return <ErrorBlock text={error} onRetry={() => { setError(''); void refresh() }} />
   if (!booking) return <EmptyBlock title="Session not found" text="This reservation is not on your account." />
@@ -85,7 +86,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
     setBusy(true)
     setError('')
     try {
-      const result = await callFunction(session, 'scheduling-acuity', { action: 'cancel', booking_id: id })
+      const result = await callFunction(session, door, { action: 'cancel', booking_id: id })
       const body = result.body as { status?: string } | null
       if (body?.status !== 'cancelled') {
         setError('The calendar and the platform did not both cancel.')
@@ -105,7 +106,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
     setBusy(true)
     setPendingCalendar(false)
     try {
-      const result = await callFunction(session, 'scheduling-acuity', {
+      const result = await callFunction(session, door, {
         action: 'availability',
         professional_id: booking?.professional_id,
         date: day,
@@ -127,7 +128,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
     setBusy(true)
     setError('')
     try {
-      const result = await callFunction(session, 'scheduling-acuity', { action: 'reschedule', booking_id: id, starts_at: nextTime })
+      const result = await callFunction(session, door, { action: 'reschedule', booking_id: id, starts_at: nextTime })
       const body = result.body as { status?: string } | null
       if (body?.status !== 'provider_confirmed') {
         setError('The calendar and the platform did not both change the time.')
@@ -147,7 +148,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
     setBusy(true)
     setExternal('')
     try {
-      const result = await callFunction(session, 'scheduling-acuity', { action: 'read', booking_id: id })
+      const result = await callFunction(session, door, { action: 'read', booking_id: id })
       const body = result.body as { supported?: boolean; diverged?: boolean; external_starts_at?: string | null; external_canceled?: boolean } | null
       if (body?.supported === false || result.status === 422) {
         setPendingCalendar(true)

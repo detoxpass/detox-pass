@@ -11,7 +11,8 @@ Quando uma decisão pendente for aprovada por Samuel ou Elias, ela entra em
 `docs/DECISIONS.md` antes de virar tarefa de implementação.
 
 O corte das entregas 1 a 4, com a auditoria e os parâmetros de aceite, está em
-[`ROADMAP-01-04.md`](./ROADMAP-01-04.md).
+[`ROADMAP-01-04.md`](./ROADMAP-01-04.md). A agenda interna e a escolha da
+profissional estão em [`ROADMAP-AGENDA-INTERNA.md`](./ROADMAP-AGENDA-INTERNA.md).
 
 ## Como ler cada entrega
 

@@ -427,6 +427,9 @@ verify_jwt = true
 [functions.scheduling-acuity]
 verify_jwt = true
 
+[functions.scheduling-internal]
+verify_jwt = true
+
 [functions.scheduling-acuity-webhook]
 verify_jwt = false
 

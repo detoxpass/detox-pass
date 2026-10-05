@@ -2,7 +2,7 @@
 
 begin;
 
-select plan(21);
+select plan(25);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -390,6 +390,85 @@ select is(
   ),
   0,
   'cliente não altera serviço'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+update public.professionals
+set schedule_mode = 'internal', slot_minutes = 60, schedule_timezone = 'America/New_York'
+where profile_id = '00000000-0000-0000-0000-000000000102';
+
+insert into public.professional_hours (professional_id, weekday, start_minute, end_minute)
+select id, 1, 540, 1020
+from public.professionals
+where profile_id = '00000000-0000-0000-0000-000000000102';
+
+select (
+  ((date_trunc('week', (now() at time zone 'America/New_York'))::date + 7)::timestamp + time '15:00')
+  at time zone 'America/New_York'
+) as slot \gset
+
+select public.open_booking_intent(
+  '00000000-0000-0000-0000-000000000101',
+  (select id from public.professionals where profile_id = '00000000-0000-0000-0000-000000000102'),
+  '00000000-0000-0000-0000-000000000301',
+  '00000000-0000-0000-0000-000000000201',
+  :'slot'::timestamptz
+) as internal_id \gset
+
+select is(
+  (select provider from public.bookings where id = :'internal_id'::uuid),
+  'internal',
+  'agenda interna grava provider internal'
+);
+
+select throws_ok(
+  format(
+    $sql$select public.open_booking_intent(
+      '00000000-0000-0000-0000-000000000101',
+      %L::uuid,
+      '00000000-0000-0000-0000-000000000301',
+      '00000000-0000-0000-0000-000000000201',
+      %L::timestamptz
+    )$sql$,
+    (select id from public.professionals where profile_id = '00000000-0000-0000-0000-000000000102'),
+    :'slot'
+  ),
+  '23505',
+  'horário já tem reserva em andamento',
+  'segundo pedido no mesmo instante da agenda interna falha'
+);
+
+select throws_ok(
+  format(
+    $sql$select public.open_booking_intent(
+      '00000000-0000-0000-0000-000000000101',
+      %L::uuid,
+      '00000000-0000-0000-0000-000000000301',
+      '00000000-0000-0000-0000-000000000201',
+      (%L::timestamptz + interval '8 hours')
+    )$sql$,
+    (select id from public.professionals where profile_id = '00000000-0000-0000-0000-000000000102'),
+    :'slot'
+  ),
+  '22023',
+  'horário não está aberto na agenda interna',
+  'fora da janela a agenda interna não abre reserva'
+);
+
+select throws_ok(
+  format(
+    $sql$insert into public.professional_blocks (professional_id, starts_at, ends_at)
+    select id, %L::timestamptz, %L::timestamptz + interval '30 minutes'
+    from public.professionals
+    where profile_id = '00000000-0000-0000-0000-000000000102'$sql$,
+    :'slot',
+    :'slot'
+  ),
+  '23505',
+  'há reserva nesse intervalo',
+  'bloqueio não cobre reserva ativa'
 );
 
 select * from finish();

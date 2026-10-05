@@ -32,11 +32,12 @@ function pending(body: unknown) {
   return Boolean(body && typeof body === 'object' && 'supported' in body && body.supported === false)
 }
 
-export function BookingPanel({ session, professionalId, offers, cities }: {
+export function BookingPanel({ session, professionalId, offers, cities, mode }: {
   session: Session
   professionalId: string
   offers: Offer[]
   cities: City[]
+  mode: 'internal' | 'external' | null
 }) {
   const [serviceId, setServiceId] = useState(offers[0]?.id ?? '')
   const [cityId, setCityId] = useState(cities[0]?.id ?? '')
@@ -60,7 +61,12 @@ export function BookingPanel({ session, professionalId, offers, cities }: {
     setDay('')
     setTimes([])
     setChosen('')
-    callFunction(session, 'scheduling-acuity', { action: 'dates', professional_id: professionalId, month })
+    if (!mode) {
+      setLoading(false)
+      return () => { alive = false }
+    }
+    const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
+    callFunction(session, door, { action: 'dates', professional_id: professionalId, month })
       .then((result) => {
         if (!alive) return
         if (pending(result.body) || result.status === 422) {
@@ -74,7 +80,7 @@ export function BookingPanel({ session, professionalId, offers, cities }: {
       })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
-  }, [session, professionalId, month, reload])
+  }, [session, professionalId, month, reload, mode])
 
   async function pickDay(next: string) {
     setDay(next)
@@ -83,7 +89,8 @@ export function BookingPanel({ session, professionalId, offers, cities }: {
     setError('')
     setBusy(true)
     try {
-      const result = await callFunction(session, 'scheduling-acuity', { action: 'availability', professional_id: professionalId, date: next })
+      const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
+      const result = await callFunction(session, door, { action: 'availability', professional_id: professionalId, date: next })
       if (pending(result.body) || result.status === 422) {
         setPendingCalendar(true)
         return
@@ -101,7 +108,8 @@ export function BookingPanel({ session, professionalId, offers, cities }: {
     setNotice('')
     setBusy(true)
     try {
-      const result = await callFunction(session, 'scheduling-acuity', {
+      const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
+      const result = await callFunction(session, door, {
         action: 'book',
         professional_id: professionalId,
         service_id: serviceId,
@@ -128,11 +136,18 @@ export function BookingPanel({ session, professionalId, offers, cities }: {
     }
   }
 
+  if (mode == null) {
+    return <PendingBlock text="This professional has not chosen a calendar yet. No time is offered." />
+  }
   if (offers.length === 0 || cities.length === 0) {
     return <PendingBlock text="This professional has no service and city linked yet, so no time is offered." />
   }
   if (loading) return <LoadingBlock text="Checking the calendar…" />
-  if (pendingCalendar) return <PendingBlock text="Availability did not come from the calendar. No local time is offered." />
+  if (pendingCalendar) {
+    return <PendingBlock text={mode === 'internal'
+      ? 'This professional has not published openings on their Detox Pass calendar.'
+      : 'Availability did not come from the external calendar. No time is offered.'} />
+  }
   if (error && dates.length === 0 && !day) return <ErrorBlock text={error} onRetry={() => setReload((value) => value + 1)} />
 
   return (
