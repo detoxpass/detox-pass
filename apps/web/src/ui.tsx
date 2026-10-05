@@ -19,6 +19,13 @@ export function Icon({ name }: { name: string }) {
   if (name === 'calendar') return <svg {...common}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3.5V7M16 3.5V7M4 10h16" /></svg>
   if (name === 'eye') return <svg {...common}><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>
   if (name === 'menu') return <svg {...common}><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+  if (name === 'grid') return <svg {...common}><rect x="4" y="4" width="6.5" height="6.5" rx="1" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1" /></svg>
+  if (name === 'card') return <svg {...common}><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18" /></svg>
+  if (name === 'users') return <svg {...common}><circle cx="9" cy="9" r="2.4" /><path d="M5 17c.5-2.2 2-3.4 4-3.4s3.5 1.2 4 3.4" /><circle cx="16" cy="9.5" r="2" /><path d="M15 13.8c1.6.2 2.8 1.2 3.3 3.2" /></svg>
+  if (name === 'file') return <svg {...common}><path d="M7 3.5h7l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 20V5A1.5 1.5 0 0 1 7 3.5Z" /><path d="M14 3.5V8h4.5" /></svg>
+  if (name === 'settings') return <svg {...common}><circle cx="12" cy="12" r="3" /><path d="M12 3.5v2.2M12 18.3V20.5M4.8 7.2l1.6 1.5M17.6 15.3l1.6 1.5M4.8 16.8l1.6-1.5M17.6 8.7l1.6-1.5" /></svg>
+  if (name === 'more') return <svg {...common}><circle cx="6" cy="12" r="1.2" fill="currentColor" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /><circle cx="18" cy="12" r="1.2" fill="currentColor" /></svg>
+  if (name === 'rate') return <svg {...common}><path d="m12 3.5 2.2 4.6 5 .7-3.6 3.5.9 5.1L12 15.2 7.5 17.4l.9-5.1L4.8 8.8l5-.7L12 3.5Z" /></svg>
   return null
 }
 
