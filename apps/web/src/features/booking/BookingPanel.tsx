@@ -1,18 +1,13 @@
 import { useEffect, useState } from 'react'
 import { callFunction, type Session } from '../../lib/supabase'
-import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice, PendingBlock } from '../../ui'
+import { Button, ErrorBlock, Icon, LoadingBlock, PendingBlock } from '../../ui'
+import { formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
 type Offer = { id: string; name: string; price: number | null; currency: string | null }
 type City = { id: string; name: string }
 
-function monthOf(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function shiftMonth(month: string, delta: number) {
-  const [year, raw] = month.split('-').map(Number)
-  const next = new Date(Date.UTC(year, raw - 1 + delta, 1))
-  return monthOf(next)
+function money(cents: number, currency: string) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(cents / 100)
 }
 
 function timesOf(body: unknown) {
@@ -32,13 +27,15 @@ function pending(body: unknown) {
   return Boolean(body && typeof body === 'object' && 'supported' in body && body.supported === false)
 }
 
-export function BookingPanel({ session, professionalId, offers, cities, mode }: {
+export function BookingPanel({ session, professionalId, offers, cities, mode, onReserved }: {
   session: Session
   professionalId: string
   offers: Offer[]
   cities: City[]
   mode: 'internal' | 'external' | null
+  onReserved?: () => void
 }) {
+  const [open, setOpen] = useState(false)
   const [serviceId, setServiceId] = useState(offers[0]?.id ?? '')
   const [cityId, setCityId] = useState(cities[0]?.id ?? '')
   const [month, setMonth] = useState(monthOf(new Date()))
@@ -46,14 +43,32 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
   const [day, setDay] = useState('')
   const [times, setTimes] = useState<string[]>([])
   const [chosen, setChosen] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [pendingCalendar, setPendingCalendar] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [reload, setReload] = useState(0)
 
+  const service = offers.find((offer) => offer.id === serviceId) ?? offers[0]
+  const city = cities.find((item) => item.id === cityId) ?? cities[0]
+  const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
+
   useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !busy) setOpen(false)
+    }
+    document.body.classList.add('modal-open')
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.classList.remove('modal-open')
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open, busy])
+
+  useEffect(() => {
+    if (!open || !mode) return
     let alive = true
     setLoading(true)
     setError('')
@@ -61,16 +76,12 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
     setDay('')
     setTimes([])
     setChosen('')
-    if (!mode) {
-      setLoading(false)
-      return () => { alive = false }
-    }
-    const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
     callFunction(session, door, { action: 'dates', professional_id: professionalId, month })
       .then((result) => {
         if (!alive) return
         if (pending(result.body) || result.status === 422) {
           setPendingCalendar(true)
+          setDates([])
           return
         }
         setDates(datesOf(result.body))
@@ -80,7 +91,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
       })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
-  }, [session, professionalId, month, reload, mode])
+  }, [session, professionalId, month, reload, mode, open, door])
 
   async function pickDay(next: string) {
     setDay(next)
@@ -89,7 +100,6 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
     setError('')
     setBusy(true)
     try {
-      const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
       const result = await callFunction(session, door, { action: 'availability', professional_id: professionalId, date: next })
       if (pending(result.body) || result.status === 422) {
         setPendingCalendar(true)
@@ -108,7 +118,6 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
     setNotice('')
     setBusy(true)
     try {
-      const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
       const result = await callFunction(session, door, {
         action: 'book',
         professional_id: professionalId,
@@ -118,8 +127,9 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
       })
       const body = result.body as { status?: string; booking_id?: string } | null
       if (body?.status === 'provider_confirmed' && body.booking_id) {
-        setNotice(`Reserved. Payment is not part of this step. Reference ${body.booking_id}.`)
+        setNotice(chosen)
         setChosen('')
+        setReload((value) => value + 1)
         return
       }
       if (pending(body) || result.status === 422) {
@@ -136,56 +146,118 @@ export function BookingPanel({ session, professionalId, offers, cities, mode }: 
     }
   }
 
+  function close() {
+    if (busy) return
+    setOpen(false)
+    setNotice('')
+    setError('')
+  }
+
   if (mode == null) {
     return <PendingBlock text="This professional has not chosen a calendar yet. No time is offered." />
   }
   if (offers.length === 0 || cities.length === 0) {
     return <PendingBlock text="This professional has no service and city linked yet, so no time is offered." />
   }
-  if (loading) return <LoadingBlock text="Checking the calendar…" />
-  if (pendingCalendar) {
-    return <PendingBlock text={mode === 'internal'
-      ? 'This professional has not published openings on their Detox Pass calendar.'
-      : 'Availability did not come from the external calendar. No time is offered.'} />
-  }
-  if (error && dates.length === 0 && !day) return <ErrorBlock text={error} onRetry={() => setReload((value) => value + 1)} />
+
+  const price = service?.price != null && service.currency ? money(service.price, service.currency) : 'Price pending'
 
   return (
-    <div className="stack">
-      <label className="field"><span>Service</span>
-        <select value={serviceId} onChange={(event) => setServiceId(event.target.value)}>
-          {offers.map((offer) => <option key={offer.id} value={offer.id}>{offer.name}</option>)}
-        </select>
-      </label>
-      <label className="field"><span>City</span>
-        <select value={cityId} onChange={(event) => setCityId(event.target.value)}>
-          {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
-        </select>
-      </label>
-      <div className="shortcuts">
-        <Button kind="ghost" onClick={() => setMonth(shiftMonth(month, -1))}>{shiftMonth(month, -1)}</Button>
-        <strong>{month}</strong>
-        <Button kind="ghost" onClick={() => setMonth(shiftMonth(month, 1))}>{shiftMonth(month, 1)}</Button>
-      </div>
-      {dates.length === 0 ? <EmptyBlock title="No openings this month" text="The calendar returned no dates." /> : (
-        <div className="day-list">
-          {dates.map((date) => (
-            <button type="button" key={date} className={date === day ? 'on' : ''} onClick={() => pickDay(date)}>{date}</button>
-          ))}
+    <>
+      <section className="reserve-card">
+        <div>
+          <h2>Book a session</h2>
+          <p>Choose a service and an open time. The price stays on the service. This step does not take payment.</p>
         </div>
-      )}
-      {day && times.length === 0 && !busy ? <EmptyBlock title="No times that day" text="Pick another date the calendar returned." /> : null}
-      {times.length > 0 ? (
-        <div className="slot-list">
-          {times.map((time) => (
-            <button type="button" key={time} className={time === chosen ? 'on' : ''} onClick={() => setChosen(time)}>{time}</button>
-          ))}
+        <Button onClick={() => setOpen(true)}>Reserve</Button>
+      </section>
+      {open ? (
+        <div className="book-back" role="presentation" onClick={close}>
+          <div className="book-sheet" role="dialog" aria-modal="true" aria-labelledby="reserve-title" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <h2 id="reserve-title">{notice ? 'Reserved' : 'Reserve'}</h2>
+              <button type="button" aria-label="Close" onClick={close}><Icon name="close" /></button>
+            </header>
+            {notice ? (
+              <div className="book-body book-done">
+                <p className="kicker">{service?.name} · {city?.name}</p>
+                <strong>{formatWhen(notice)}</strong>
+                <p>{price}. Payment is not taken here. You can see this in My sessions.</p>
+                <div className="visit-actions">
+                  {onReserved ? <Button onClick={() => { close(); onReserved() }}>See my sessions</Button> : null}
+                  <Button kind="ghost" onClick={close}>Done</Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="book-body">
+                  {offers.length > 1 ? (
+                    <div className="book-step">
+                      <span>Service</span>
+                      <div className="choice-grid">
+                        {offers.map((offer) => (
+                          <button type="button" key={offer.id} className={offer.id === serviceId ? 'on' : ''} aria-pressed={offer.id === serviceId} onClick={() => setServiceId(offer.id)}>
+                            {offer.name}
+                            <small>{offer.price != null && offer.currency ? money(offer.price, offer.currency) : 'Price pending'}</small>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : <p className="book-fact"><span>Service</span><strong>{service?.name}</strong></p>}
+                  {cities.length > 1 ? (
+                    <div className="book-step">
+                      <span>City</span>
+                      <div className="choice-grid">
+                        {cities.map((item) => (
+                          <button type="button" key={item.id} className={item.id === cityId ? 'on' : ''} aria-pressed={item.id === cityId} onClick={() => setCityId(item.id)}>{item.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : <p className="book-fact"><span>City</span><strong>{city?.name}</strong></p>}
+                  <div className="book-step">
+                    <span>Date</span>
+                    <div className="month-row">
+                      <button type="button" aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))}>Prev</button>
+                      <strong>{formatMonth(month)}</strong>
+                      <button type="button" aria-label="Next month" onClick={() => setMonth(shiftMonth(month, 1))}>Next</button>
+                    </div>
+                    {loading ? <LoadingBlock text="Checking the calendar…" /> : null}
+                    {pendingCalendar ? <PendingBlock text={mode === 'internal' ? 'This professional has not published openings on their Detox Pass calendar.' : 'Availability did not come from the external calendar. No time is offered.'} /> : null}
+                    {!loading && !pendingCalendar && dates.length === 0 && !error ? <p className="muted">No openings this month.</p> : null}
+                    {dates.length > 0 ? (
+                      <div className="choice-grid">
+                        {dates.map((date) => (
+                          <button type="button" key={date} className={date === day ? 'on' : ''} aria-pressed={date === day} onClick={() => pickDay(date)}>{formatDay(date)}</button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  {day ? (
+                    <div className="book-step">
+                      <span>Time</span>
+                      {busy && times.length === 0 ? <LoadingBlock text="Checking times…" /> : null}
+                      {!busy && times.length === 0 && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
+                      {times.length > 0 ? (
+                        <div className="choice-grid times">
+                          {times.map((time) => (
+                            <button type="button" key={time} className={time === chosen ? 'on' : ''} aria-pressed={time === chosen} onClick={() => setChosen(time)}>{formatClock(time)}</button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {error ? <ErrorBlock text={error} onRetry={dates.length === 0 ? () => setReload((value) => value + 1) : undefined} /> : null}
+                </div>
+                <footer className="book-foot">
+                  <p>{chosen ? `${service?.name} · ${city?.name} · ${formatWhen(chosen)}` : 'Choose an open time.'}</p>
+                  <p className="muted">{price}. The price stays on the service.</p>
+                  <Button disabled={!chosen || busy} onClick={reserve}>{busy ? 'Please wait' : 'Reserve'}</Button>
+                </footer>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
-      {error ? <ErrorBlock text={error} /> : null}
-      {notice ? <Notice text={notice} /> : null}
-      <Button disabled={!chosen || busy} onClick={reserve}>{busy ? 'Please wait' : 'Reserve'}</Button>
-      <p className="muted">The price stays on the service. This step does not take payment.</p>
-    </div>
+    </>
   )
 }

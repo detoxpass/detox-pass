@@ -1,14 +1,41 @@
 import { useEffect, useState } from 'react'
 import { callFunction, loadBookingEvents, loadBookings, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
-import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice, PendingBlock, SagaStatus } from '../../ui'
+import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice, SagaStatus } from '../../ui'
+import { appointmentParts, formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
-function when(value: string | null) {
-  return value || '—'
+const eventLabels: Record<string, string> = {
+  intent_opened: 'Reservation started',
+  provider_confirmed: 'Time reserved',
+  cancelled: 'Reservation cancelled',
+  rescheduled: 'Time changed',
+  charge_created: 'Charge started',
+  paid: 'Marked paid',
+  compensation_required: 'Needs review',
+  payout_released: 'Payout released',
 }
 
-export function SessionList({ session, readOnly, onOpen }: {
+function eventLabel(type: string) {
+  return eventLabels[type] ?? type.replaceAll('_', ' ')
+}
+
+function datesOf(body: unknown) {
+  if (!body || typeof body !== 'object' || !('dates' in body) || !Array.isArray(body.dates)) return []
+  return body.dates.filter((item): item is string => typeof item === 'string')
+}
+
+function timesOf(body: unknown) {
+  if (!body || typeof body !== 'object' || !('times' in body) || !Array.isArray(body.times)) return []
+  return body.times.flatMap((item) => {
+    if (!item || typeof item !== 'object' || !('time' in item) || typeof item.time !== 'string') return []
+    return [item.time]
+  })
+}
+
+export function SessionList({ session, title, hint, bare = false, onOpen }: {
   session: Session
-  readOnly: boolean
+  title: string
+  hint: string
+  bare?: boolean
   onOpen: (id: string) => void
 }) {
   const [rows, setRows] = useState<BookingRow[]>([])
@@ -24,24 +51,41 @@ export function SessionList({ session, readOnly, onOpen }: {
     return () => { alive = false }
   }, [session])
 
-  if (loading) return <LoadingBlock />
-  if (error) return <ErrorBlock text={error} />
-  if (rows.length === 0) {
-    return <EmptyBlock title={readOnly ? 'No sessions yet' : 'No sessions yet'} text={readOnly ? 'Reservations for this account will show up here.' : 'A reservation appears here after the calendar confirms it.'} />
-  }
-  return (
-    <div className="catalog-grid">
-      {rows.map((row) => (
-        <button type="button" className="session-card" key={row.id} onClick={() => onOpen(row.id)}>
-          <strong>{row.professionals?.display_name || 'Therapist'}</strong>
-          <span>{row.services?.name || 'Service'}</span>
-          <span>{row.cities?.name || 'City'}</span>
-          <span>{row.starts_at}</span>
-          <SagaStatus status={row.saga_status} />
-        </button>
-      ))}
-    </div>
+  const body = (
+    <>
+      <header className="page-head">
+        <h1>{title}</h1>
+        <p>{hint}</p>
+      </header>
+      {loading ? <LoadingBlock /> : null}
+      {error ? <ErrorBlock text={error} /> : null}
+      {!loading && !error && rows.length === 0 ? <EmptyBlock title="No sessions yet" text="A reservation appears here after the calendar confirms it." /> : null}
+      {rows.length > 0 ? (
+        <ul className="visit-list">
+          {rows.map((row) => {
+            const when = appointmentParts(row.starts_at)
+            return (
+              <li key={row.id}>
+                <button type="button" className="visit-card" onClick={() => onOpen(row.id)}>
+                  <span className="visit-when">
+                    <strong>{when.day}</strong>
+                    <em>{when.time}</em>
+                  </span>
+                  <span className="visit-who">
+                    <strong>{row.professionals?.display_name || 'Therapist'}</strong>
+                    <span>{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
+                  </span>
+                  <SagaStatus status={row.saga_status} />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+    </>
   )
+  if (bare) return <section className="visit-embed">{body}</section>
+  return <div className="page narrow">{body}</div>
 }
 
 export function SessionDetail({ session, id, canChange, canRead, onBack }: {
@@ -59,8 +103,12 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   const [busy, setBusy] = useState(false)
   const [nextTime, setNextTime] = useState('')
   const [times, setTimes] = useState<string[]>([])
+  const [month, setMonth] = useState(monthOf(new Date()))
+  const [dates, setDates] = useState<string[]>([])
   const [day, setDay] = useState('')
+  const [datesLoading, setDatesLoading] = useState(false)
   const [pendingCalendar, setPendingCalendar] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [external, setExternal] = useState('')
 
   function refresh() {
@@ -78,9 +126,33 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
 
   const booking = rows.find((row) => row.id === id)
   const door = booking?.provider === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
-  if (loading) return <LoadingBlock />
-  if (error) return <ErrorBlock text={error} onRetry={() => { setError(''); void refresh() }} />
-  if (!booking) return <EmptyBlock title="Session not found" text="This reservation is not on your account." />
+
+  useEffect(() => {
+    if (!canChange || !booking || booking.saga_status !== 'provider_confirmed') return
+    let alive = true
+    setDatesLoading(true)
+    setPendingCalendar(false)
+    callFunction(session, door, { action: 'dates', professional_id: booking.professional_id, month })
+      .then((result) => {
+        if (!alive) return
+        if (result.status === 422) {
+          setPendingCalendar(true)
+          setDates([])
+          return
+        }
+        setDates(datesOf(result.body))
+      })
+      .catch(() => { if (alive) setDates([]) })
+      .finally(() => { if (alive) setDatesLoading(false) })
+    return () => { alive = false }
+  }, [session, canChange, booking?.professional_id, booking?.saga_status, door, month])
+
+  if (loading) return <div className="page narrow"><LoadingBlock /></div>
+  if (error && !booking) return <div className="page narrow"><ErrorBlock text={error} onRetry={() => { setError(''); void refresh() }} /></div>
+  if (!booking) return <div className="page narrow"><EmptyBlock title="Session not found" text="This reservation is not on your account." /></div>
+
+  const when = appointmentParts(booking.starts_at)
+  const open = booking.saga_status === 'provider_confirmed'
 
   async function cancel() {
     setBusy(true)
@@ -93,6 +165,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
         return
       }
       setNotice('Cancelled.')
+      setConfirmCancel(false)
       await refresh()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not cancel.')
@@ -101,22 +174,23 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
     }
   }
 
-  async function loadTimes() {
-    if (!day) return
+  async function pickDay(next: string) {
+    setDay(next)
+    setNextTime('')
+    setTimes([])
+    setError('')
     setBusy(true)
-    setPendingCalendar(false)
     try {
       const result = await callFunction(session, door, {
         action: 'availability',
         professional_id: booking?.professional_id,
-        date: day,
+        date: next,
       })
       if (result.status === 422) {
         setPendingCalendar(true)
         return
       }
-      const body = result.body as { times?: { time?: string }[] } | null
-      setTimes((body?.times ?? []).flatMap((item) => item.time ? [item.time] : []))
+      setTimes(timesOf(result.body))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not load times.')
     } finally {
@@ -134,8 +208,10 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
         setError('The calendar and the platform did not both change the time.')
         return
       }
-      setNotice('Rescheduled. Payment is not part of this step.')
+      setNotice('Moved. Payment is not part of this step.')
       setNextTime('')
+      setDay('')
+      setTimes([])
       await refresh()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not reschedule.')
@@ -154,7 +230,9 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
         setPendingCalendar(true)
         return
       }
-      setExternal(body?.diverged ? `The calendar differs. External time: ${body.external_starts_at || 'unknown'}. Canceled there: ${body.external_canceled ? 'yes' : 'no'}.` : 'The calendar matches this reservation.')
+      setExternal(body?.diverged
+        ? `The calendar differs. Time there: ${body.external_starts_at ? formatWhen(body.external_starts_at) : 'unknown'}. Canceled there: ${body.external_canceled ? 'yes' : 'no'}.`
+        : 'The calendar matches this reservation.')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not read the calendar.')
     } finally {
@@ -162,55 +240,85 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
     }
   }
 
-  const open = booking.saga_status === 'provider_confirmed'
-
   return (
-    <div className="stack">
+    <div className="page narrow visit-page">
       <button type="button" className="back" onClick={onBack}>Back</button>
-      <section className="account-card">
-        <h2>{booking.professionals?.display_name}</h2>
-        <p>{booking.services?.name} · {booking.cities?.name}</p>
-        <p>{booking.starts_at}</p>
+      <article className="session-hero">
+        <p className="kicker">{when.long}</p>
+        <h1>{when.time || when.day}</h1>
         <SagaStatus status={booking.saga_status} />
-        <p className="muted">{booking.amount_cents == null ? 'Not paid. Charging is not connected.' : 'This reservation has an amount on record.'}</p>
-      </section>
+        <dl className="session-facts">
+          <div><dt>Therapist</dt><dd>{booking.professionals?.display_name || 'Therapist'}</dd></div>
+          <div><dt>Service</dt><dd>{booking.services?.name || 'Service'}</dd></div>
+          <div><dt>City</dt><dd>{booking.cities?.name || 'City'}</dd></div>
+        </dl>
+        <p className="muted">{booking.amount_cents == null ? 'Payment is not taken on this reservation.' : 'An amount is recorded. This screen does not take payment.'}</p>
+      </article>
       <section className="account-card">
-        <h2>History</h2>
-        {events.length === 0 ? <EmptyBlock title="No events" text="Changes will be listed here." /> : (
-          <ul className="stack">
-            {events.map((event) => (
-              <li key={event.id}>
-                <strong>{event.event_type}</strong>
-                <span> {when(event.from_starts_at)} → {when(event.to_starts_at)}</span>
-              </li>
-            ))}
-          </ul>
+        <h2>What happened</h2>
+        {events.length === 0 ? <p className="muted">Changes will be listed here.</p> : (
+          <ol className="timeline">
+            {events.map((event) => {
+              const moved = event.from_starts_at && event.to_starts_at && event.from_starts_at !== event.to_starts_at
+              return (
+                <li key={event.id}>
+                  <i />
+                  <div>
+                    <strong>{eventLabel(event.event_type)}</strong>
+                    <time dateTime={event.created_at}>{formatWhen(event.created_at)}</time>
+                    {moved ? <span>{formatWhen(event.from_starts_at || '')} to {formatWhen(event.to_starts_at || '')}</span> : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
         )}
       </section>
       {canChange && open ? (
         <section className="account-card">
-          <h2>Change</h2>
-          <label className="field"><span>Another date from the calendar</span>
-            <input value={day} onChange={(event) => setDay(event.target.value)} placeholder="YYYY-MM-DD" />
-          </label>
-          <Button kind="ghost" disabled={busy || !day} onClick={loadTimes}>Show times</Button>
-          {pendingCalendar ? <PendingBlock text="The calendar did not return a time. Nothing was changed." /> : null}
-          {times.length > 0 ? (
-            <div className="slot-list">
-              {times.map((time) => (
-                <button type="button" key={time} className={time === nextTime ? 'on' : ''} onClick={() => setNextTime(time)}>{time}</button>
+          <h2>Move this session</h2>
+          <p className="muted">Pick another open day and time. The current time stays until the calendar accepts the change.</p>
+          <div className="month-row">
+            <button type="button" aria-label="Previous month" onClick={() => { setMonth(shiftMonth(month, -1)); setDay(''); setTimes([]); setNextTime('') }}>Prev</button>
+            <strong>{formatMonth(month)}</strong>
+            <button type="button" aria-label="Next month" onClick={() => { setMonth(shiftMonth(month, 1)); setDay(''); setTimes([]); setNextTime('') }}>Next</button>
+          </div>
+          {datesLoading ? <LoadingBlock text="Checking open days…" /> : null}
+          {pendingCalendar ? <p className="muted">The calendar did not return a time. Nothing was changed.</p> : null}
+          {!datesLoading && dates.length === 0 && !pendingCalendar ? <p className="muted">No openings this month.</p> : null}
+          {dates.length > 0 ? (
+            <div className="choice-grid">
+              {dates.map((date) => (
+                <button type="button" key={date} className={date === day ? 'on' : ''} aria-pressed={date === day} onClick={() => pickDay(date)}>{formatDay(date)}</button>
               ))}
             </div>
           ) : null}
-          <Button disabled={busy || !nextTime} onClick={reschedule}>Reschedule</Button>
-          <Button kind="ghost" disabled={busy} onClick={cancel}>Cancel reservation</Button>
+          {day && times.length === 0 && !busy && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
+          {times.length > 0 ? (
+            <div className="choice-grid times">
+              {times.map((time) => (
+                <button type="button" key={time} className={time === nextTime ? 'on' : ''} aria-pressed={time === nextTime} onClick={() => setNextTime(time)}>{formatClock(time)}</button>
+              ))}
+            </div>
+          ) : null}
+          <div className="visit-actions">
+            <Button disabled={busy || !nextTime} onClick={reschedule}>{busy ? 'Please wait' : 'Move to this time'}</Button>
+            {confirmCancel ? (
+              <div className="confirm-box">
+                <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>
+                <div className="visit-actions">
+                  <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(false)}>Keep it</Button>
+                  <Button disabled={busy} onClick={cancel}>Cancel reservation</Button>
+                </div>
+              </div>
+            ) : <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel reservation</Button>}
+          </div>
         </section>
       ) : null}
-      {canRead ? <Button kind="ghost" disabled={busy} onClick={readExternal}>Read from calendar</Button> : null}
+      {canRead ? <Button kind="ghost" disabled={busy} onClick={readExternal}>Check the calendar</Button> : null}
       {external ? <Notice text={external} /> : null}
       {notice ? <Notice text={notice} /> : null}
       {error ? <ErrorBlock text={error} /> : null}
     </div>
   )
 }
-

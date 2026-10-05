@@ -97,13 +97,17 @@ export function Notice({ text }: { text: string }) {
   return <p className="notice" role="status">{text}</p>
 }
 
-const sagaLabels: Record<string, string> = {
-  intent: 'Checking the time',
-  provider_confirmed: 'Reserved',
-  cancelled: 'Cancelled',
-  compensation_required: 'Needs review',
+const sagaLabels: Record<string, { label: string; tone: string }> = {
+  intent: { label: 'Checking', tone: 'pending' },
+  provider_confirmed: { label: 'Reserved', tone: 'confirmed' },
+  cancelled: { label: 'Cancelled', tone: 'canceled' },
+  compensation_required: { label: 'Needs review', tone: 'pending' },
+  charge_created: { label: 'Charge started', tone: 'pending' },
+  paid: { label: 'Paid', tone: 'completed' },
+  payout_released: { label: 'Released', tone: 'completed' },
 }
 
 export function SagaStatus({ status }: { status: string }) {
-  return <Status value={sagaLabels[status] ?? status} />
+  const known = sagaLabels[status]
+  return <span className={`status-pill ${known?.tone ?? 'pending'}`}>{known?.label ?? status.replaceAll('_', ' ')}</span>
 }

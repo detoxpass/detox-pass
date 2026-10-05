@@ -132,13 +132,13 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
 }) {
   if (path === '/account') return <Account session={session} onSession={onSession} onName={onName} onAvatar={onAvatar} />
   if (path === '/find') return <Home session={session} onOpen={(id) => go(`/therapists/${id}`)} />
-  if (path.startsWith('/therapists/')) return <TherapistPage session={session} id={path.split('/')[2]} onBack={() => go('/find')} onOpen={(id) => go(`/therapists/${id}`)} />
-  if (path === '/sessions') return <SessionList session={session} readOnly={false} onOpen={(id) => go(`/sessions/${id}`)} />
+  if (path.startsWith('/therapists/')) return <TherapistPage session={session} id={path.split('/')[2]} onBack={() => go('/find')} onOpen={(id) => go(`/therapists/${id}`)} onReserved={() => go('/sessions')} />
+  if (path === '/sessions') return <SessionList session={session} title="My sessions" hint="Times the calendar confirmed. Payment is not taken here." onOpen={(id) => go(`/sessions/${id}`)} />
   if (path.startsWith('/sessions/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange canRead={false} onBack={() => go('/sessions')} />
   if (path === '/agenda') return (
-    <div className="stack">
+    <div className="page narrow stack">
       <AgendaManager session={session} />
-      <SessionList session={session} readOnly onOpen={(id) => go(`/agenda/${id}`)} />
+      <SessionList bare session={session} title="Reservations" hint="Clients book these times. You can see them. The client changes or cancels." onOpen={(id) => go(`/agenda/${id}`)} />
     </div>
   )
   if (path.startsWith('/agenda/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange={false} canRead={false} onBack={() => go('/agenda')} />
@@ -152,7 +152,7 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
   if (path === '/admin/services') return <ServicesScreen session={session} />
   if (path === '/admin/cities') return <CitiesScreen session={session} />
   if (path === '/admin/specialties') return <SpecialtiesScreen session={session} />
-  if (path === '/admin/booking') return <SessionList session={session} readOnly={false} onOpen={(id) => go(`/admin/booking/${id}`)} />
+  if (path === '/admin/booking') return <SessionList session={session} title="Reservations" hint="Reservations on the platform. Payment is not taken here." onOpen={(id) => go(`/admin/booking/${id}`)} />
   if (path.startsWith('/admin/booking/')) return <SessionDetail session={session} id={path.split('/')[3]} canChange canRead onBack={() => go('/admin/booking')} />
   if (path === '/admin/reviews') return <EmptyBlock title="Reviews" text="Reviews are not a module of Detox Pass." />
   if (path === '/admin/financial') return <EmptyBlock title="Financial" text="Paid, pending and released reports arrive with charging. Nothing here is a payout." />
@@ -177,11 +177,12 @@ function Dashboard({ role, go }: { role: Role; go: (path: string) => void }) {
   )
 }
 
-function TherapistPage({ session, id, onBack, onOpen }: {
+function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
   session: Session
   id: string
   onBack: () => void
   onOpen: (id: string) => void
+  onReserved: () => void
 }) {
   const [rows, setRows] = useState<ProfessionalRow[]>([])
   const [error, setError] = useState('')
@@ -250,7 +251,7 @@ function TherapistPage({ session, id, onBack, onOpen }: {
         localStorage.setItem('detox-pass-loved', JSON.stringify(next))
         setLoved(next)
       }}
-      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} />}
+      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} onReserved={onReserved} />}
     />
   )
 }
