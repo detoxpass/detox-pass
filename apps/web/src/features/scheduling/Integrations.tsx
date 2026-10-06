@@ -388,15 +388,17 @@ export function Integrations({ session, embedded, onReady }: {
             return (
               <article className="integ-card" key={calendar.id}>
                 <img src={calendar.logo} alt={calendar.label} />
-                <div className="integ-name">
-                  {calendar.id === 'square' || calendar.id === 'wix' ? <strong>{calendar.label}</strong> : null}
-                  <em className={connected ? 'integ-ok' : 'integ-off'}>{connected ? 'Connected' : 'Not connected'}</em>
-                </div>
-                <p>{connected
+                <div className="integ-copy">
+                  <div className="integ-name">
+                    {calendar.id === 'square' || calendar.id === 'wix' ? <strong>{calendar.label}</strong> : null}
+                    <em className={connected ? 'integ-ok' : 'integ-off'}>{connected ? 'Connected' : 'Not connected'}</em>
+                  </div>
+                  <p>{connected
                   ? `${count} ${count === 1 ? 'reservation' : 'reservations'} this month`
                   : calendar.id === 'square'
                     ? 'Sign in with Square to receive reservations.'
                     : `This screen does not connect ${calendar.label} yet.`}</p>
+                </div>
                 <button type="button" className="integ-more" aria-label={`${calendar.label} actions`} aria-expanded={menuId === calendar.id} onClick={() => setMenuId(menuId === calendar.id ? '' : calendar.id)}>
                   <Icon name="more" />
                 </button>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { BookingRow } from '../../lib/supabase'
+import { Icon } from '../../ui'
 
 const COLORS: Record<string, string> = {
   internal: 'cal-internal',
@@ -55,9 +56,10 @@ function Chevron({ dir }: { dir: 'left' | 'right' }) {
   )
 }
 
-export function CalendarBoard({ bookings, onOpen }: {
+export function CalendarBoard({ bookings, onOpen, onSettings }: {
   bookings: BookingRow[]
   onOpen: (id: string) => void
+  onSettings: () => void
 }) {
   const [cursor, setCursor] = useState(() => new Date())
   const [view, setView] = useState<'month' | 'week' | 'day'>('month')
@@ -107,12 +109,17 @@ export function CalendarBoard({ bookings, onOpen }: {
 
   return (
     <section className="agenda-board">
-      <div className="cal-switch" role="tablist" aria-label="Calendar view">
-        {(['month', 'week', 'day'] as const).map((item) => (
-          <button key={item} type="button" role="tab" aria-selected={view === item} onClick={() => setView(item)}>
-            {item === 'month' ? 'Month' : item === 'week' ? 'Week' : 'Day'}
-          </button>
-        ))}
+      <div className="cal-switch-row">
+        <div className="cal-switch" role="tablist" aria-label="Calendar view">
+          {(['month', 'week', 'day'] as const).map((item) => (
+            <button key={item} type="button" role="tab" aria-selected={view === item} onClick={() => setView(item)}>
+              {item === 'month' ? 'Month' : item === 'week' ? 'Week' : 'Day'}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="cal-settings" aria-label="Calendar settings" onClick={onSettings}>
+          <Icon name="settings" />
+        </button>
       </div>
 
       <div className="cal-nav">

@@ -845,11 +845,10 @@ body.modal-open .shell-scroll { overflow: hidden; }
 }
 
 .agenda-page { display: grid; gap: 20px; }
-.agenda-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-.agenda-toolbar p { margin: 0; color: #4d4d4d; line-height: 1.45; }
-.agenda-toolbar > button { border: 1.5px solid #161616; background: white; border-radius: 999px; padding: 10px 16px; font-weight: 700; white-space: nowrap; }
 .agenda-board { background: white; border: 1px solid var(--line); border-radius: 24px; padding: 16px 14px 18px; min-width: 0; }
-.cal-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #f3f3f3; border-radius: 14px; padding: 4px; }
+.cal-switch-row { display: flex; align-items: center; gap: 8px; }
+.cal-switch { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #f3f3f3; border-radius: 14px; padding: 4px; }
+.cal-settings { width: 44px; height: 44px; flex: none; border: 0; border-radius: 14px; background: #f3f3f3; display: grid; place-items: center; }
 .cal-switch button { border: 0; background: transparent; border-radius: 11px; min-height: 36px; font-weight: 700; }
 .cal-switch button[aria-selected="true"] { background: #111; color: white; }
 .cal-nav { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px; margin-top: 14px; }
@@ -954,13 +953,14 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .integ-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .integ-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "logo name more" "body body body" "action action action"; gap: 8px 12px; align-items: center; padding: 16px; min-width: 0; }
 .integ-card:has(.integ-menu) { z-index: 6; }
+.integ-copy { display: contents; }
 .integ-card > img { grid-area: logo; height: 28px; width: auto; max-width: 96px; object-fit: contain; object-position: left center; }
 .integ-name { grid-area: name; display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
 .integ-name strong { font-size: 16px; }
 .integ-ok, .integ-off { font-style: normal; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 750; }
 .integ-ok { background: #e8f7ee; color: #1d8a4e; }
 .integ-off { background: #f2f2f2; color: #777; }
-.integ-card > p { grid-area: body; }
+.integ-copy > p { grid-area: body; }
 .integ-more { grid-area: more; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: grid; place-items: center; justify-self: end; }
 .integ-action { grid-area: action; width: 100%; }
 .integ-menu { position: absolute; right: 12px; top: 52px; z-index: 7; background: #fff; border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14); padding: 6px; display: grid; min-width: 160px; }
@@ -973,10 +973,13 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .integ-manage.mob { display: inline-flex; }
   .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
   .integ-hero-side { justify-self: end; align-self: start; }
-  .integ-card { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "logo name action" "logo body action"; align-items: center; }
-  .integ-name { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .integ-card { display: flex; align-items: center; gap: 12px; }
+  .integ-card > img { width: 72px; height: 28px; max-width: 72px; flex: none; align-self: center; }
+  .integ-copy { display: grid; gap: 2px; flex: 1; min-width: 0; justify-items: start; }
+  .integ-name { flex-direction: row; align-items: center; justify-content: flex-start; }
+  .integ-card > p, .integ-copy > p { text-align: left; }
   .integ-more { display: none; }
-  .integ-action { width: auto; justify-self: end; align-self: center; }
+  .integ-action { width: auto; flex: none; align-self: center; white-space: nowrap; }
   .integ-stat strong { font-size: 22px; }
   .integ-stat strong.integ-when { font-size: 15px; }
   .integ-stat { padding: 10px; }
@@ -1142,6 +1145,5 @@ body.modal-open .shell-scroll { overflow: hidden; }
 }
 
 @media (max-width: 799px) {
-  .agenda-toolbar { align-items: stretch; flex-direction: column; }
-  .agenda-toolbar > button { width: 100%; }
+  .cal-settings { width: 40px; height: 40px; }
 }
