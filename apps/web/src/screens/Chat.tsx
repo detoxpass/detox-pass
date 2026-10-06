@@ -20,12 +20,11 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
   const [text, setText] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [recording, setRecording] = useState(false)
+  const [phase, setPhase] = useState<'idle' | 'recording' | 'processing'>('idle')
   const [elapsed, setElapsed] = useState(0)
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const recorder = useRef<MediaRecorder | null>(null)
-  const fieldRef = useRef<HTMLTextAreaElement>(null)
   const started = useRef(0)
 
   useEffect(() => {
@@ -42,20 +41,13 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
-  }, [blocks, busy, recording])
+  }, [blocks, busy, phase])
 
   useEffect(() => {
-    const field = fieldRef.current
-    if (!field) return
-    field.style.height = '0px'
-    field.style.height = `${Math.min(field.scrollHeight, 140)}px`
-  }, [text])
-
-  useEffect(() => {
-    if (!recording) return
+    if (phase !== 'recording') return
     const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - started.current) / 1000)), 200)
     return () => window.clearInterval(timer)
-  }, [recording])
+  }, [phase])
 
   async function send(value = text, fromAudio = false) {
     const message = value.trim()
@@ -114,7 +106,7 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
   }
 
   function startRecording() {
-    if (busy || recording) return
+    if (busy || phase !== 'idle') return
     navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => {
       const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
       const media = new MediaRecorder(stream, { mimeType: mime })
@@ -132,32 +124,32 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
       setElapsed(0)
       setLiveStream(stream)
       media.start()
-      setRecording(true)
+      setPhase('recording')
       window.setTimeout(() => { if (media.state === 'recording') media.stop() }, 60_000)
     }).catch(() => setError('The microphone is not available.'))
   }
 
   function stopRecording() {
-    if (recorder.current?.state === 'recording') recorder.current.stop()
-    setRecording(false)
+    if (recorder.current?.state !== 'recording') return
+    setPhase('processing')
+    recorder.current.stop()
   }
 
   async function transcribe(bytes: Uint8Array, mime: string, duration: number) {
-    setBusy(true)
+    setPhase('processing')
     setError('')
     let binary = ''
     for (const byte of bytes) binary += String.fromCharCode(byte)
     try {
       const result = await postChat(session, { action: 'transcribe', audio_base64: btoa(binary), mime, duration_seconds: duration })
       const body = result.body as { text?: string; error?: string; blocks?: ChatBlock[] }
-      if (body.text) setText(body.text)
+      if (body.text) setText(body.text.replace(/\s+/g, ' ').trim())
       else if (Array.isArray(body.blocks)) setBlocks((current) => [...current, ...body.blocks!])
       else setError(body.error || 'The recording could not be transcribed.')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'The recording could not be transcribed.')
     } finally {
-      setRecording(false)
-      setBusy(false)
+      setPhase('idle')
     }
   }
 
@@ -180,27 +172,31 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
         </div>
       </div>
       <form className="chat-dock" onSubmit={(event) => { event.preventDefault(); void send() }}>
-        <div className={recording ? 'composer rec' : 'composer'}>
-          <button type="button" className={recording ? 'mic on' : 'mic'} aria-label={recording ? 'Stop recording' : 'Record audio'} onClick={recording ? stopRecording : startRecording}>
-            <Icon name="mic" />
-          </button>
-          {recording ? (
+        <div className={phase === 'idle' ? 'composer' : `composer ${phase}`}>
+          {phase === 'processing' ? (
+            <p className="audio-status"><span className="audio-spin" aria-hidden="true" />Processing audio...</p>
+          ) : phase === 'recording' ? (
             <>
+              <button type="button" className="mic on" aria-label="Stop recording" onClick={stopRecording}>
+                <Icon name="mic" />
+              </button>
               <Waveform stream={liveStream} />
               <time>{clock(elapsed)}</time>
               <button type="button" className="send" aria-label="Stop recording" onClick={stopRecording}><Icon name="stop" /></button>
             </>
           ) : (
             <>
-              <textarea
-                ref={fieldRef}
-                rows={1}
+              <button type="button" className="mic" aria-label="Record audio" onClick={startRecording}>
+                <Icon name="mic" />
+              </button>
+              <input
                 value={text}
                 placeholder="Service, city, or therapist"
                 aria-label="Message"
-                onChange={(event) => setText(event.target.value)}
+                enterKeyHint="send"
+                onChange={(event) => setText(event.target.value.replace(/[\r\n]+/g, ' '))}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
+                  if (event.key === 'Enter') {
                     event.preventDefault()
                     void send()
                   }

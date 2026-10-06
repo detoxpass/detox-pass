@@ -799,12 +799,15 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .chat-actions { display: flex; gap: 8px; align-items: center; }
 .chat-receipt { flex-direction: column; background: var(--pink-soft); }
 .chat-dock { flex: none; padding: 6px 0 12px; background: linear-gradient(to top, var(--bg) 62%, transparent); }
-.composer { width: min(760px, calc(100% - 32px)); margin: 0 auto; display: flex; align-items: flex-end; gap: 4px; background: white; border: 1px solid var(--line); border-radius: 28px; padding: 6px; box-shadow: 0 10px 30px rgba(17, 17, 17, 0.05); }
-.composer textarea { flex: 1; min-width: 0; border: 0; resize: none; outline: none; background: transparent; min-height: 24px; max-height: 140px; padding: 8px 4px; font: inherit; line-height: 1.4; }
+.composer { width: min(760px, calc(100% - 32px)); height: 52px; margin: 0 auto; display: flex; align-items: center; gap: 4px; background: white; border: 1px solid var(--line); border-radius: 26px; padding: 6px; box-shadow: 0 10px 30px rgba(17, 17, 17, 0.05); overflow: hidden; }
+.composer input { flex: 1; min-width: 0; height: 36px; border: 0; outline: none; background: transparent; padding: 0 4px; font: inherit; line-height: 36px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.composer input::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-status { margin: 0; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0 8px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.audio-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #f3d4d6; border-top-color: #111; animation: audio-spin 0.7s linear infinite; flex: none; }
 .composer .mic, .composer .send { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: #1b1b1b; display: grid; place-items: center; flex: none; padding: 0; }
 .composer .send { background: var(--pink); }
 .composer .send:disabled { background: #f1f1f2; color: #b5b5b5; }
-.composer.rec { align-items: center; width: min(760px, calc(100% - 16px)); }
+.composer.rec, .composer.processing { width: min(760px, calc(100% - 16px)); }
 .composer.rec .mic { background: var(--pink); animation: mic-pulse 1.1s ease-in-out infinite; }
 .composer time { font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 36px; }
 .wave { flex: 1; min-width: 0; height: 36px; display: flex; align-items: center; justify-content: center; gap: 3px; }
@@ -814,6 +817,7 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .wave.live i { animation: none; }
 .chat-detail .dash-item { margin-top: 8px; }
 @keyframes mic-pulse { 50% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(255, 185, 185, 0.45); } }
+@keyframes audio-spin { to { transform: rotate(360deg); } }
 @keyframes wave-bar { 50% { height: 22px; } }
 
 @media (max-width: 800px) {
