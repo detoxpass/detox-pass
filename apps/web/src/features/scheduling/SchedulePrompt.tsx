@@ -45,7 +45,7 @@ export function SchedulePrompt({ session }: { session: Session }) {
         <h2 id="schedule-choice-title">Choose your calendar</h2>
         <p>Each professional keeps their own calendar. Detox Pass does not share one login across the team.</p>
         <p>Internal keeps the openings on Detox Pass. You publish the weekly hours, and clients book those times.</p>
-        <p>Square is connected from Agenda. Paste the access token there. Acuity, Wix, Zenoti, and Mindbody stay on the list and are not connected from this screen yet.</p>
+        <p>Square is connected from Agenda. Sign in with Square there. Acuity, Wix, Zenoti, and Mindbody stay on the list and are not connected from this screen yet.</p>
         <label className="check-row">
           <input type="checkbox" checked={dismiss} onChange={(event) => setDismiss(event.target.checked)} />
           Do not show this again

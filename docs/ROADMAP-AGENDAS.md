@@ -29,37 +29,9 @@ A origem do reagendamento já aceita `platform`, `acuity`, `square`, `wix`,
 
 ## 1. Square
 
-Sandbox. Unidade Default Test Account, fuso `America/Anchorage`. Serviço
-"Sessão Detox", variação Regular de 30 minutos. A version do catálogo é lida
-na hora de criar.
-
-URL para colar no aplicativo sandbox, sem barra no final:
-
-```
-https://otddminugslmacdirual.supabase.co/functions/v1/scheduling-square-webhook
-```
-
-Eventos: `booking.created` e `booking.updated`. Versão da API: `2025-01-23`.
-O passo a passo está em [`SQUARE-WEBHOOK.md`](./SQUARE-WEBHOOK.md).
-
-A ida já está na função `scheduling-square`. A volta está publicada e recusa
-pedido sem a Signature key. Essa chave a Square mostra depois que a URL é
-salva. Ela entra no secret `SQUARE_WEBHOOK_SIGNATURE_KEY`. Sem ela, o aviso
-real não foi recebido.
-
-A profissional escolhe a Square na Agenda. O formulário pede o ambiente e o
-access token. A função descobre unidade, pessoa e serviço. Se houver mais de
-um, a tela mostra a lista e só grava quando a escolha volta. O token não
-aparece de novo. Acuity, Wix, Zenoti e Mindbody ficam na lista e esta tela
-ainda não conecta essas quatro. A operação tem o mesmo formulário da Square
-na ficha da profissional.
-
-A busca do mês corrente começa um minuto à frente. A Square recusa um início
-no passado. Um dia que já acabou devolve lista vazia.
-
-A função publicada fechou o ciclo na ficha Detox Pass, com serviço e cidade
-só durante a prova, e a ficha voltou a inativa, sem serviço e sem cidade.
-O status da Square nessa ficha ficou `tested`. Homologada continua fora.
+O corte desta agenda está em [`ROADMAP-SQUARE.md`](./ROADMAP-SQUARE.md).
+A ida e a volta no sandbox já fecharam ciclo. A profissional passa a entrar
+pela tela de autorização da Square. Homologada continua fora.
 
 ## 2. Acuity
 

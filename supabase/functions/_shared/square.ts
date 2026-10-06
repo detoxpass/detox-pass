@@ -151,6 +151,136 @@ export function futureWindow(start: string, end: string, now = Date.now()): { st
   }
 }
 
+export const SQUARE_OAUTH_REDIRECT_URL = 'https://otddminugslmacdirual.supabase.co/functions/v1/scheduling-square-oauth'
+export const SQUARE_APP_ORIGIN = 'https://detox-pass.vercel.app'
+
+export const SQUARE_SCOPES = [
+  'APPOINTMENTS_READ',
+  'APPOINTMENTS_ALL_READ',
+  'APPOINTMENTS_WRITE',
+  'APPOINTMENTS_ALL_WRITE',
+  'MERCHANT_PROFILE_READ',
+  'EMPLOYEES_READ',
+  'ITEMS_READ',
+  'CUSTOMERS_READ',
+  'CUSTOMERS_WRITE',
+] as const
+
+const SQUARE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+const SQUARE_REFRESH_WINDOW_MS = 8 * 24 * 60 * 60 * 1000
+
+export type SquareOAuthState = {
+  professionalId: string
+  environment: 'sandbox' | 'production'
+  surface: 'agenda' | 'admin'
+  exp: number
+  nonce: string
+}
+
+export function squareAuthorizeUrl(environment: string, clientId: string, state: string): string | null {
+  const host = squareHost(environment)
+  if (!host || !clientId || !state) return null
+  const params = new URLSearchParams({
+    client_id: clientId,
+    scope: SQUARE_SCOPES.join(' '),
+    state,
+    redirect_uri: SQUARE_OAUTH_REDIRECT_URL,
+  })
+  if (environment === 'production') params.set('session', 'false')
+  return `${host}/oauth2/authorize?${params}`
+}
+
+export function squareReturnUrl(surface: string, professionalId: string, result: string): string {
+  const safe = ['connected', 'choose', 'incomplete', 'denied', 'error'].includes(result) ? result : 'error'
+  if (surface === 'admin' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(professionalId)) {
+    return `${SQUARE_APP_ORIGIN}/admin/therapists/${professionalId}?square=${safe}`
+  }
+  return `${SQUARE_APP_ORIGIN}/agenda?square=${safe}`
+}
+
+export function shouldRefreshSquareToken(input: {
+  refreshToken?: string | null
+  expiresAt?: string | null
+  refreshedAt?: string | null
+  now?: number
+}): boolean {
+  if (!input.refreshToken) return false
+  const now = input.now ?? Date.now()
+  const expires = input.expiresAt ? Date.parse(input.expiresAt) : Number.NaN
+  if (!Number.isFinite(expires) || expires - now <= SQUARE_REFRESH_WINDOW_MS) return true
+  const refreshed = input.refreshedAt ? Date.parse(input.refreshedAt) : Number.NaN
+  if (!Number.isFinite(refreshed) || now - refreshed >= SQUARE_WEEK_MS) return true
+  return false
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let text = ''
+  for (const byte of bytes) text += String.fromCharCode(byte)
+  return btoa(text).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+}
+
+function base64UrlToBytes(value: string): Uint8Array | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null
+  const padded = value.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - (value.length % 4)) % 4)
+  try {
+    const binary = atob(padded)
+    const bytes = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+    return bytes
+  } catch {
+    return null
+  }
+}
+
+async function hmacSha256(secret: string, value: string): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signed = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(value))
+  return new Uint8Array(signed)
+}
+
+export async function signOAuthState(secret: string, state: SquareOAuthState): Promise<string> {
+  const payload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(state)))
+  const signature = bytesToBase64Url(await hmacSha256(secret, payload))
+  return `${payload}.${signature}`
+}
+
+export async function readOAuthState(secret: string, token: string, now = Date.now()): Promise<SquareOAuthState | null> {
+  if (!secret || !token) return null
+  const [payload, signature, extra] = token.split('.')
+  if (!payload || !signature || extra) return null
+  const expected = bytesToBase64Url(await hmacSha256(secret, payload))
+  if (!signaturesMatch(expected, signature)) return null
+  const bytes = base64UrlToBytes(payload)
+  if (!bytes) return null
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<SquareOAuthState>
+    if (!parsed.professionalId || !/^[0-9a-f-]{36}$/i.test(parsed.professionalId)) return null
+    if (parsed.environment !== 'sandbox' && parsed.environment !== 'production') return null
+    if (parsed.surface !== 'agenda' && parsed.surface !== 'admin') return null
+    if (typeof parsed.exp !== 'number' || parsed.exp * 1000 <= now) return null
+    if (typeof parsed.nonce !== 'string' || parsed.nonce.length < 8) return null
+    return parsed as SquareOAuthState
+  } catch {
+    return null
+  }
+}
+
+export async function acceptSquareWebhook(keys: string[], url: string, body: string, received: string): Promise<'missing' | 'invalid' | 'ok'> {
+  const present = keys.filter((key) => key.length > 0)
+  if (present.length === 0 || !received) return 'missing'
+  for (const key of present) {
+    const expected = await squareSignature(key, url, body)
+    if (signaturesMatch(expected, received)) return 'ok'
+  }
+  return 'invalid'
+}
+
 export function monthBounds(month: string): { start: string; end: string } | null {
   const match = /^(\d{4})-(\d{2})$/.exec(month)
   if (!match) return null

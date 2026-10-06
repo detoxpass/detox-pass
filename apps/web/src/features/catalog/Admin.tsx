@@ -224,6 +224,23 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
 
   useEffect(() => { reload() }, [session, id])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('square')
+    if (!result) return
+    const messages: Record<string, string> = {
+      connected: 'Square is connected. It stays pending until a live booking is completed.',
+      choose: 'This Square account has more than one location, person, or service. The professional picks them on Agenda.',
+      incomplete: 'Square still needs a location, a team member, and a bookable service.',
+      denied: 'Square sign-in was cancelled.',
+      error: 'Square sign-in did not finish.',
+    }
+    if (messages[result]) setNotice(messages[result])
+    params.delete('square')
+    const next = params.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${next ? `?${next}` : ''}`)
+  }, [])
+
   if (loading) return <LoadingBlock />
   if (error) return <ErrorBlock text={error} onRetry={reload} />
   if (!row) return <EmptyBlock title="Professional not found" text="This profile is not in the catalog." />
@@ -363,7 +380,7 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
         }
       }}>
         <h2>Square</h2>
-        <p>Status: {current.schedule_connections?.find((item) => item.provider === 'square')?.status ?? 'not connected'}. Paste the access token. Location, person, and service come from the account when there is only one of each.</p>
+        <p>Status: {current.schedule_connections?.find((item) => item.provider === 'square')?.status ?? 'not connected'}. The professional signs in from Agenda. This form only saves a sandbox access token for operation.</p>
         <Field label="Environment">
           <select value={squareEnvironment} onChange={(event) => setSquareEnvironment(event.target.value === 'production' ? 'production' : 'sandbox')}>
             <option value="sandbox">Sandbox</option>
@@ -371,7 +388,19 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
           </select>
         </Field>
         <Field label="Access token"><input value={squareToken} onChange={(event) => setSquareToken(event.target.value)} type="password" autoComplete="off" required /></Field>
-        <Button type="submit" disabled={squareToken.trim() === ''}>Connect Square</Button>
+        <Button type="submit" disabled={squareToken.trim() === ''}>Save sandbox token</Button>
+        <Button kind="ghost" onClick={async () => {
+          try {
+            const result = await callFunction(session, 'scheduling-square', { action: 'disconnect', professional_id: current.id })
+            const body = result.body && typeof result.body === 'object' ? result.body as Record<string, unknown> : {}
+            setNotice(body.revoked === true
+              ? 'Square is disconnected here and the sign-in was revoked.'
+              : 'Square is disconnected here.')
+            reload()
+          } catch (caught) {
+            setNotice(caught instanceof Error ? caught.message : 'Could not disconnect Square.')
+          }
+        }}>Disconnect Square</Button>
       </form>
       <form className="account-card" onSubmit={saveConnection}>
         <h2>Acuity</h2>

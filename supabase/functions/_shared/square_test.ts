@@ -1,13 +1,21 @@
 import {
+  SQUARE_OAUTH_REDIRECT_URL,
+  SQUARE_SCOPES,
   SQUARE_WEBHOOK_URL,
+  acceptSquareWebhook,
   availabilityTimes,
   decideSquareEvent,
   durationMinutes,
   localDate,
   futureWindow,
   monthBounds,
+  readOAuthState,
+  shouldRefreshSquareToken,
+  signOAuthState,
   signaturesMatch,
+  squareAuthorizeUrl,
   squareHost,
+  squareReturnUrl,
   squareSignature,
   zonedDayRange,
 } from './square.ts'
@@ -176,4 +184,75 @@ Deno.test('cancelamento e reagendamento da Square', () => {
     localStartsAt: '2026-10-07T17:00:00Z',
   })
   assertEquals(other, { kind: 'ignore' }, 'outro evento')
+})
+
+Deno.test('login da Square pede só o escopo da agenda', () => {
+  const sandbox = squareAuthorizeUrl('sandbox', 'sandbox-sq0idb-example', 'state-1')
+  const live = squareAuthorizeUrl('production', 'sq0idp-example', 'state-2')
+  if (!sandbox || !live) throw new Error('url vazia')
+  const sandboxUrl = new URL(sandbox)
+  const liveUrl = new URL(live)
+  assertEquals(sandboxUrl.origin, 'https://connect.squareupsandbox.com', 'host sandbox')
+  assertEquals(liveUrl.origin, 'https://connect.squareup.com', 'host produção')
+  assertEquals(sandboxUrl.pathname, '/oauth2/authorize', 'caminho')
+  assertEquals(sandboxUrl.searchParams.get('session'), null, 'sandbox sem session')
+  assertEquals(liveUrl.searchParams.get('session'), 'false', 'produção exige login')
+  assertEquals(sandboxUrl.searchParams.get('redirect_uri'), SQUARE_OAUTH_REDIRECT_URL, 'volta')
+  assertEquals(sandboxUrl.searchParams.get('scope'), SQUARE_SCOPES.join(' '), 'escopo')
+  assertEquals(SQUARE_SCOPES.some((scope) => scope.startsWith('PAYMENTS')), false, 'sem pagamento')
+  assertEquals(squareAuthorizeUrl('test', 'id', 'state'), null, 'ambiente')
+})
+
+Deno.test('state do login não aceita troca nem prazo vencido', async () => {
+  const secret = 'state-secret'
+  const now = Date.parse('2026-10-06T15:00:00Z')
+  const token = await signOAuthState(secret, {
+    professionalId: '9a038721-84f0-4584-bf91-6e6a341ad9e0',
+    environment: 'sandbox',
+    surface: 'agenda',
+    exp: Math.floor(now / 1000) + 60,
+    nonce: 'nonce-1234',
+  })
+  const read = await readOAuthState(secret, token, now)
+  assertEquals(read?.professionalId, '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'profissional')
+  assertEquals(await readOAuthState('other-secret', token, now), null, 'outra chave')
+  assertEquals(await readOAuthState(secret, `${token}x`, now), null, 'assinatura trocada')
+  assertEquals(await readOAuthState(secret, token, now + 120_000), null, 'vencido')
+  assertEquals(squareReturnUrl('admin', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'choose'), 'https://detox-pass.vercel.app/admin/therapists/9a038721-84f0-4584-bf91-6e6a341ad9e0?square=choose', 'admin')
+  assertEquals(squareReturnUrl('agenda', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'javascript:alert(1)'), 'https://detox-pass.vercel.app/agenda?square=error', 'resultado')
+  assertEquals(squareReturnUrl('https://evil.example', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'connected'), 'https://detox-pass.vercel.app/agenda?square=connected', 'superfície')
+})
+
+Deno.test('token da Square renova em sete dias e perto do vencimento', () => {
+  const now = Date.parse('2026-10-06T15:00:00Z')
+  assertEquals(shouldRefreshSquareToken({ refreshToken: '', expiresAt: '2026-11-01T00:00:00Z', refreshedAt: '2026-10-06T00:00:00Z', now }), false, 'sem refresh')
+  assertEquals(shouldRefreshSquareToken({
+    refreshToken: 'refresh',
+    expiresAt: '2026-11-05T00:00:00Z',
+    refreshedAt: '2026-10-06T00:00:00Z',
+    now,
+  }), false, 'novo')
+  assertEquals(shouldRefreshSquareToken({
+    refreshToken: 'refresh',
+    expiresAt: '2026-11-05T00:00:00Z',
+    refreshedAt: '2026-09-28T00:00:00Z',
+    now,
+  }), true, 'sete dias')
+  assertEquals(shouldRefreshSquareToken({
+    refreshToken: 'refresh',
+    expiresAt: '2026-10-13T00:00:00Z',
+    refreshedAt: '2026-10-06T00:00:00Z',
+    now,
+  }), true, 'perto de vencer')
+})
+
+Deno.test('webhook aceita a chave de produção sem largar a do sandbox', async () => {
+  const body = '{"type":"booking.updated"}'
+  const sandbox = await squareSignature('sandbox-key', SQUARE_WEBHOOK_URL, body)
+  const production = await squareSignature('production-key', SQUARE_WEBHOOK_URL, body)
+  assertEquals(await acceptSquareWebhook(['sandbox-key', ''], SQUARE_WEBHOOK_URL, body, ''), 'missing', 'sem assinatura')
+  assertEquals(await acceptSquareWebhook(['', ''], SQUARE_WEBHOOK_URL, body, sandbox), 'missing', 'sem chave')
+  assertEquals(await acceptSquareWebhook(['sandbox-key', 'production-key'], SQUARE_WEBHOOK_URL, body, sandbox), 'ok', 'sandbox')
+  assertEquals(await acceptSquareWebhook(['sandbox-key', 'production-key'], SQUARE_WEBHOOK_URL, body, production), 'ok', 'produção')
+  assertEquals(await acceptSquareWebhook(['sandbox-key', 'production-key'], SQUARE_WEBHOOK_URL, body, 'nope'), 'invalid', 'errada')
 })

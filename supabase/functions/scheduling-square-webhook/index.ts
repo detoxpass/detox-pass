@@ -1,5 +1,5 @@
 import { json, serviceClient } from '../_shared/supabase.ts'
-import { SQUARE_WEBHOOK_URL, decideSquareEvent, signaturesMatch, squareSignature } from '../_shared/square.ts'
+import { SQUARE_WEBHOOK_URL, acceptSquareWebhook, decideSquareEvent } from '../_shared/square.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return json({ ok: true })
@@ -7,11 +7,13 @@ Deno.serve(async (req) => {
 
   const raw = await req.text()
   const signature = req.headers.get('x-square-hmacsha256-signature') ?? ''
-  const key = Deno.env.get('SQUARE_WEBHOOK_SIGNATURE_KEY') ?? ''
   const notificationUrl = Deno.env.get('SQUARE_WEBHOOK_NOTIFICATION_URL') || SQUARE_WEBHOOK_URL
-  if (!key || !signature) return json({ error: 'assinatura ausente' }, 401)
-  const expected = await squareSignature(key, notificationUrl, raw)
-  if (!signaturesMatch(expected, signature)) return json({ error: 'assinatura inválida' }, 401)
+  const verdict = await acceptSquareWebhook([
+    Deno.env.get('SQUARE_WEBHOOK_SIGNATURE_KEY') ?? '',
+    Deno.env.get('SQUARE_WEBHOOK_SIGNATURE_KEY_PRODUCTION') ?? '',
+  ], notificationUrl, raw, signature)
+  if (verdict === 'missing') return json({ error: 'assinatura ausente' }, 401)
+  if (verdict === 'invalid') return json({ error: 'assinatura inválida' }, 401)
 
   let event: {
     type?: string

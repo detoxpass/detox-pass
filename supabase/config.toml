@@ -439,6 +439,12 @@ verify_jwt = true
 [functions.scheduling-square-webhook]
 verify_jwt = false
 
+[functions.scheduling-square-oauth]
+verify_jwt = false
+
+[functions.scheduling-square-refresh]
+verify_jwt = false
+
 [functions.scheduling-wix]
 verify_jwt = true
 

@@ -1,22 +1,29 @@
 import { appRole, json, preflight, requireUser, serviceClient, type SupabaseClient } from '../_shared/supabase.ts'
 import {
-  SQUARE_VERSION,
   availabilityTimes,
   durationMinutes,
   futureWindow,
   localDate,
   monthBounds,
-  squareHost,
+  signOAuthState,
+  squareAuthorizeUrl,
   zonedDayRange,
 } from '../_shared/square.ts'
+import {
+  disconnectSquare,
+  discoverSquare,
+  ensureFreshSquare,
+  grantSquare,
+  mergePastedSecret,
+  parseStored,
+  readStored,
+  squareAccountStatus,
+  squareCredentials,
+  squareFetch,
+  type SquareSecret,
+} from '../_shared/square_account.ts'
 
-type Secret = {
-  environment: 'sandbox' | 'production'
-  accessToken: string
-  locationId: string
-  teamMemberId: string
-  serviceVariationId: string
-}
+type Secret = SquareSecret
 
 type Body = {
   action?: string
@@ -34,12 +41,6 @@ type Body = {
   location_id?: string
   team_member_id?: string
   service_variation_id?: string
-}
-
-type SquareChoice = {
-  locations: { id: string; name: string; timezone: string }[]
-  members: { id: string; name: string }[]
-  services: { variationId: string; name: string; minutes: number }[]
 }
 
 type Caller = { id: string; role: string }
@@ -60,6 +61,11 @@ Deno.serve(async (req) => {
 
   const caller = { id: auth.user.id, role: appRole(auth.user) }
   if (body.action === 'preview') return previewSquare(caller, body)
+  if (body.action === 'oauth_start') return oauthStart(caller, body)
+  if (body.action === 'options') return squareOptions(caller, body)
+  if (body.action === 'finish') return finishSquare(caller, body)
+  if (body.action === 'disconnect') return disconnect(caller, body)
+  if (body.action === 'status') return accountStatus(caller, body)
   if (body.action === 'connect') return connectSquare(caller, body)
   if (body.action === 'store_secret') return storeSecret(caller, body)
   if (body.action === 'availability') return availability(auth.client, body)
@@ -77,6 +83,107 @@ async function previewSquare(caller: Caller, body: Body) {
   const found = await discover(body.environment, body.access_token)
   if (found.error) return found.error
   return json({ status: 'choose', ...found.choice, homologated: false })
+}
+
+async function oauthStart(caller: Caller, body: Body) {
+  const gate = await ownProfessional(caller, body.professional_id)
+  if (gate.error || !gate.professionalId) return gate.error ?? json({ error: 'profissional obrigatória' }, 400)
+  if (body.environment !== 'sandbox' && body.environment !== 'production') {
+    return json({ error: 'environment sandbox ou production' }, 400)
+  }
+  const creds = squareCredentials(body.environment)
+  const stateSecret = Deno.env.get('SQUARE_OAUTH_STATE_SECRET')?.trim() ?? ''
+  if (!creds || !stateSecret) {
+    const error = body.environment === 'production'
+      ? 'Square live sign-in is not configured yet.'
+      : 'Square sign-in is not configured yet.'
+    return json({ error }, 503)
+  }
+  const state = await signOAuthState(stateSecret, {
+    professionalId: gate.professionalId,
+    environment: body.environment,
+    surface: caller.role === 'operacao' ? 'admin' : 'agenda',
+    exp: Math.floor(Date.now() / 1000) + 15 * 60,
+    nonce: crypto.randomUUID(),
+  })
+  const url = squareAuthorizeUrl(body.environment, creds.id, state)
+  if (!url) return json({ error: 'Square sign-in is not configured yet.' }, 503)
+  return json({ url, homologated: false })
+}
+
+async function squareOptions(caller: Caller, body: Body) {
+  const gate = await ownProfessional(caller, body.professional_id)
+  if (gate.error || !gate.professionalId) return gate.error ?? json({ error: 'profissional obrigatória' }, 400)
+  const ready = await storedToken(gate.professionalId)
+  if (ready.error || !ready.secret) return ready.error ?? json({ error: 'Connect with Square before choosing a service.' }, 422)
+  const found = await discoverSquare(ready.secret.environment, ready.secret.accessToken)
+  if (!found.ok) return json({ error: found.error }, found.status === 401 ? 401 : 422)
+  return json({ status: 'choose', ...found.choice, environment: ready.secret.environment, homologated: false })
+}
+
+async function finishSquare(caller: Caller, body: Body) {
+  const gate = await ownProfessional(caller, body.professional_id)
+  if (gate.error || !gate.professionalId) return gate.error ?? json({ error: 'profissional obrigatória' }, 400)
+  const ready = await storedToken(gate.professionalId)
+  if (ready.error || !ready.secret) return ready.error ?? json({ error: 'Connect with Square before choosing a service.' }, 422)
+  const granted = await grantSquare({
+    professionalId: gate.professionalId,
+    environment: ready.secret.environment,
+    accessToken: ready.secret.accessToken,
+    refreshToken: ready.secret.refreshToken,
+    expiresAt: ready.secret.expiresAt,
+    merchantId: ready.secret.merchantId,
+    locationId: body.location_id,
+    teamMemberId: body.team_member_id,
+    serviceVariationId: body.service_variation_id,
+    obtainedVia: ready.secret.obtainedVia ?? 'oauth',
+  })
+  if (granted.kind === 'rejected') return json({ error: granted.error }, 400)
+  if (granted.kind === 'incomplete') return json({ status: 'incomplete', error: 'Square needs a location, a team member, and a bookable service before it can connect.' }, 422)
+  if (granted.kind === 'choose') return json({ status: 'choose', ...granted.choice, homologated: false })
+  return json({ ok: true, provider: 'square', status: granted.status, homologated: false, location: granted.location, member: granted.member, service: granted.service })
+}
+
+async function disconnect(caller: Caller, body: Body) {
+  const gate = await ownProfessional(caller, body.professional_id)
+  if (gate.error || !gate.professionalId) return gate.error ?? json({ error: 'profissional obrigatória' }, 400)
+  const result = await disconnectSquare(gate.professionalId)
+  return json({ ...result, homologated: false })
+}
+
+async function accountStatus(caller: Caller, body: Body) {
+  const gate = await ownProfessional(caller, body.professional_id)
+  if (gate.error || !gate.professionalId) return gate.error ?? json({ error: 'profissional obrigatória' }, 400)
+  return json(await squareAccountStatus(gate.professionalId))
+}
+
+async function storedToken(professionalId: string) {
+  const { data: connection } = await serviceClient()
+    .from('schedule_connections')
+    .select('id, external_resource_id')
+    .eq('professional_id', professionalId)
+    .eq('provider', 'square')
+    .maybeSingle()
+  if (!connection) return { error: json({ error: 'Connect with Square before choosing a service.' }, 422) } as const
+  const stored = await readStored(connection.id)
+  if (!stored?.accessToken || stored.revoked) {
+    return { error: json({ error: 'Connect with Square before choosing a service.' }, 422) } as const
+  }
+  const secret: Secret = {
+    environment: stored.environment,
+    accessToken: stored.accessToken,
+    locationId: stored.locationId || 'discover',
+    teamMemberId: stored.teamMemberId || 'discover',
+    serviceVariationId: stored.serviceVariationId || connection.external_resource_id || 'discover',
+    refreshToken: stored.refreshToken,
+    expiresAt: stored.expiresAt,
+    refreshedAt: stored.refreshedAt,
+    merchantId: stored.merchantId,
+    obtainedVia: stored.obtainedVia,
+  }
+  const fresh = await ensureFreshSquare(connection.id, secret)
+  if ('expired' in fresh) return { error: json({ error: 'Square needs to be connected again.' }, 401) } as const
+  return { secret: fresh } as const
 }
 
 async function connectSquare(caller: Caller, body: Body) {
@@ -126,9 +233,11 @@ async function connectSquare(caller: Caller, body: Body) {
     if (error || !data) return json({ error: error?.message ?? 'não gravou a conexão' }, 400)
     connectionId = data.id
   }
+  if (!connectionId) return json({ error: 'não gravou a conexão' }, 400)
+  const previous = await readStored(connectionId)
   const { error: secretError } = await admin.rpc('store_calendar_secret', {
     p_connection_id: connectionId,
-    p_token: JSON.stringify(secret),
+    p_token: JSON.stringify(mergePastedSecret(previous, secret)),
   })
   if (secretError) return json({ error: secretError.message }, 400)
   const { error: modeError } = await admin.from('professionals').update({
@@ -177,6 +286,14 @@ async function discover(environment: string | undefined, accessToken: string | u
     return { error: json({ error: 'environment sandbox ou production' }, 400) } as const
   }
   if (!accessToken?.trim()) return { error: json({ error: 'access token obrigatório' }, 400) } as const
+  const found = await discoverSquare(environment, accessToken.trim())
+  if (!found.ok) {
+    if (found.status === 401) return { error: json({ error: found.error }, 401) } as const
+    if (found.status === 422) {
+      return { error: json({ status: 'pending', supported: false, detail: found.detail, choice: found.choice }, 422) } as const
+    }
+    return { error: squareFailure(found.status, found.detail) } as const
+  }
   const secret: Secret = {
     environment,
     accessToken: accessToken.trim(),
@@ -184,61 +301,7 @@ async function discover(environment: string | undefined, accessToken: string | u
     teamMemberId: 'discover',
     serviceVariationId: 'discover',
   }
-  const [locationsResponse, membersResponse, services] = await Promise.all([
-    square(secret, '/v2/locations'),
-    square(secret, '/v2/team-members/search', {
-      method: 'POST',
-      body: JSON.stringify({ query: { filter: { status: 'ACTIVE' } }, limit: 25 }),
-    }),
-    listBookableServices(secret),
-  ])
-  const locationsBody = await locationsResponse.json().catch(() => null)
-  const membersBody = await membersResponse.json().catch(() => null)
-  if (!locationsResponse.ok) return { error: squareFailure(locationsResponse.status, locationsBody) } as const
-  if (!membersResponse.ok) return { error: squareFailure(membersResponse.status, membersBody) } as const
-  if (services.error) return { error: services.error } as const
-  const locations = (Array.isArray(locationsBody?.locations) ? locationsBody.locations : []).flatMap((row: { id?: string; name?: string; timezone?: string; status?: string }) => {
-    if (row.status && row.status !== 'ACTIVE') return []
-    if (!row.id || !row.name || !row.timezone) return []
-    return [{ id: row.id, name: row.name, timezone: row.timezone }]
-  })
-  const members = (Array.isArray(membersBody?.team_members) ? membersBody.team_members : []).flatMap((row: { id?: string; given_name?: string; family_name?: string; status?: string }) => {
-    if (row.status && row.status !== 'ACTIVE') return []
-    if (!row.id) return []
-    const name = [row.given_name, row.family_name].filter(Boolean).join(' ') || 'Team member'
-    return [{ id: row.id, name }]
-  })
-  const choice: SquareChoice = { locations, members, services: services.rows }
-  if (locations.length === 0 || members.length === 0 || services.rows.length === 0) {
-    return { error: json({ status: 'pending', supported: false, detail: 'Square não devolveu unidade, pessoa ou serviço de agenda', choice }, 422) } as const
-  }
-  return { choice, secret } as const
-}
-
-async function listBookableServices(secret: Secret) {
-  const rows: SquareChoice['services'] = []
-  let cursor = ''
-  for (let page = 0; page < 5; page += 1) {
-    const path = `/v2/catalog/list?types=${encodeURIComponent('ITEM')}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
-    const response = await square(secret, path)
-    const payload = await response.json().catch(() => null)
-    if (!response.ok) return { error: squareFailure(response.status, payload) }
-    const objects = Array.isArray(payload?.objects) ? payload.objects : []
-    for (const object of objects) {
-      const item = object?.item_data
-      const variations = Array.isArray(item?.variations) ? item.variations : []
-      for (const variation of variations) {
-        const data = variation?.item_variation_data
-        const minutes = durationMinutes(data?.service_duration)
-        if (!variation?.id || minutes == null) continue
-        const variant = typeof data?.name === 'string' && data.name !== 'Regular' ? ` · ${data.name}` : ''
-        rows.push({ variationId: variation.id, name: `${item?.name ?? 'Service'}${variant} · ${minutes} min`, minutes })
-      }
-    }
-    cursor = typeof payload?.cursor === 'string' ? payload.cursor : ''
-    if (!cursor) break
-  }
-  return { rows }
+  return { choice: found.choice, secret } as const
 }
 
 async function storeSecret(caller: Caller, body: Body) {
@@ -511,7 +574,9 @@ async function readyFor(client: SupabaseClient, professionalId: string, skipVisi
   if (!connection) return { error: json({ status: 'pending', supported: false, detail: 'profissional sem agenda Square' }, 422) } as const
   const secret = await readSecret(connection.id, connection.external_resource_id)
   if (!secret) return { error: json({ status: 'pending', supported: false, detail: 'token Square ainda não gravado' }, 422) } as const
-  return { secret } as const
+  const fresh = await ensureFreshSquare(connection.id, secret)
+  if ('expired' in fresh) return { error: json({ error: 'Square needs to be connected again.' }, 401) } as const
+  return { secret: fresh } as const
 }
 
 function denyUnlessParty(caller: Caller, booking: { client_id: string } | null) {
@@ -594,6 +659,7 @@ async function customerFor(secret: Secret, email: string, fullName: string) {
 
 function normalizeSecret(value: Partial<Secret> | undefined): Secret | null {
   if (!value?.accessToken || !value.locationId || !value.teamMemberId || !value.serviceVariationId) return null
+  if (value.locationId === 'discover' || value.serviceVariationId === 'discover') return null
   if (value.environment !== 'sandbox' && value.environment !== 'production') return null
   return {
     environment: value.environment,
@@ -601,6 +667,11 @@ function normalizeSecret(value: Partial<Secret> | undefined): Secret | null {
     locationId: value.locationId,
     teamMemberId: value.teamMemberId,
     serviceVariationId: value.serviceVariationId,
+    refreshToken: value.refreshToken,
+    expiresAt: value.expiresAt,
+    refreshedAt: value.refreshedAt,
+    merchantId: value.merchantId,
+    obtainedVia: value.obtainedVia,
   }
 }
 
@@ -608,7 +679,7 @@ async function readSecret(connectionId: string, resourceId: string | null): Prom
   const { data, error } = await serviceClient().rpc('read_calendar_secret', { p_connection_id: connectionId })
   if (error || !data) return null
   try {
-    const parsed = JSON.parse(data) as Partial<Secret>
+    const parsed = parseStored(data) ?? {} as Partial<Secret>
     const secret = normalizeSecret({
       ...parsed,
       serviceVariationId: parsed.serviceVariationId || resourceId || undefined,
@@ -620,16 +691,5 @@ async function readSecret(connectionId: string, resourceId: string | null): Prom
 }
 
 function square(secret: Secret, path: string, init: RequestInit = {}) {
-  const host = squareHost(secret.environment)
-  if (!host) return Promise.resolve(new Response(JSON.stringify({ error: 'ambiente Square desconhecido' }), { status: 422 }))
-  return fetch(`${host}${path}`, {
-    ...init,
-    headers: {
-      authorization: `Bearer ${secret.accessToken}`,
-      accept: 'application/json',
-      'content-type': 'application/json',
-      'Square-Version': SQUARE_VERSION,
-      ...(init.headers ?? {}),
-    },
-  })
+  return squareFetch(secret.environment, secret.accessToken, path, init)
 }
