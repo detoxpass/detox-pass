@@ -865,17 +865,14 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .cal-wix { background: #e4d7f0; }
 .cal-zenoti { background: #f3e2c8; }
 .cal-mindbody { background: #d5ecec; }
-.calendar-panel { display: flex; flex-direction: column; gap: 12px; }
+.calendar-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 100%; }
 .calendar-panel h2 { font-size: 22px; letter-spacing: -0.04em; }
 .calendar-panel > p { margin: 0; color: #4d4d4d; line-height: 1.45; }
 .calendar-panel > .btn { align-self: start; }
-.calendar-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-@media (min-width: 900px) {
-  .calendar-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-.calendar-card { display: grid; gap: 6px; justify-items: start; border: 0; border-radius: 18px; background: transparent; padding: 4px 2px 8px; text-align: left; }
+.calendar-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px 20px; min-width: 0; max-width: 100%; }
+.calendar-card { display: grid; gap: 6px; justify-items: start; min-width: 0; border: 0; border-radius: 18px; background: transparent; padding: 4px 2px 8px; text-align: left; }
 .calendar-card:hover { background: rgba(255, 255, 255, 0.7); }
-.cal-logo { height: 28px; width: auto; max-width: 132px; object-fit: contain; object-position: left center; }
+.cal-logo { display: block; height: 28px; width: auto; max-width: min(140px, 100%); object-fit: contain; object-position: left center; }
 .priority-back { position: fixed; inset: 0; z-index: 200; background: rgba(17, 17, 17, 0.48); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .priority-sheet { width: min(440px, 100%); max-height: min(80dvh, 560px); overflow: auto; background: #fff; border-radius: 24px; padding: 8px 8px 18px; display: flex; flex-direction: column; gap: 12px; }
 .priority-sheet > header { display: flex; align-items: center; gap: 12px; padding: 8px 8px 0; }
