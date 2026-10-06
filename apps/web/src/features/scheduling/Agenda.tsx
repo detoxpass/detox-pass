@@ -87,7 +87,6 @@ export function AgendaManager({ session }: { session: Session }) {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [picked, setPicked] = useState('')
-  const [environment, setEnvironment] = useState<'sandbox' | 'production'>('sandbox')
   const [squareVia, setSquareVia] = useState<string | null>(null)
   const wantChoice = useRef(new URLSearchParams(window.location.search).get('square') === 'choose')
   const [locations, setLocations] = useState<SquareOption[]>([])
@@ -117,7 +116,6 @@ export function AgendaManager({ session }: { session: Session }) {
           const status = await callFunction(session, 'scheduling-square', { action: 'status', professional_id: row.id })
           const account = status.body && typeof status.body === 'object' ? status.body as Record<string, unknown> : {}
           setSquareVia(typeof account.via === 'string' ? account.via : null)
-          if (account.environment === 'production' || account.environment === 'sandbox') setEnvironment(account.environment)
           if (wantChoice.current || account.pendingChoice === true) {
             wantChoice.current = false
             setPicked('square')
@@ -198,7 +196,7 @@ export function AgendaManager({ session }: { session: Session }) {
         : await callFunction(session, 'scheduling-square', {
           action: 'oauth_start',
           professional_id: schedule.id,
-          environment,
+          environment: 'production',
         })
       const body = result.body && typeof result.body === 'object' ? result.body as Record<string, unknown> : {}
       if (!choosing && typeof body.url === 'string') {
@@ -303,13 +301,7 @@ export function AgendaManager({ session }: { session: Session }) {
       {picked === 'square' ? (
         <form className="account-card" onSubmit={connectSquare}>
           <h2>Square</h2>
-          <p className="muted">Square asks you to allow Detox Pass to read and write appointments. Location, person, and service are filled in from the account.</p>
-          <label className="field"><span>Environment</span>
-            <select value={environment} onChange={(event) => setEnvironment(event.target.value === 'production' ? 'production' : 'sandbox')}>
-              <option value="sandbox">Sandbox</option>
-              <option value="production">Live</option>
-            </select>
-          </label>
+          <p className="muted">Square asks you to allow Detox Pass to read and write appointments on your live account. Location, person, and service are filled in from the account.</p>
           {locations.length > 1 ? (
             <label className="field"><span>Location</span>
               <select value={locationId} onChange={(event) => setLocationId(event.target.value)}>

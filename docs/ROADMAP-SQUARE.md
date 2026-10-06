@@ -40,7 +40,7 @@ outro efeito.
 ## O que a profissional faz agora
 
 Na Agenda ela escolhe Square e aperta **Connect with Square**. A tela abre
-o login da Square, no sandbox ou em produção, conforme o ambiente. A Square
+o login da Square, na conta de produção. A Square
 mostra as permissões e, se ela aceitar, devolve um código para este endereço:
 
 ```
@@ -88,14 +88,15 @@ não cria aplicativo nem webhook. Todas usam este.
 3. A profissional precisa de conta de seller, Square Appointments ligado,
    uma unidade, uma pessoa e um serviço com duração. Se faltar algum, a
    Agenda não marca a Square como conectada.
-4. Produção é outro aplicativo, outro host e outra Signature key. Os secrets
-   são `SQUARE_PRODUCTION_APPLICATION_ID`, `SQUARE_PRODUCTION_APPLICATION_SECRET`
-   e `SQUARE_WEBHOOK_SIGNATURE_KEY_PRODUCTION`. O webhook de produção usa a
-   mesma URL. Enquanto a chave de produção não existir, um aviso assinado
-   só por ela responde 401. O sandbox continua válido.
+4. O aplicativo de produção já tem Application ID e Application Secret nos
+   secrets `SQUARE_PRODUCTION_APPLICATION_ID` e
+   `SQUARE_PRODUCTION_APPLICATION_SECRET`. A Agenda da profissional abre
+   esse login. A Signature key de produção entra em
+   `SQUARE_WEBHOOK_SIGNATURE_KEY_PRODUCTION`. O webhook usa a mesma URL.
+   Enquanto essa chave não existir, um aviso assinado só por ela responde
+   401. O sandbox continua válido para o token que a operação cola.
 
-O botão **Live** fica desligado até os secrets de produção existirem. O
-marketplace da Square é o mesmo login, mais tarde. Não é requisito da
+O marketplace da Square é o mesmo login, mais tarde. Não é requisito da
 primeira profissional.
 
 ## O que este corte não faz
