@@ -841,9 +841,6 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .partner-grid.three { grid-template-columns: 0.8fr 1.1fr 0.8fr; }
   .partner-form { padding: 28px; }
   .agenda-page { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; width: min(1180px, calc(100% - 32px)); }
-  .week-single { display: none; }
-  .week-columns { display: block; }
-  .day-strip { display: none; }
   .month-grid .day { min-height: 72px; }
 }
 
@@ -921,6 +918,11 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .day-card.cal-wix small { background: #e4d7f0; }
 .day-card.cal-zenoti small { background: #f3e2c8; }
 .day-card.cal-mindbody small { background: #d5ecec; }
+@media (min-width: 800px) {
+  .week-single { display: none; }
+  .week-columns { display: block; }
+  .day-strip { display: none; }
+}
 .calendar-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 100%; }
 .calendar-panel h2 { font-size: 22px; letter-spacing: -0.04em; }
 .calendar-panel > p { margin: 0; color: #4d4d4d; line-height: 1.45; }
