@@ -413,7 +413,7 @@ export function TherapistsScreen({ session, onOpen }: { session: Session; onOpen
             <button type="button" className="catalog-card" key={row.id} onClick={() => onOpen(row.id)}>
               <strong>{row.display_name}</strong>
               <span>{row.active ? 'Published' : 'Hidden'}</span>
-              <span>{(row.professional_services ?? []).length} services · {(row.professional_cities ?? []).length} cities</span>
+              <span>{(row.professional_services ?? []).length === 1 ? '1 service' : `${(row.professional_services ?? []).length} services`} · {(row.professional_cities ?? []).length === 1 ? '1 city' : `${(row.professional_cities ?? []).length} cities`}</span>
             </button>
           ))}
         </div>
@@ -775,7 +775,7 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
       </form>
       <form className="account-card" onSubmit={saveConnection}>
         <h2>Acuity</h2>
-        <p>Status: {connection?.status ?? 'pending'}. Homologated is not a choice on this form.</p>
+        <p>Status: {connection?.status ?? 'not connected'}. Homologated is not a choice on this form.</p>
         <Field label="Appointment type"><input value={typeId} onChange={(event) => setTypeId(event.target.value)} inputMode="numeric" /></Field>
         <Button type="submit">Save connection</Button>
       </form>
