@@ -366,9 +366,7 @@ app publicado.
 
 ## O que ainda não está feito
 
-A função e a tela estão no repositório. No projeto `detoxpass`, a busca por
-serviço e cidade, a reserva interna com `amount_cents` nulo, o segundo toque
-no mesmo horário, a recusa de quem não é cliente, o texto clínico sem modelo
-e o áudio `wav` já foram exercidos na função publicada. A tela em
-`https://detox-pass.vercel.app/chat` ainda espera o deploy do frontend. O
-microfone ao vivo ainda não foi exercido.
+O corte publicado e o que ficou de fora estão em
+[`ROADMAP-AGENTE-ACEITE.md`](./ROADMAP-AGENTE-ACEITE.md). O microfone ao vivo
+não transcreveu. Não há profissional com agenda externa neste banco, então
+esse caminho não foi exercido numa ficha real. Operação continua sem conta.
