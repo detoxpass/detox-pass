@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { loadTermsAdmin, publishTerms, saveTermsDraft, type Session } from '../../lib/supabase'
+import { loadAdminProfessionals, loadTermsAdmin, publishTerms, saveTermsDraft, type Session } from '../../lib/supabase'
 import { Button, ErrorBlock, LoadingBlock } from '../../ui'
 
 type Version = {
@@ -14,6 +14,7 @@ type Version = {
 
 type Acceptance = {
   id: string
+  professional_id: string
   version_number: number
   email: string
   display_name: string
@@ -25,9 +26,10 @@ type Acceptance = {
   content_sha256: string
 }
 
-export function TermsAdmin({ session }: { session: Session }) {
+export function TermsAdmin({ session, onOpen }: { session: Session; onOpen?: (id: string) => void }) {
   const [versions, setVersions] = useState<Version[]>([])
   const [acceptances, setAcceptances] = useState<Acceptance[]>([])
+  const [people, setPeople] = useState<{ id: string; display_name: string }[]>([])
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [error, setError] = useState('')
@@ -36,10 +38,11 @@ export function TermsAdmin({ session }: { session: Session }) {
 
   function reload() {
     setLoading(true)
-    loadTermsAdmin(session)
-      .then((result) => {
+    Promise.all([loadTermsAdmin(session), loadAdminProfessionals(session)])
+      .then(([result, professionals]) => {
         setVersions(result.versions)
         setAcceptances(result.acceptances)
+        setPeople(professionals.map((person) => ({ id: person.id, display_name: person.display_name })))
         const draft = result.versions.find((row) => row.status === 'draft')
         if (draft) {
           setTitle(draft.title)
@@ -83,6 +86,10 @@ export function TermsAdmin({ session }: { session: Session }) {
 
   if (loading) return <LoadingBlock text="Loading terms…" />
 
+  const published = versions.filter((row) => row.status === 'published').sort((a, b) => (b.version_number ?? 0) - (a.version_number ?? 0))[0]
+  const accepted = new Set(acceptances.filter((row) => published && row.version_number === published.version_number).map((row) => row.professional_id))
+  const missing = published?.version_number ? people.filter((person) => !accepted.has(person.id)) : []
+
   return (
     <div className="page stack">
       <section className="account-card stack">
@@ -102,41 +109,43 @@ export function TermsAdmin({ session }: { session: Session }) {
       </section>
       <section className="account-card">
         <h2>Versions</h2>
-        <table className="terms-table">
-          <thead><tr><th>Version</th><th>Status</th><th>Published</th><th>Hash</th></tr></thead>
-          <tbody>
-            {versions.map((row) => (
-              <tr key={row.id}>
-                <td>{row.version_number ?? '—'}</td>
-                <td>{row.status}</td>
-                <td>{row.published_at ? new Date(row.published_at).toLocaleString() : '—'}</td>
-                <td>{row.content_sha256 ? row.content_sha256.slice(0, 12) : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <p className="muted">A published version stays as it was. Saving a draft does not change what a professional is asked to accept.</p>
+        {versions.map((row) => (
+          <article className="catalog-card" key={row.id}>
+            <strong>{row.version_number ?? 'Draft'} · {row.status}</strong>
+            <span>{row.published_at ? new Date(row.published_at).toLocaleString() : 'Not published'}</span>
+            <details>
+              <summary>Hash</summary>
+              <p>{row.content_sha256 || 'No hash yet'}</p>
+            </details>
+          </article>
+        ))}
+      </section>
+      <section className="account-card" id="missing">
+        <h2>Still to accept</h2>
+        {missing.length === 0 ? <p className="muted">Every professional has accepted the current version, or nothing is published yet.</p> : missing.map((person) => (
+          <button type="button" className="catalog-card" key={person.id} onClick={() => onOpen?.(person.id)}>
+            <strong>{person.display_name}</strong>
+            <span>Has not accepted the current version</span>
+          </button>
+        ))}
       </section>
       <section className="account-card">
         <h2>Acceptances</h2>
-        <table className="terms-table">
-          <thead>
-            <tr><th>When</th><th>Name</th><th>Email</th><th>Version</th><th>Surface</th><th>IP</th><th>Locale</th><th>Agent</th></tr>
-          </thead>
-          <tbody>
-            {acceptances.map((row) => (
-              <tr key={row.id}>
-                <td>{new Date(row.accepted_at).toLocaleString()}</td>
-                <td>{row.display_name}</td>
-                <td>{row.email}</td>
-                <td>{row.version_number}</td>
-                <td>{row.surface}</td>
-                <td>{row.ip}</td>
-                <td>{row.locale}</td>
-                <td>{row.user_agent}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {acceptances.length === 0 ? <p className="muted">No acceptances yet.</p> : acceptances.map((row) => (
+          <article className="catalog-card" key={row.id}>
+            <strong>{row.display_name}</strong>
+            <span>{row.email}</span>
+            <span>{new Date(row.accepted_at).toLocaleString()} · v{row.version_number} · {row.surface}</span>
+            <details>
+              <summary>Record</summary>
+              <p>IP {row.ip}</p>
+              <p>Locale {row.locale}</p>
+              <p>Agent {row.user_agent}</p>
+              <p>Hash {row.content_sha256}</p>
+            </details>
+          </article>
+        ))}
       </section>
     </div>
   )

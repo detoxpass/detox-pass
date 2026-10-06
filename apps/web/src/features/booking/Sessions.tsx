@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { calendarDoor, callFunction, loadBookingEvents, loadBookings, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
+import { authorizePayout, calendarDoor, callFunction, loadAdminBookings, loadAttendance, loadBookingEvents, loadBookings, loadFinanceReport, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
 import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice, SagaStatus } from '../../ui'
 import { appointmentParts, formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
@@ -31,25 +31,67 @@ function timesOf(body: unknown) {
   })
 }
 
-export function SessionList({ session, title, hint, bare = false, onOpen }: {
+export function SessionList({ session, title, hint, bare = false, ops = false, onOpen }: {
   session: Session
   title: string
   hint: string
   bare?: boolean
+  ops?: boolean
   onOpen: (id: string) => void
 }) {
   const [rows, setRows] = useState<BookingRow[]>([])
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set())
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState(() => new URLSearchParams(window.location.search))
+
+  function setFilter(key: string, value: string) {
+    const next = new URLSearchParams(window.location.search)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    const search = next.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${search ? `?${search}` : ''}`)
+    setFilters(next)
+  }
 
   useEffect(() => {
     let alive = true
-    loadBookings(session)
-      .then((next) => { if (alive) setRows(next) })
+    const load = ops ? loadAdminBookings(session) : loadBookings(session)
+    const attendance = ops ? loadAttendance(session) : Promise.resolve([])
+    Promise.all([load, attendance])
+      .then(([next, visits]) => {
+        if (!alive) return
+        setRows(next)
+        setConfirmed(new Set(visits.map((row) => row.booking_id)))
+      })
       .catch((caught: unknown) => { if (alive) setError(caught instanceof Error ? caught.message : 'Could not load sessions.') })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
-  }, [session])
+  }, [session, ops])
+
+  const shown = rows.filter((row) => {
+    if (!ops) return true
+    const saga = filters.get('saga')
+    const provider = filters.get('provider')
+    const professional = filters.get('professional')
+    const city = filters.get('city')
+    const service = filters.get('service')
+    const from = filters.get('from')
+    const to = filters.get('to')
+    if (filters.get('queue') === 'confirmed' && !(row.saga_status === 'paid' && confirmed.has(row.id))) return false
+    if (saga && row.saga_status !== saga) return false
+    if (provider && row.provider !== provider) return false
+    if (professional && row.professional_id !== professional) return false
+    if (city && row.city_id !== city) return false
+    if (service && row.service_id !== service) return false
+    const day = row.starts_at.slice(0, 10)
+    if (from && day < from) return false
+    if (to && day > to) return false
+    return true
+  })
+  const professionals = [...new Map(rows.map((row) => [row.professional_id, row.professionals?.display_name || 'Therapist'])).entries()]
+  const cities = [...new Map(rows.flatMap((row) => row.city_id ? [[row.city_id, row.cities?.name || 'City'] as const] : [])).entries()]
+  const services = [...new Map(rows.flatMap((row) => row.service_id ? [[row.service_id, row.services?.name || 'Service'] as const] : [])).entries()]
 
   const body = (
     <>
@@ -59,21 +101,57 @@ export function SessionList({ session, title, hint, bare = false, onOpen }: {
       </header>
       {loading ? <LoadingBlock /> : null}
       {error ? <ErrorBlock text={error} /> : null}
-      {!loading && !error && rows.length === 0 ? <EmptyBlock title="No sessions yet" text="A reservation appears here after the calendar confirms it." /> : null}
-      {rows.length > 0 ? (
+      {ops ? (
+        <div className="admin-filters">
+          <label className="field"><span>Status</span>
+            <select value={filters.get('saga') ?? ''} onChange={(event) => setFilter('saga', event.target.value)}>
+              <option value="">All</option>
+              {['intent', 'provider_confirmed', 'charge_created', 'paid', 'cancelled', 'compensation_required', 'compensated', 'payout_released'].map((status) => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Calendar</span>
+            <select value={filters.get('provider') ?? ''} onChange={(event) => setFilter('provider', event.target.value)}>
+              <option value="">All</option>
+              {['internal', 'square', 'acuity', 'wix', 'zenoti', 'mindbody'].map((provider) => <option key={provider} value={provider}>{provider}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Professional</span>
+            <select value={filters.get('professional') ?? ''} onChange={(event) => setFilter('professional', event.target.value)}>
+              <option value="">All</option>
+              {professionals.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>City</span>
+            <select value={filters.get('city') ?? ''} onChange={(event) => setFilter('city', event.target.value)}>
+              <option value="">All</option>
+              {cities.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Service</span>
+            <select value={filters.get('service') ?? ''} onChange={(event) => setFilter('service', event.target.value)}>
+              <option value="">All</option>
+              {services.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>From</span><input type="date" value={filters.get('from') ?? ''} onChange={(event) => setFilter('from', event.target.value)} /></label>
+          <label className="field"><span>To</span><input type="date" value={filters.get('to') ?? ''} onChange={(event) => setFilter('to', event.target.value)} /></label>
+        </div>
+      ) : null}
+      {!loading && !error && shown.length === 0 ? <EmptyBlock title="No sessions yet" text={ops ? 'Nothing matches these filters.' : 'A reservation appears here after the calendar confirms it.'} /> : null}
+      {shown.length > 0 ? (
         <ul className="visit-list">
-          {rows.map((row) => {
+          {shown.map((row) => {
             const when = appointmentParts(row.starts_at)
             return (
               <li key={row.id}>
-                <button type="button" className="visit-card" onClick={() => onOpen(row.id)}>
+                <button type="button" className={`visit-card cal-${row.provider}`} onClick={() => onOpen(row.id)}>
                   <span className="visit-when">
                     <strong>{when.day}</strong>
                     <em>{when.time}</em>
                   </span>
                   <span className="visit-who">
                     <strong>{row.professionals?.display_name || 'Therapist'}</strong>
-                    <span>{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
+                    <span>{ops && row.client?.full_name ? `${row.client.full_name} · ` : ''}{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
                   </span>
                   <SagaStatus status={row.saga_status} />
                 </button>
@@ -88,15 +166,18 @@ export function SessionList({ session, title, hint, bare = false, onOpen }: {
   return <div className="page narrow">{body}</div>
 }
 
-export function SessionDetail({ session, id, canChange, canRead, onBack }: {
+export function SessionDetail({ session, id, canChange, canRead, ops = false, onBack }: {
   session: Session
   id: string
   canChange: boolean
   canRead: boolean
+  ops?: boolean
   onBack: () => void
 }) {
   const [rows, setRows] = useState<BookingRow[]>([])
   const [events, setEvents] = useState<BookingEvent[]>([])
+  const [confirmedAt, setConfirmedAt] = useState('')
+  const [pendingCents, setPendingCents] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
@@ -113,16 +194,22 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
 
   function refresh() {
     setLoading(true)
-    return Promise.all([loadBookings(session), loadBookingEvents(session, id)])
-      .then(([bookings, timeline]) => {
+    const bookings = ops ? loadAdminBookings(session) : loadBookings(session)
+    const attendance = ops ? loadAttendance(session) : Promise.resolve([])
+    const finance = ops ? loadFinanceReport(session).catch(() => []) : Promise.resolve([])
+    return Promise.all([bookings, loadBookingEvents(session, id), attendance, finance])
+      .then(([bookings, timeline, visits, report]) => {
         setRows(bookings)
         setEvents(timeline)
+        setConfirmedAt(visits.find((row) => row.booking_id === id)?.confirmed_at ?? '')
+        const line = report.find((row) => row.booking_id === id)
+        setPendingCents(line ? line.pending_cents : null)
       })
       .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Could not load this session.'))
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { void refresh() }, [session, id])
+  useEffect(() => { void refresh() }, [session, id, ops])
 
   const booking = rows.find((row) => row.id === id)
   const door = calendarDoor(booking?.provider)
@@ -255,8 +342,12 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
           <div><dt>Therapist</dt><dd>{booking.professionals?.display_name || 'Therapist'}</dd></div>
           <div><dt>Service</dt><dd>{booking.services?.name || 'Service'}</dd></div>
           <div><dt>City</dt><dd>{booking.cities?.name || 'City'}</dd></div>
+          {ops && booking.client?.full_name ? <div><dt>Client</dt><dd>{booking.client.full_name}</dd></div> : null}
+          {ops ? <div><dt>Calendar</dt><dd>{booking.provider}</dd></div> : null}
+          {ops && confirmedAt ? <div><dt>Visit confirmed</dt><dd>{formatWhen(confirmedAt)}</dd></div> : null}
+          {ops && booking.external_charge_ref ? <div><dt>Charge reference</dt><dd>{booking.external_charge_ref}</dd></div> : null}
         </dl>
-        <p className="muted">{booking.amount_cents == null ? 'Payment is not taken on this reservation.' : 'An amount is recorded. This screen does not take payment.'}</p>
+        <p className="muted">{booking.amount_cents == null ? 'Payment is not taken on this reservation.' : `An amount is recorded${booking.currency ? ` in ${booking.currency}` : ''}. This screen does not take payment.`}</p>
       </article>
       <section className="account-card">
         <h2>What happened</h2>
@@ -318,6 +409,27 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
               </div>
             ) : <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel reservation</Button>}
           </div>
+        </section>
+      ) : null}
+      {ops ? (
+        <section className="account-card">
+          <h2>Payout</h2>
+          <p className="muted">
+            {!confirmedAt ? 'The client has not confirmed this visit.' : booking.saga_status !== 'paid' ? 'This reservation is not paid.' : pendingCents == null || pendingCents <= 0 ? 'There is no pending payout.' : 'The client confirmed the visit and a payout is pending.'}
+          </p>
+          <Button disabled={busy || !confirmedAt || booking.saga_status !== 'paid' || pendingCents == null || pendingCents <= 0} onClick={async () => {
+            setBusy(true)
+            setError('')
+            try {
+              await authorizePayout(session, id)
+              setNotice('Payout released.')
+              await refresh()
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : 'Could not release the payout.')
+            } finally {
+              setBusy(false)
+            }
+          }}>Release payout</Button>
         </section>
       ) : null}
       {canRead && door ? <Button kind="ghost" disabled={busy} onClick={readExternal}>Check the calendar</Button> : null}

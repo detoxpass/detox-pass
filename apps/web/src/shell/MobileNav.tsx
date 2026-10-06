@@ -15,6 +15,12 @@ export function MobileNav({
   const [open, setOpen] = useState(false)
   const moreCurrent = more.some((item) => item.id === screen)
 
+  function selected(item: NavItem) {
+    if (item.id === 'people') return screen === 'people' || screen === 'therapists' || screen === 'clients' || screen === 'users'
+    if (item.id === 'financial') return screen === 'financial' || screen === 'settings'
+    return screen === item.id
+  }
+
   function go(id: string) {
     setOpen(false)
     onNavigate(id)
@@ -37,8 +43,8 @@ export function MobileNav({
         <button
           key={item.id}
           type="button"
-          className={screen === item.id ? 'on' : ''}
-          aria-current={screen === item.id ? 'page' : undefined}
+          className={selected(item) ? 'on' : ''}
+          aria-current={selected(item) ? 'page' : undefined}
           onClick={() => go(item.id)}
         >
           <Icon name={item.icon} />

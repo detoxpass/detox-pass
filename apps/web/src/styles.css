@@ -1162,3 +1162,25 @@ body.modal-open .shell-scroll { overflow: hidden; }
 @media (max-width: 799px) {
   .cal-settings { width: 40px; height: 40px; }
 }
+
+.admin-queues { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.admin-queue { min-height: 92px; }
+.admin-queue strong { font-size: 28px; letter-spacing: -0.04em; }
+.admin-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.admin-filters > * { flex: 1 1 140px; min-width: 0; }
+.admin-filters .btn { align-self: end; }
+.visit-card.cal-internal { border-left: 4px solid #e7b4b4; }
+.visit-card.cal-square { border-left: 4px solid #8eae86; }
+.visit-card.cal-acuity { border-left: 4px solid #7f9ec4; }
+.visit-card.cal-wix { border-left: 4px solid #b79ad4; }
+.visit-card.cal-zenoti { border-left: 4px solid #d7b57a; }
+.visit-card.cal-mindbody { border-left: 4px solid #7fb8b8; }
+.catalog-card details { font-size: 13px; }
+.catalog-card summary { cursor: pointer; font-weight: 700; }
+
+@media (max-width: 899px) {
+  .page { width: min(1180px, calc(100% - 28px)); }
+  .admin-filters { flex-direction: column; }
+  .admin-filters > * { width: 100%; }
+  .catalog-grid { grid-template-columns: 1fr; }
+}

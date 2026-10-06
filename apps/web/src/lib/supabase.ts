@@ -472,17 +472,125 @@ export type AdminProfessional = {
   id: string
   profile_id: string
   display_name: string
+  bio: string | null
   active: boolean
   portrait_path: string | null
+  schedule_mode: 'internal' | 'external' | null
+  schedule_timezone: string
+  slot_minutes: number
+  updated_at: string
   professional_services: { service_id: string }[] | null
   professional_cities: { city_id: string }[] | null
   professional_specialties: { specialty_id: string }[] | null
-  schedule_connections: { id: string; provider: string; external_resource_id: string | null; status: string }[] | null
+  schedule_connections: { id: string; provider: string; external_resource_id: string | null; status: string; is_source: boolean }[] | null
 }
 
 export function loadAdminProfessionals(session: Session) {
-  const select = 'id,profile_id,display_name,active,portrait_path,professional_services(service_id),professional_cities(city_id),professional_specialties(specialty_id),schedule_connections(id,provider,external_resource_id,status)'
+  const select = 'id,profile_id,display_name,bio,active,portrait_path,schedule_mode,schedule_timezone,slot_minutes,updated_at,professional_services(service_id),professional_cities(city_id),professional_specialties(specialty_id),schedule_connections(id,provider,external_resource_id,status,is_source)'
   return rows<AdminProfessional>(session, `professionals?select=${encodeURIComponent(select)}&order=display_name.asc`)
+}
+
+export async function deleteRow(session: Session, table: string, id: string) {
+  const response = await fetch(`${url}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(session),
+  })
+  if (!response.ok) {
+    const body = await readJson(response)
+    throw new Error(messageOf(body) || 'Could not delete.')
+  }
+}
+
+export type PartnerApplicationRow = {
+  profile_id: string
+  email: string
+  full_name: string | null
+  professional_id: string | null
+  birth_date: string
+  gender: string | null
+  phone: string
+  bio: string
+  address_line: string
+  postal_code: string
+  city_name: string
+  region: string
+  instagram: string | null
+  specialty_note: string
+  coverage_note: string
+  terms_accepted_at: string
+  created_at: string
+}
+
+export async function listPartnerApplications(session: Session) {
+  const body = await rpc(session, 'list_partner_applications', {})
+  return (Array.isArray(body) ? body : []) as PartnerApplicationRow[]
+}
+
+export type ProfessionalStep = { professional_id: string; step: 'profile' | 'calendar'; completed_at: string }
+export type CalendarOrderRow = { professional_id: string; calendar_key: string; position: number }
+
+export function loadProfessionalSteps(session: Session) {
+  return rows<ProfessionalStep>(session, 'professional_steps?select=professional_id,step,completed_at')
+}
+
+export function loadCalendarOrder(session: Session) {
+  return rows<CalendarOrderRow>(session, 'calendar_order?select=professional_id,calendar_key,position&order=position.asc')
+}
+
+export type MarketplaceSettings = { id: number; commission_bps: number; currency: string | null }
+
+export async function loadMarketplaceSettings(session: Session) {
+  const list = await rows<MarketplaceSettings>(session, 'marketplace_settings?select=id,commission_bps,currency&id=eq.1')
+  return list[0] ?? null
+}
+
+export type RewardRule = { id: string; code: string; active: boolean }
+export type RewardGrant = {
+  id: string
+  booking_id: string
+  professional_id: string
+  created_at: string
+  professionals: { display_name: string } | null
+}
+
+export function loadRewardRules(session: Session) {
+  return rows<RewardRule>(session, 'reward_rules?select=id,code,active&order=code.asc')
+}
+
+export function loadRewardGrants(session: Session) {
+  return rows<RewardGrant>(session, 'reward_grants?select=id,booking_id,professional_id,created_at,professionals(display_name)&order=created_at.desc')
+}
+
+export type FinanceRow = {
+  booking_id: string
+  currency: string
+  paid_cents: number
+  commission_cents: number
+  pending_cents: number
+  released_cents: number
+}
+
+export async function loadFinanceReport(session: Session) {
+  const result = await callFunction(session, 'commands', { action: 'finance_report' })
+  const body = result.body && typeof result.body === 'object' ? result.body as { rows?: FinanceRow[] } : {}
+  return (body.rows ?? []).map((row) => ({
+    ...row,
+    paid_cents: Number(row.paid_cents),
+    commission_cents: Number(row.commission_cents),
+    pending_cents: Number(row.pending_cents),
+    released_cents: Number(row.released_cents),
+  }))
+}
+
+export async function authorizePayout(session: Session, bookingId: string) {
+  const result = await callFunction(session, 'commands', { action: 'authorize_payout', booking_id: bookingId })
+  if (result.status >= 400) throw new Error(messageOf(result.body) || 'Could not release the payout.')
+}
+
+export type AttendanceRow = { booking_id: string; confirmed_at: string }
+
+export function loadAttendance(session: Session) {
+  return rows<AttendanceRow>(session, 'attendance_confirmations?select=booking_id,confirmed_at')
 }
 
 export async function insertRow(session: Session, table: string, payload: Record<string, unknown>) {
@@ -579,7 +687,7 @@ export async function loadPublishedTerms() {
 export async function loadTermsAdmin(session: Session) {
   const [versions, acceptances] = await Promise.all([
     rows<{ id: string; version_number: number | null; title: string; body: string; content_sha256: string | null; status: string; published_at: string | null; published_by: string | null }>(session, 'terms_versions?select=id,version_number,title,body,content_sha256,status,published_at,published_by&order=created_at.desc'),
-    rows<{ id: string; version_number: number; email: string; display_name: string; surface: string; accepted_at: string; ip: string; user_agent: string; locale: string; content_sha256: string }>(session, 'terms_acceptances?select=id,version_number,email,display_name,surface,accepted_at,ip,user_agent,locale,content_sha256&order=accepted_at.desc'),
+    rows<{ id: string; user_id: string; professional_id: string; version_number: number; email: string; display_name: string; surface: string; accepted_at: string; ip: string; user_agent: string; locale: string; content_sha256: string }>(session, 'terms_acceptances?select=id,user_id,professional_id,version_number,email,display_name,surface,accepted_at,ip,user_agent,locale,content_sha256&order=accepted_at.desc'),
   ])
   return { versions, acceptances }
 }
@@ -683,20 +791,31 @@ export async function removeBlock(session: Session, id: string) {
 
 export type BookingRow = {
   id: string
+  client_id?: string
   professional_id: string
+  service_id?: string
+  city_id?: string
   starts_at: string
   ends_at?: string
   saga_status: string
   external_booking_id: string | null
+  external_charge_ref?: string | null
   amount_cents: number | null
+  currency?: string | null
   services: { name: string } | null
   professionals: { display_name: string } | null
   cities: { name: string } | null
+  client?: { full_name: string | null } | null
   provider: string
 }
 
 export function loadBookings(session: Session) {
   const select = 'id,professional_id,starts_at,ends_at,saga_status,external_booking_id,amount_cents,provider,services(name),professionals(display_name),cities(name)'
+  return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
+}
+
+export function loadAdminBookings(session: Session) {
+  const select = 'id,client_id,professional_id,service_id,city_id,starts_at,ends_at,saga_status,external_booking_id,external_charge_ref,amount_cents,currency,provider,services(name),professionals(display_name),cities(name),client:profiles!bookings_client_id_fkey(full_name)'
   return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
 }
 

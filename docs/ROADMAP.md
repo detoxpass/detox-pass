@@ -16,6 +16,7 @@ profissional estão em [`ROADMAP-AGENDA-INTERNA.md`](./ROADMAP-AGENDA-INTERNA.md
 A caixa de avisos e a página de favoritos estão em
 [`ROADMAP-NOTIFICACOES.md`](./ROADMAP-NOTIFICACOES.md).
 O agente de IA está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
+O painel da operação está em [`ROADMAP-ADMIN.md`](./ROADMAP-ADMIN.md).
 
 ## Como ler cada entrega
 

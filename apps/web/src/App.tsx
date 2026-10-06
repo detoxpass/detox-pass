@@ -6,6 +6,7 @@ import { Integrations } from './features/scheduling/Integrations'
 import { BookingPanel } from './features/booking/BookingPanel'
 import { SessionDetail, SessionList } from './features/booking/Sessions'
 import { ServicesScreen, SpecialtiesScreen, CitiesScreen, TherapistEditor, TherapistsScreen, UsersScreen } from './features/catalog/Admin'
+import { AdminHome, CalendarsScreen, ClientEditor, ClientsScreen, MoneyScreen, PeopleHub, RewardsScreen } from './features/catalog/AdminDesk'
 import { avatarUrl, completeAuthCallback, displayName, loadEntryState, loadProfile, loadSession, loadUnreadCount, roleOf, signOut, type Session } from './lib/supabase'
 import { readLoved, writeLoved } from './lib/loved'
 import { Account } from './screens/Account'
@@ -187,38 +188,29 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread
   if (path === '/rewards') return <EmptyBlock title="Rewards" text="Points show up only after a confirmed visit. Nothing here is a reward yet." />
   if (path === '/payments') return <EmptyBlock title="Payments" text="There is no payout to release from this account." />
   if (path === '/dashboard') return <PartnerHome session={session} go={go} />
-  if (path === '/admin') return <Dashboard role={role} go={go} />
+  if (path === '/admin') return <AdminHome session={session} go={go} />
+  if (path === '/admin/people') return <PeopleHub go={go} />
   if (path === '/admin/users') return <UsersScreen session={session} />
+  if (path === '/admin/clients') return <ClientsScreen session={session} onOpen={(id) => go(`/admin/clients/${id}`)} />
+  if (path.startsWith('/admin/clients/')) return <ClientEditor session={session} id={path.split('/')[3]} />
   if (path === '/admin/therapists') return <TherapistsScreen session={session} onOpen={(id) => go(`/admin/therapists/${id}`)} />
   if (path.startsWith('/admin/therapists/')) return <TherapistEditor session={session} id={path.split('/')[3]} />
   if (path === '/admin/services') return <ServicesScreen session={session} />
   if (path === '/admin/cities') return <CitiesScreen session={session} />
   if (path === '/admin/specialties') return <SpecialtiesScreen session={session} />
-  if (path === '/admin/booking') return <SessionList session={session} title="Reservations" hint="Reservations on the platform. Payment is not taken here." onOpen={(id) => go(`/admin/booking/${id}`)} />
-  if (path.startsWith('/admin/booking/')) return <SessionDetail session={session} id={path.split('/')[3]} canChange canRead onBack={() => go('/admin/booking')} />
+  if (path === '/admin/calendars') return <CalendarsScreen session={session} onOpen={(id) => go(`/admin/therapists/${id}`)} />
+  if (path === '/admin/booking') return <SessionList ops session={session} title="Reservations" hint="Reservations on the platform. The client changes or cancels. This desk does not." onOpen={(id) => go(`/admin/booking/${id}${window.location.search}`)} />
+  if (path.startsWith('/admin/booking/')) return <SessionDetail ops session={session} id={path.split('/')[3]} canChange={false} canRead onBack={() => go(`/admin/booking${window.location.search}`)} />
   if (path === '/admin/reviews') return <EmptyBlock title="Reviews" text="Reviews are not a module of Detox Pass." />
-  if (path === '/admin/financial') return <EmptyBlock title="Financial" text="Paid, pending and released reports arrive with charging. Nothing here is a payout." />
+  if (path === '/admin/financial' || path === '/admin/settings') return <MoneyScreen session={session} />
   if (path === '/favorites') return <Favorites session={session} onOpen={role === 'client' ? (id) => go(`/therapists/${id}`) : undefined} onFind={role === 'client' ? () => go('/find') : undefined} />
   if (path === '/notifications') return <Notifications session={session} go={go} onChange={onUnread} />
-  if (path === '/admin/terms') return <TermsAdmin session={session} />
-  if (path === '/support' || path === '/admin/gamification' || path === '/admin/docs' || path === '/admin/settings') {
+  if (path === '/admin/terms') return <TermsAdmin session={session} onOpen={(id) => go(`/admin/therapists/${id}`)} />
+  if (path === '/admin/gamification') return <RewardsScreen session={session} onOpen={(id) => go(`/admin/booking/${id}`)} />
+  if (path === '/support' || path === '/admin/docs') {
     return <EmptyBlock title={screenTitle(role, screenFromPath(path))} text="There is nothing to show here yet." />
   }
   return <EmptyBlock title="Not found" text="This page is not part of the app." />
-}
-
-function Dashboard({ role, go }: { role: Role; go: (path: string) => void }) {
-  const links = role === 'admin'
-    ? [['/admin/therapists', 'Therapists'], ['/admin/booking', 'Booking'], ['/admin/users', 'Users'], ['/admin/services', 'Services']]
-    : [['/agenda', 'Agenda'], ['/rewards', 'Rewards'], ['/payments', 'Payments']]
-  return (
-    <div className="page">
-      <EmptyBlock title="Dashboard" text="Open a section. This page does not invent numbers." />
-      <div className="shortcuts">
-        {links.map(([href, label]) => <button type="button" key={href} className="text-link" onClick={() => go(href)}>{label}</button>)}
-      </div>
-    </div>
-  )
 }
 
 function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
