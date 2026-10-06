@@ -607,11 +607,11 @@ button.is-busy { display: inline-flex; align-items: center; justify-content: cen
 .book-back { position: fixed; inset: 0; z-index: 200; background: rgba(17, 17, 17, 0.72); display: flex; align-items: flex-end; justify-content: center; animation: book-fade 220ms ease; }
 .book-sheet { width: 100%; max-height: min(92dvh, 860px); background: #fff; border-radius: 28px 28px 0 0; display: flex; flex-direction: column; overflow: hidden; text-align: left; animation: book-rise 340ms cubic-bezier(.2, .8, .2, 1); }
 .book-sheet button { line-height: 1.2; }
-.book-head { display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 16px 16px 8px; flex: none; }
-.book-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; }
-.book-who img { width: 52px; height: 52px; max-width: none; border-radius: 50%; object-fit: cover; flex: none; display: none; }
-.book-who h2 { margin: 0; font-size: 22px; line-height: 1.15; letter-spacing: -0.04em; }
-.book-who p { margin: 4px 0 0; color: var(--muted); display: flex; align-items: center; gap: 6px; font-size: 14px; line-height: 1.2; }
+.book-head { display: flex; align-items: center; gap: 16px; min-height: 84px; padding: 18px 18px 14px; flex: none; }
+.book-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 16px; }
+.book-who img { width: 48px; height: 48px; max-width: none; border-radius: 50%; object-fit: cover; flex: none; display: block; }
+.book-who h2 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -0.04em; }
+.book-who p { margin: 8px 0 0; color: var(--muted); display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.2; }
 .book-icon { width: 40px; height: 40px; min-width: 40px; border: 0; border-radius: 50%; background: var(--bg); display: grid; place-items: center; flex: none; padding: 0; }
 .book-back-btn:empty, .book-head > span.book-back-btn { visibility: hidden; }
 .book-body { overflow: auto; padding: 8px 16px 12px; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
@@ -679,10 +679,12 @@ button.is-busy { display: inline-flex; align-items: center; justify-content: cen
 .book-go { border: 0; background: #ff5b7f; color: white; }
 .book-go:disabled { opacity: 1; background: #f3d0d6; color: #8d5c64; cursor: not-allowed; }
 .book-later { border: 1px solid var(--line); background: white; color: var(--ink); }
-.book-done { padding: 12px 20px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
-.book-done h3 { margin: 8px 0 0; font-size: 28px; letter-spacing: -0.04em; }
-.book-done p { margin: 0; color: #3f3f3f; }
-.book-done .book-go, .book-done .book-later { margin-top: 8px; }
+.book-done { width: 100%; padding: 8px 20px calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; text-align: center; }
+.book-done h3 { margin: 8px 0 12px; font-size: 26px; letter-spacing: -0.04em; line-height: 1.15; }
+.book-done p { margin: 0; max-width: 36ch; color: #3f3f3f; line-height: 1.45; }
+.book-done .book-pay { margin-top: 10px; }
+.book-done .book-go { margin-top: 22px; }
+.book-done .book-later { margin-top: 12px; }
 .book-burst { position: relative; width: 128px; height: 128px; }
 .book-burst i { position: absolute; inset: 34px; border-radius: 50%; background: #ffe4ea; color: #ff5b7f; display: grid; place-items: center; font-style: normal; font-size: 28px; font-weight: 800; animation: book-pop 560ms cubic-bezier(.2, .8, .2, 1) both; }
 .book-burst span { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #ffb9b9; animation: book-spark 800ms ease both; }
@@ -733,9 +735,13 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .book-back { align-items: center; padding: 32px; }
   .book-sheet { width: min(920px, 100%); border-radius: 28px; max-height: min(90dvh, 840px); animation-name: book-in; }
   .book-reserve { width: min(960px, calc(100vw - 64px)); min-height: 680px; }
-  .book-head { min-height: 88px; padding: 20px 24px 4px; }
+  .book-reserve.book-confirmed { width: min(520px, calc(100vw - 64px)); min-height: 0; }
+  .book-head { min-height: 104px; gap: 20px; padding: 24px 28px 18px; }
+  .book-who { gap: 18px; }
+  .book-who img { width: 64px; height: 64px; }
+  .book-who h2 { font-size: 28px; }
   .book-body { flex: 1; padding: 8px 28px 20px; }
-  .book-who img { display: block; }
+  .book-confirmed .book-done { padding: 12px 32px 32px; }
   .book-steps, .book-mobile, .book-go-step, .book-back-btn { display: none; }
   .book-desk { display: flex; flex-direction: column; gap: 20px; }
   .book-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr); gap: 32px; align-items: stretch; }

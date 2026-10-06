@@ -192,11 +192,11 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
 
   const sheet = (
     <div className="book-back" role="presentation" onClick={close}>
-      <div className="book-sheet book-reserve" role="dialog" aria-modal="true" aria-labelledby="reserve-title" onClick={(event) => event.stopPropagation()}>
+      <div className={`book-sheet book-reserve${notice ? ' book-confirmed' : ''}`} role="dialog" aria-modal="true" aria-labelledby="reserve-title" onClick={(event) => event.stopPropagation()}>
         <header className="book-head">
           {!notice && step !== 'service' ? (
             <button type="button" className="book-icon book-back-btn" aria-label="Back" onClick={back}><Icon name="back" /></button>
-          ) : <span className="book-icon book-back-btn" />}
+          ) : null}
           <div className="book-who">
             <img src={photo} alt="" />
             <div>
