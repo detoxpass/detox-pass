@@ -352,7 +352,7 @@ function ServicePills({ offers, serviceId, length, onService }: {
   )
 }
 
-function DateStep({ month, dates, day, loading, pendingCalendar, error, onMonth, onDay, onRetry }: {
+export function DateStep({ month, dates, day, loading, pendingCalendar, error, onMonth, onDay, onRetry }: {
   month: string
   dates: string[]
   day: string
@@ -398,7 +398,7 @@ function DateStep({ month, dates, day, loading, pendingCalendar, error, onMonth,
   )
 }
 
-function TimeStep({ day, times, chosen, busy, pendingCalendar, onPick }: {
+export function TimeStep({ day, times, chosen, busy, pendingCalendar, onPick }: {
   day: string
   times: string[]
   chosen: string

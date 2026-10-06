@@ -639,6 +639,7 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 .book-times button.on, .book-pills button.on { background: #161616; color: white; border-color: #161616; }
 .book-pills { display: flex; flex-wrap: wrap; gap: 10px; }
 .book-pills-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.book-pills-wide button:only-child { max-width: 360px; }
 .book-pills-wide button { height: auto; min-height: 76px; display: flex; flex-direction: row; align-items: center; gap: 12px; padding: 14px 16px; text-align: left; }
 .book-pills-wide i { width: 22px; height: 22px; flex: none; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 800; }
 .book-pills-wide button.on i { background: white; color: #161616; }
@@ -713,8 +714,6 @@ body.modal-open .shell-scroll { overflow: hidden; }
 @media (min-width: 800px) {
   .book-back { align-items: center; padding: 32px; }
   .book-sheet { width: min(920px, 100%); border-radius: 28px; max-height: min(90dvh, 840px); animation-name: book-in; }
-  .book-sheet.move-sheet { width: min(560px, calc(100vw - 64px)); min-height: 0; }
-  .move-sheet .book-foot { display: flex; flex-direction: column; min-height: 0; }
   .book-reserve { width: min(960px, calc(100vw - 64px)); min-height: 680px; }
   .book-reserve.book-confirmed { width: min(520px, calc(100vw - 64px)); min-height: 0; }
   .book-head { min-height: 104px; gap: 20px; padding: 24px 28px 18px; }

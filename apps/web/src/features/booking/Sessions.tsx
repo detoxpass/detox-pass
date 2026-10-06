@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { authorizePayout, calendarDoor, callFunction, loadAdminBookings, loadAttendance, loadBookingEvents, loadBookings, loadFinanceReport, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
 import { Button, EmptyBlock, ErrorBlock, Icon, LoadingBlock, Notice, SagaStatus } from '../../ui'
-import { appointmentParts, formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
+import { DateStep, TimeStep } from './BookingPanel'
+import { appointmentParts, formatWhen, monthOf, shiftMonth } from './when'
 
 const eventLabels: Record<string, string> = {
   intent_opened: 'Reservation started',
@@ -281,6 +282,8 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [pendingCalendar, setPendingCalendar] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
+  const [moveStep, setMoveStep] = useState<'date' | 'time'>('date')
+  const [datesReload, setDatesReload] = useState(0)
   const [external, setExternal] = useState('')
 
   function refresh() {
@@ -329,7 +332,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
       .catch(() => { if (alive) setDates([]) })
       .finally(() => { if (alive) setDatesLoading(false) })
     return () => { alive = false }
-  }, [moveOpen, session, canChange, booking?.professional_id, booking?.saga_status, door, month])
+  }, [moveOpen, session, canChange, booking?.professional_id, booking?.saga_status, door, month, datesReload])
 
   if (loading) return <div className="page narrow"><LoadingBlock kind="detail" text="Loading this session…" /></div>
   if (error && !booking) return <div className="page narrow"><ErrorBlock text={error} onRetry={() => { setError(''); void refresh() }} /></div>
@@ -337,6 +340,16 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
 
   const when = appointmentParts(booking.starts_at)
   const open = booking.saga_status === 'provider_confirmed'
+  const movePrice = booking.amount_cents != null && booking.currency ? money(booking.amount_cents, booking.currency) : ''
+  const moveLength = lengthOf(booking.starts_at, booking.ends_at)
+
+  function shiftMoveMonth(delta: number) {
+    setMonth(shiftMonth(month, delta))
+    setDay('')
+    setTimes([])
+    setNextTime('')
+    setMoveStep('date')
+  }
 
   async function cancel() {
     if (!door) return
@@ -484,7 +497,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
       {canChange && open && !door ? <p className="muted">This calendar is not connected yet. Nothing was changed.</p> : null}
       {canChange && open && door ? (
         <div className="visit-actions">
-          <Button disabled={busy} onClick={() => setMoveOpen(true)}>Move this session</Button>
+          <Button disabled={busy} onClick={() => { setMoveStep('date'); setMoveOpen(true) }}>Move this session</Button>
           {confirmCancel ? (
             <div className="confirm-box">
               <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>
@@ -498,45 +511,58 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
       ) : null}
       {moveOpen ? createPortal(
         <div className="book-back" role="presentation" onClick={() => { if (!busy) setMoveOpen(false) }}>
-          <div className="book-sheet move-sheet" role="dialog" aria-modal="true" aria-labelledby="move-title" onClick={(event) => event.stopPropagation()}>
+          <div className="book-sheet book-reserve" role="dialog" aria-modal="true" aria-labelledby="move-title" onClick={(event) => event.stopPropagation()}>
             <header className="book-head">
+              {moveStep === 'time' ? (
+                <button type="button" className="book-icon book-back-btn" aria-label="Back" onClick={() => setMoveStep('date')}><Icon name="back" /></button>
+              ) : null}
               <div className="book-who">
                 <img src={photoOf(booking)} alt="" />
                 <div>
                   <h2 id="move-title">Move this session</h2>
-                  <p>The current time stays until the calendar accepts the change.</p>
+                  <p><Icon name="pin" /> {booking.cities?.name || 'City'}</p>
                 </div>
               </div>
               <button type="button" className="book-icon" aria-label="Close" onClick={() => { if (!busy) setMoveOpen(false) }}><Icon name="close" /></button>
             </header>
+            <ol className="book-steps">
+              <li className={moveStep === 'time' ? 'done' : 'now'}><span>{moveStep === 'time' ? '✓' : '1'}</span>Date</li>
+              <li className={moveStep === 'time' ? 'now' : ''}><span>2</span>Time</li>
+            </ol>
             <div className="book-body">
-              <div className="month-row">
-                <button type="button" aria-label="Previous month" onClick={() => { setMonth(shiftMonth(month, -1)); setDay(''); setTimes([]); setNextTime('') }}>Prev</button>
-                <strong>{formatMonth(month)}</strong>
-                <button type="button" aria-label="Next month" onClick={() => { setMonth(shiftMonth(month, 1)); setDay(''); setTimes([]); setNextTime('') }}>Next</button>
+              <div className="book-mobile">
+                {moveStep === 'date' ? (
+                  <DateStep month={month} dates={dates} day={day} loading={datesLoading} pendingCalendar={pendingCalendar} error="" onMonth={shiftMoveMonth} onDay={pickDay} onRetry={() => setDatesReload((value) => value + 1)} />
+                ) : (
+                  <TimeStep day={day} times={times} chosen={nextTime} busy={slotsBusy} pendingCalendar={pendingCalendar} onPick={setNextTime} />
+                )}
               </div>
-              {datesLoading ? <LoadingBlock text="Checking open days…" /> : null}
-              {pendingCalendar ? <p className="muted">The calendar did not return a time. Nothing was changed.</p> : null}
-              {!datesLoading && dates.length === 0 && !pendingCalendar ? <p className="muted">No openings this month.</p> : null}
-              {dates.length > 0 ? (
-                <div className="choice-grid">
-                  {dates.map((date) => (
-                    <button type="button" key={date} className={date === day ? 'on' : ''} aria-pressed={date === day} onClick={() => pickDay(date)}>{formatDay(date)}</button>
-                  ))}
+              <div className="book-desk">
+                <div className="book-pills book-pills-wide">
+                  <button type="button" className="on" aria-pressed="true">
+                    <i aria-hidden="true">✓</i>
+                    <span>
+                      <strong>{booking.services?.name || 'Service'}</strong>
+                      <small>{[moveLength, movePrice].filter(Boolean).join(' · ') || 'This session'}</small>
+                    </span>
+                  </button>
                 </div>
-              ) : null}
-              {slotsBusy ? <LoadingBlock text="Checking times…" /> : null}
-              {day && times.length === 0 && !slotsBusy && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
-              {times.length > 0 ? (
-                <div className="choice-grid times">
-                  {times.map((time) => (
-                    <button type="button" key={time} className={time === nextTime ? 'on' : ''} aria-pressed={time === nextTime} onClick={() => setNextTime(time)}>{formatClock(time)}</button>
-                  ))}
+                <div className="book-split">
+                  <DateStep month={month} dates={dates} day={day} loading={datesLoading} pendingCalendar={pendingCalendar} error="" onMonth={shiftMoveMonth} onDay={pickDay} onRetry={() => setDatesReload((value) => value + 1)} />
+                  <TimeStep day={day} times={times} chosen={nextTime} busy={slotsBusy} pendingCalendar={pendingCalendar} onPick={setNextTime} />
                 </div>
-              ) : null}
+              </div>
             </div>
             <footer className="book-foot">
-              <button type="button" className={`book-go${busy ? ' is-busy' : ''}`} disabled={!nextTime || busy} aria-busy={busy || undefined} onClick={reschedule}>{busy ? <span className="spin" aria-hidden="true" /> : null}Move to this time</button>
+              <div className="book-summary">
+                <strong>{nextTime ? `${booking.services?.name || 'Service'} · ${formatWhen(nextTime)}` : 'Choose an open time.'}</strong>
+                <span>{moveLength ? `${moveLength} session` : 'The current time stays until the calendar accepts the change.'}</span>
+              </div>
+              {movePrice ? <strong className="book-price">{movePrice}</strong> : null}
+              <div className="book-actions">
+                <button type="button" className={`book-go book-go-step${busy ? ' is-busy' : ''}`} disabled={moveStep === 'date' ? !day || datesLoading || busy : !nextTime || busy} aria-busy={busy || undefined} onClick={moveStep === 'date' ? () => setMoveStep('time') : reschedule}>{busy ? <span className="spin" aria-hidden="true" /> : null}{moveStep === 'time' ? (movePrice ? `Move · ${movePrice}` : 'Move to this time') : 'Continue'}</button>
+                <button type="button" className={`book-go book-go-desk${busy ? ' is-busy' : ''}`} disabled={!nextTime || busy} aria-busy={busy || undefined} onClick={reschedule}>{busy ? <span className="spin" aria-hidden="true" /> : null}{movePrice ? `Move · ${movePrice}` : 'Move'}</button>
+              </div>
               <p className="book-pay">Payment is not taken here.</p>
             </footer>
           </div>
