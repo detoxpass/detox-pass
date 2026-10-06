@@ -609,6 +609,30 @@ export type BookingEvent = {
   created_at: string
 }
 
+export type ChatBlock = { type: string; text?: string; [key: string]: unknown }
+
+export type ChatMessage = {
+  id: string
+  thread_id: string
+  role: 'user' | 'assistant'
+  body: string
+  blocks: ChatBlock[]
+  from_audio: boolean
+  created_at: string
+}
+
+export async function loadChat(session: Session) {
+  const threads = await rows<{ id: string }>(session, 'chat_threads?select=id&order=created_at.desc&limit=1')
+  const threadId = threads[0]?.id ?? ''
+  if (!threadId) return { threadId, messages: [] as ChatMessage[] }
+  const messages = await rows<ChatMessage>(session, `chat_messages?select=id,thread_id,role,body,blocks,from_audio,created_at&thread_id=eq.${encodeURIComponent(threadId)}&order=created_at.asc`)
+  return { threadId, messages }
+}
+
+export function postChat(session: Session, payload: Record<string, unknown>) {
+  return callFunction(session, 'chat', payload)
+}
+
 export function loadBookingEvents(session: Session, bookingId: string) {
   return rows<BookingEvent>(session, `booking_events?select=id,event_type,from_status,to_status,from_starts_at,to_starts_at,origin,created_at&booking_id=eq.${encodeURIComponent(bookingId)}&order=created_at.asc`)
 }

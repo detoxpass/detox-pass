@@ -16,6 +16,7 @@ export type NavItem = {
 export const navigation: Record<Role, NavItem[]> = {
   client: [
     { id: 'find', label: 'Find a therapist', icon: 'search', path: '/find' },
+    { id: 'chat', label: 'Chat', icon: 'chat', path: '/chat' },
     { id: 'sessions', label: 'My sessions', icon: 'calendar', path: '/sessions' },
     { id: 'rewards', label: 'Rewards', icon: 'trophy', path: '/rewards' },
   ],
@@ -53,6 +54,7 @@ const accountTitles: Record<string, string> = {
   favorites: 'Favorites',
   notifications: 'Notifications',
   support: 'Support',
+  chat: 'Chat',
 }
 
 export function pathFor(role: Role, id: string) {
@@ -73,7 +75,7 @@ export function screenTitle(role: Role, screen: string) {
 }
 
 export function allows(role: Role, path: string) {
-  if (path.startsWith('/account') || path.startsWith('/favorites') || path.startsWith('/notifications') || path.startsWith('/support')) return true
+  if (path.startsWith('/account') || path.startsWith('/favorites') || path.startsWith('/notifications') || path.startsWith('/support') || path.startsWith('/chat')) return true
   if (path.startsWith('/rewards')) return role === 'client' || role === 'therapist'
   if (path.startsWith('/find') || path.startsWith('/therapists') || path.startsWith('/sessions')) return role === 'client'
   if (path.startsWith('/dashboard') || path.startsWith('/agenda') || path.startsWith('/payments')) return role === 'therapist'

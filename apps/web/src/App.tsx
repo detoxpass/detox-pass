@@ -7,6 +7,7 @@ import { ServicesScreen, SpecialtiesScreen, CitiesScreen, TherapistEditor, Thera
 import { avatarUrl, completeAuthCallback, displayName, loadProfile, loadSession, loadUnreadCount, roleOf, signOut, type Session } from './lib/supabase'
 import { readLoved, writeLoved } from './lib/loved'
 import { Account } from './screens/Account'
+import { Chat } from './screens/Chat'
 import { DeleteAccount } from './screens/DeleteAccount'
 import { Favorites } from './screens/Favorites'
 import { Home } from './screens/Home'
@@ -154,6 +155,7 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread
 }) {
   if (path === '/account') return <Account session={session} onSession={onSession} onName={onName} onAvatar={onAvatar} />
   if (path === '/find') return <Home session={session} onOpen={(id) => go(`/therapists/${id}`)} />
+  if (path === '/chat') return <Chat session={session} go={go} />
   if (path.startsWith('/therapists/')) return <TherapistPage session={session} id={path.split('/')[2]} onBack={() => go('/find')} onOpen={(id) => go(`/therapists/${id}`)} onReserved={() => go('/sessions')} />
   if (path === '/sessions') return <SessionList session={session} title="My sessions" hint="Times the calendar confirmed. Payment is not taken here." onOpen={(id) => go(`/sessions/${id}`)} />
   if (path.startsWith('/sessions/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange canRead={false} onBack={() => go('/sessions')} />

@@ -15,6 +15,7 @@ O corte das entregas 1 a 4, com a auditoria e os parâmetros de aceite, está em
 profissional estão em [`ROADMAP-AGENDA-INTERNA.md`](./ROADMAP-AGENDA-INTERNA.md).
 A caixa de avisos e a página de favoritos estão em
 [`ROADMAP-NOTIFICACOES.md`](./ROADMAP-NOTIFICACOES.md).
+O agente de IA está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
 
 ## Como ler cada entrega
 
@@ -244,16 +245,7 @@ Frontend e backend de cada uma reusam a mesma porta da reserva. A tela não ganh
 
 ## 8 — Chat
 
-A função `chat` já devolve serviço, cidade e profissional ativa a partir do catálogo. Não chama modelo.
-
-| | |
-| --- | --- |
-| Frontend | Conversa da cliente. A resposta lista só o que a função devolveu. O próximo passo é abrir a profissional, não reservar dentro do chat. Sem provedor aprovado, a tela não escreve uma resposta como se fosse um modelo. |
-| Backend | A função continua limitada aos dados da plataforma. Quando houver decisão de provedor, o modelo entra nesta função, com o mesmo contrato: sem horário inventado, sem cobrança, sem payout, sem orientação clínica. |
-| Automação | Nenhuma até existir política de retenção das conversas. |
-| Aceite | Perguntar por um serviço e uma cidade devolve só profissionais ativas daquele recorte. Pedido de horário responde que o horário vem da agenda. A cliente segue para a página da profissional. |
-
-Bloqueado para a parte de modelo: provedor e modelo aprovados em `DECISIONS.md`.
+O corte do agente, com ferramentas, áudio, blocos visuais e a lista de testes, está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
 
 ---
 

@@ -389,7 +389,7 @@ Responsável: Elias.
 > Itens ainda **não definidos**. Não implementar/escolher sem aprovação de
 > Samuel/Elias. Ao definir, mover para o histórico de decisões acima.
 
-- [ ] **Modelo e provedor de IA** do agente de chat.
+- [x] **Provedor de IA** desta fase: OpenAI, para transcrição e para a conversa com tool calling. O nome do modelo de conversa é configuração da função, não uma escolha de produto congelada. O comportamento está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
 - [ ] **Biblioteca visual / design system definitivo** e nova identidade visual aprovada.
 - [ ] **Arquitetura definitiva do Stripe / payout** (só fecha após a POC da Fase 05).
 - [ ] **Estrutura final do Gusto** (Fase 08, opcional) e tratamento fiscal (W-9/1099) com a cliente/contador.
@@ -501,6 +501,35 @@ avaliação, dólar ou pontos inventados.
 Impacto: a migration faz o fan-out dos eventos já gravados e dos próximos.
 Ficha que já nasceu ativa não recebe “perfil visível” retroativo. Sem conta
 `operacao`, a caixa dela não é aberta e `partner_applied` fica em zero.
+
+Responsável: Elias.
+
+---
+
+## 2026-10-06 — O agente reserva pelo comando que a tela já usa
+
+Contexto: a decisão de 2026-10-02 coloca o chat no escopo e proíbe reserva
+paralela, horário inventado, cobrança e orientação clínica. Elias pediu o
+agente com ferramentas de busca, ficha, dados de quem fala, agenda e
+agendamento, numa Edge Function, com áudio só como gravação transcrita pela
+OpenAI.
+
+Decisão: o agente continua sem uma segunda saga de reserva. A ferramenta de
+agendar chama a ação `book` já publicada em `scheduling-internal`, com o JWT
+de quem fala, e só depois que a cliente toca um horário que a ferramenta de
+agenda devolveu naquela conversa. O modelo não escolhe o instante. A
+transcrição é OpenAI. O modelo de conversa é OpenAI com tool calling, e o
+nome do modelo fica em variável da função, não na tela. A busca, o teto de
+ferramentas e os blocos visuais estão em
+[`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
+
+Motivo: a cliente precisa achar e reservar na conversa sem furar a RLS, o
+limite da Edge Function nem a regra de que o horário vem da grade.
+
+Impacto: a frase “o agente não cria reserva” da decisão de 2026-10-02 vale
+para qualquer caminho que não seja esse comando. Cobrança, payout, reward,
+agenda externa sem credencial e orientação clínica continuam fora. A spec
+[`spec/10-chat-agente.md`](../spec/10-chat-agente.md) segue esta decisão.
 
 Responsável: Elias.
 
