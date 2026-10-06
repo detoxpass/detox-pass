@@ -280,7 +280,7 @@ function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
         writeLoved(next)
         setLoved(next)
       }}
-      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} onReserved={onReserved} />}
+      schedule={<BookingPanel session={session} professionalId={row.id} name={row.display_name} photo={row.portrait_path || '/people/splash.jpg'} minutes={row.slot_minutes} offers={offers} cities={places} onReserved={onReserved} />}
     />
   )
 }

@@ -321,6 +321,7 @@ export async function catalog(session: Session) {
     'display_name',
     'portrait_path',
     'schedule_mode',
+    'slot_minutes',
     'professional_services(service_id,services(id,name,price_cents,currency))',
     'professional_cities(city_id,cities(id,name))',
     'schedule_connections(provider,is_source)',
@@ -341,6 +342,7 @@ export type ProfessionalRow = {
   display_name: string
   portrait_path: string | null
   schedule_mode: 'internal' | 'external' | null
+  slot_minutes: number | null
   professional_services: { service_id: string; services: { id: string; name: string; price_cents: number | null; currency: string | null } | null }[] | null
   professional_cities: { city_id: string; cities: { id: string; name: string } | null }[] | null
   schedule_connections: { provider: string; is_source: boolean }[] | null
