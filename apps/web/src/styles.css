@@ -956,7 +956,8 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .integ-copy { display: contents; }
 .integ-card > img { grid-area: logo; height: 28px; width: auto; max-width: 96px; object-fit: contain; object-position: left center; }
 .integ-name { grid-area: name; display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
-.integ-name strong { font-size: 16px; }
+.integ-name strong { font-size: 16px; text-align: left; }
+.integ-word { display: none; }
 .integ-ok, .integ-off { font-style: normal; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 750; }
 .integ-ok { background: #e8f7ee; color: #1d8a4e; }
 .integ-off { background: #f2f2f2; color: #777; }
@@ -973,14 +974,15 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .integ-manage.mob { display: inline-flex; }
   .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
   .integ-hero-side { justify-self: end; align-self: start; }
-  .integ-card { display: flex; align-items: center; gap: 12px; }
-  .integ-card > img { width: 72px; height: 28px; max-width: 72px; flex: none; align-self: center; }
-  .integ-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1; min-width: 0; }
-  .integ-name, .integ-copy > p { grid-area: auto; }
-  .integ-name { flex-direction: row; align-items: center; justify-content: flex-start; }
-  .integ-copy > p { text-align: left; }
+  .integ-card { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "logo copy action"; align-items: center; column-gap: 12px; row-gap: 0; }
+  .integ-card > img { grid-area: logo; width: 36px; height: 36px; max-width: 36px; align-self: center; }
+  .integ-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; grid-area: copy; min-width: 0; }
+  .integ-name { display: contents; }
+  .integ-word { display: block; }
+  .integ-name strong, .integ-copy > p { text-align: left; margin: 0; }
+  .integ-ok, .integ-off { white-space: nowrap; }
   .integ-more { display: none; }
-  .integ-action { width: auto; flex: none; align-self: center; white-space: nowrap; }
+  .integ-action { grid-area: action; width: auto; align-self: center; white-space: nowrap; }
   .integ-stat strong { font-size: 22px; }
   .integ-stat strong.integ-when { font-size: 15px; }
   .integ-stat { padding: 10px; }

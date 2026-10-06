@@ -390,7 +390,7 @@ export function Integrations({ session, embedded, onReady }: {
                 <img src={calendar.logo} alt={calendar.label} />
                 <div className="integ-copy">
                   <div className="integ-name">
-                    {calendar.id === 'square' || calendar.id === 'wix' ? <strong>{calendar.label}</strong> : null}
+                    <strong className={calendar.id === 'square' || calendar.id === 'wix' ? undefined : 'integ-word'}>{calendar.label}</strong>
                     <em className={connected ? 'integ-ok' : 'integ-off'}>{connected ? 'Connected' : 'Not connected'}</em>
                   </div>
                   <p>{connected
