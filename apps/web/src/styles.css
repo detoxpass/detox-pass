@@ -880,9 +880,9 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .priority-sheet > header button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-size: 22px; }
 .priority-sheet > p { margin: 0; padding: 0 8px; color: #4d4d4d; line-height: 1.45; }
 .priority-list { list-style: none; margin: 0; padding: 0 8px; display: grid; gap: 8px; }
-.priority-list li { display: grid; grid-template-columns: 28px 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; background: white; }
+.priority-list li { display: grid; grid-template-columns: 28px 88px minmax(0, 1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; background: white; }
 .priority-list li b { width: 28px; height: 28px; border-radius: 50%; background: var(--pink-soft); display: grid; place-items: center; font-size: 13px; }
-.priority-list li img { height: 20px; width: 72px; object-fit: contain; object-position: left center; }
+.priority-list li img { height: 20px; width: 88px; max-width: none; object-fit: contain; object-position: left center; }
 .priority-list li span { min-width: 0; font-weight: 800; }
 .priority-list li div { display: flex; gap: 8px; }
 .priority-list li .btn { width: auto; min-width: 64px; flex: none; }
