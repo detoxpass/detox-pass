@@ -974,15 +974,15 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .integ-manage.mob { display: inline-flex; }
   .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
   .integ-hero-side { justify-self: end; align-self: start; }
-  .integ-card { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "logo copy action"; align-items: center; column-gap: 12px; row-gap: 0; }
-  .integ-card > img { grid-area: logo; width: 36px; height: 36px; max-width: 36px; align-self: center; }
-  .integ-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; grid-area: copy; min-width: 0; }
+  .integ-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .integ-card > img { width: 36px; height: 36px; max-width: 36px; }
+  .integ-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; min-width: 0; }
   .integ-name { display: contents; }
   .integ-word { display: block; }
   .integ-name strong, .integ-copy > p { text-align: left; margin: 0; }
   .integ-ok, .integ-off { white-space: nowrap; }
   .integ-more { display: none; }
-  .integ-action { grid-area: action; width: auto; align-self: center; white-space: nowrap; }
+  .integ-action { width: 100%; align-self: stretch; white-space: nowrap; }
   .integ-stat strong { font-size: 22px; }
   .integ-stat strong.integ-when { font-size: 15px; }
   .integ-stat { padding: 10px; }
