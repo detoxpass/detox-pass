@@ -527,10 +527,12 @@ export type MySchedule = {
   schedule_prompt_dismissed: boolean
   schedule_timezone: string
   slot_minutes: number
+  active: boolean
+  display_name: string
 }
 
 export function loadMySchedule(session: Session) {
-  return rows<MySchedule>(session, `professionals?select=id,schedule_mode,schedule_prompt_dismissed,schedule_timezone,slot_minutes&profile_id=eq.${encodeURIComponent(session.user.id)}`)
+  return rows<MySchedule>(session, `professionals?select=id,schedule_mode,schedule_prompt_dismissed,schedule_timezone,slot_minutes,active,display_name&profile_id=eq.${encodeURIComponent(session.user.id)}`)
 }
 
 export type HourWindow = { id: string; weekday: number; start_minute: number; end_minute: number }

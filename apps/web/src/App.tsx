@@ -14,6 +14,7 @@ import { Professional } from './screens/Professional'
 import { AppShell } from './shell/AppShell'
 import { allows, homePath, pathFor, screenFromPath, screenTitle, type Role } from './shell/nav'
 import { catalog, type ProfessionalRow } from './lib/supabase'
+import { PartnerHome } from './features/home/PartnerHome'
 import { EmptyBlock, ErrorBlock, ForbiddenBlock, LoadingBlock } from './ui'
 
 function usePath() {
@@ -147,7 +148,7 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
   if (path.startsWith('/agenda/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange={false} canRead={false} onBack={() => go('/agenda')} />
   if (path === '/rewards') return <EmptyBlock title="Rewards" text="Points show up only after a confirmed visit. Nothing here is a reward yet." />
   if (path === '/payments') return <EmptyBlock title="Payments" text="There is no payout to release from this account." />
-  if (path === '/dashboard') return <Dashboard role={role} go={go} />
+  if (path === '/dashboard') return <PartnerHome session={session} go={go} />
   if (path === '/admin') return <Dashboard role={role} go={go} />
   if (path === '/admin/users') return <UsersScreen session={session} />
   if (path === '/admin/therapists') return <TherapistsScreen session={session} onOpen={(id) => go(`/admin/therapists/${id}`)} />
