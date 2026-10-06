@@ -6,6 +6,7 @@ Data: 2026-10-05. Decisão em [`DECISIONS.md`](./DECISIONS.md), seção
 A prova desta fase é o app publicado, na sequência da decisão
 "A prova desta fase é o app publicado": commit e push em `detoxpass/main`,
 `supabase db push --linked`, e o fluxo em `https://detox-pass.vercel.app`.
+O resultado do teste está em [`ROADMAP-NOTIFICACOES-ACEITE.md`](./ROADMAP-NOTIFICACOES-ACEITE.md).
 
 ## O que esta fase entrega
 
