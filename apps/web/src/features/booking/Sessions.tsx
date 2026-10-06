@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { readLoved, writeLoved } from '../../lib/loved'
 import { authorizePayout, calendarDoor, callFunction, loadAdminBookings, loadAttendance, loadBookingEvents, loadBookings, loadFinanceReport, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
 import { Button, EmptyBlock, ErrorBlock, Icon, LoadingBlock, Notice, SagaStatus } from '../../ui'
 import { DateStep, TimeStep } from './BookingPanel'
@@ -39,10 +40,16 @@ function money(cents: number, currency: string) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(cents / 100)
 }
 
-function amountOf(row: BookingRow) {
-  if (row.amount_cents == null) return 'Payment is not taken here.'
+function payShort(row: BookingRow) {
+  if (row.amount_cents == null) return 'Not taken yet'
   if (row.currency) return money(row.amount_cents, row.currency)
-  return 'An amount is recorded. This screen does not take payment.'
+  return 'Recorded'
+}
+
+function sessionDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }).format(date)
 }
 
 function timesOf(body: unknown) {
@@ -285,6 +292,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [moveStep, setMoveStep] = useState<'date' | 'time'>('date')
   const [datesReload, setDatesReload] = useState(0)
   const [external, setExternal] = useState('')
+  const [loved, setLoved] = useState<string[]>(readLoved)
 
   function refresh() {
     setLoading(true)
@@ -342,6 +350,20 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const open = booking.saga_status === 'provider_confirmed'
   const movePrice = booking.amount_cents != null && booking.currency ? money(booking.amount_cents, booking.currency) : ''
   const moveLength = lengthOf(booking.starts_at, booking.ends_at)
+  const client = !ops && canChange
+  const canMove = client && open && Boolean(door)
+  const saved = loved.includes(booking.professional_id)
+  const name = booking.professionals?.display_name || 'Therapist'
+  const serviceName = booking.services?.name || 'Service'
+  const cityName = booking.cities?.name || 'City'
+
+  function toggleLove() {
+    const professionalId = booking?.professional_id
+    if (!professionalId) return
+    const next = saved ? loved.filter((item) => item !== professionalId) : [...loved, professionalId]
+    writeLoved(next)
+    setLoved(next)
+  }
 
   function shiftMoveMonth(delta: number) {
     setMonth(shiftMonth(month, delta))
@@ -443,61 +465,86 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   }
 
   return (
-    <div className="page narrow visit-page">
-      <button type="button" className="back" onClick={onBack}>Back</button>
-      <article className="session-hero session-person">
-        <img src={photoOf(booking)} alt="" />
-        <div>
-          <p className="kicker">{booking.cities?.name || 'City not set'}</p>
-          <h1>{booking.professionals?.display_name || 'Therapist'}</h1>
-          <p>{booking.services?.name || 'Service'}</p>
+    <div className={`page visit-page${canMove ? ' has-dock' : ''}`}>
+      <button type="button" className="back sd-back" onClick={onBack}><Icon name="back" /> {client ? 'Back to sessions' : 'Back'}</button>
+      <article className="sd-hero">
+        <div className="sd-shot">
+          <img className="sd-photo" src={photoOf(booking)} alt="" />
+          <span className="sd-chip"><Icon name="pin" /> {cityName}</span>
+          {client ? (
+            <button type="button" className={`sd-heart${saved ? ' on' : ''}`} aria-pressed={saved} aria-label={saved ? `Remove ${name} from favorites` : `Save ${name}`} onClick={toggleLove}><Icon name="heart" /></button>
+          ) : null}
+        </div>
+        <div className="sd-id">
+          <p className="sd-city"><Icon name="pin" /> {cityName}</p>
+          <h1>{name}</h1>
+          <p>{serviceName}</p>
           <SagaStatus status={booking.saga_status} />
         </div>
+        {canMove ? (
+          <div className="sd-side">
+            {confirmCancel ? (
+              <div className="confirm-box">
+                <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>
+                <div className="visit-actions">
+                  <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(false)}>Keep it</Button>
+                  <Button disabled={busy} onClick={cancel}>Cancel reservation</Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button type="button" className="sd-reschedule" disabled={busy} onClick={() => { setMoveStep('date'); setMoveOpen(true) }}><Icon name="calendar" /> Reschedule</button>
+                <button type="button" className="sd-cancel" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel reservation</button>
+              </>
+            )}
+          </div>
+        ) : null}
       </article>
-      <dl className="session-facts">
-        <div><dt>Date</dt><dd>{when.long}</dd></div>
-        <div><dt>Time</dt><dd>{when.time || 'Time not set'}</dd></div>
-        {lengthOf(booking.starts_at, booking.ends_at) ? <div><dt>Length</dt><dd>{lengthOf(booking.starts_at, booking.ends_at)}</dd></div> : null}
-        <div><dt>Service</dt><dd>{booking.services?.name || 'Service'}</dd></div>
-        <div><dt>City</dt><dd>{booking.cities?.name || 'City'}</dd></div>
-        <div><dt>Amount</dt><dd>{amountOf(booking)}</dd></div>
-        {ops && booking.client?.full_name ? <div><dt>Client</dt><dd>{booking.client.full_name}</dd></div> : null}
-        {ops ? <div><dt>Calendar</dt><dd>{booking.provider}</dd></div> : null}
-        {ops && confirmedAt ? <div><dt>Visit confirmed</dt><dd>{formatWhen(confirmedAt)}</dd></div> : null}
-        {ops && booking.external_charge_ref ? <div><dt>Charge reference</dt><dd>{booking.external_charge_ref}</dd></div> : null}
-      </dl>
-      <section className="account-card">
-        <h2>Details</h2>
-        <ul className="session-notes">
-          <li>Payment is not taken on this reservation.</li>
-          <li>The current time stays until the calendar accepts a change.</li>
-          <li>Cancelling does not refund anything, because payment is not connected.</li>
-        </ul>
-      </section>
-      <section className="account-card">
-        <h2>What happened</h2>
-        {events.length === 0 ? <p className="muted">Changes will be listed here.</p> : (
-          <ol className="timeline">
-            {events.map((event) => {
-              const moved = event.from_starts_at && event.to_starts_at && event.from_starts_at !== event.to_starts_at
-              return (
-                <li key={event.id}>
-                  <i />
-                  <div>
-                    <strong>{eventLabel(event.event_type)}</strong>
-                    <time dateTime={event.created_at}>{formatWhen(event.created_at)}</time>
-                    {moved ? <span>{formatWhen(event.from_starts_at || '')} to {formatWhen(event.to_starts_at || '')}</span> : null}
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-        )}
-      </section>
       {canChange && open && !door ? <p className="muted">This calendar is not connected yet. Nothing was changed.</p> : null}
-      {canChange && open && door ? (
-        <div className="visit-actions">
-          <Button disabled={busy} onClick={() => { setMoveStep('date'); setMoveOpen(true) }}>Move this session</Button>
+      <dl className="sd-facts">
+        <div><Mark name="calendar" /><span><em>Date</em><strong>{sessionDate(booking.starts_at)}</strong></span></div>
+        <div><Mark name="clock" /><span><em>Time</em><strong>{when.time || 'Time not set'}</strong></span></div>
+        {moveLength ? <div><Mark name="length" /><span><em>Length</em><strong>{moveLength}</strong></span></div> : null}
+        <div><Mark name="user" /><span><em>Service</em><strong>{serviceName}</strong></span></div>
+        <div><Mark name="pin" /><span><em>City</em><strong>{cityName}</strong></span></div>
+        <div><Mark name="card" /><span><em>Payment</em><strong>{payShort(booking)}</strong></span>{booking.amount_cents == null ? <i className="sd-tip" title="Payment is not taken on this reservation.">i</i> : null}</div>
+        {ops && booking.client?.full_name ? <div><Mark name="user" /><span><em>Client</em><strong>{booking.client.full_name}</strong></span></div> : null}
+        {ops ? <div><Mark name="calendar" /><span><em>Calendar</em><strong>{booking.provider}</strong></span></div> : null}
+        {ops && confirmedAt ? <div><Mark name="clock" /><span><em>Visit confirmed</em><strong>{formatWhen(confirmedAt)}</strong></span></div> : null}
+        {ops && booking.external_charge_ref ? <div><Mark name="card" /><span><em>Charge reference</em><strong>{booking.external_charge_ref}</strong></span></div> : null}
+      </dl>
+      <div className="sd-split">
+        <section className="sd-card sd-notes">
+          <h2><Mark name="file" /> Session details</h2>
+          <ul>
+            <li><Mark name="info" /><span>Payment is not taken on this reservation.</span></li>
+            <li><Mark name="calendar" /><span>The current time stays until the calendar accepts a change.</span></li>
+            <li><Mark name="close" /><span>Cancelling does not refund anything, because payment is not connected.</span></li>
+          </ul>
+        </section>
+        <section className="sd-card">
+          <h2><Mark name="note" /> What happened</h2>
+          {events.length === 0 ? <p className="muted">Changes will be listed here.</p> : (
+            <ol className="sd-timeline">
+              {events.map((event) => {
+                const moved = event.from_starts_at && event.to_starts_at && event.from_starts_at !== event.to_starts_at
+                return (
+                  <li key={event.id}>
+                    <i>✓</i>
+                    <div>
+                      <strong>{eventLabel(event.event_type)}</strong>
+                      <time dateTime={event.created_at}>{formatWhen(event.created_at)}</time>
+                      {moved ? <span>{formatWhen(event.from_starts_at || '')} to {formatWhen(event.to_starts_at || '')}</span> : null}
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+        </section>
+      </div>
+      {canMove ? (
+        <div className="sd-dock">
           {confirmCancel ? (
             <div className="confirm-box">
               <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>
@@ -506,7 +553,12 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
                 <Button disabled={busy} onClick={cancel}>Cancel reservation</Button>
               </div>
             </div>
-          ) : <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel reservation</Button>}
+          ) : (
+            <>
+              <button type="button" className="sd-cancel" disabled={busy} onClick={() => setConfirmCancel(true)}><Icon name="close" /> Cancel</button>
+              <button type="button" className="sd-reschedule" disabled={busy} onClick={() => { setMoveStep('date'); setMoveOpen(true) }}><Icon name="calendar" /> Reschedule</button>
+            </>
+          )}
         </div>
       ) : null}
       {moveOpen ? createPortal(
@@ -596,4 +648,21 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
       {error ? <ErrorBlock text={error} /> : null}
     </div>
   )
+}
+
+function Mark({ name }: { name: 'calendar' | 'clock' | 'length' | 'user' | 'pin' | 'card' | 'file' | 'info' | 'note' | 'close' }) {
+  const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  const shape = {
+    calendar: <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3.5V7M16 3.5V7M4 10h16" /></>,
+    clock: <><circle cx="12" cy="12" r="8" /><path d="M12 8v4.5l3 2" /></>,
+    length: <><path d="M7 4h10M7 20h10M8 4c0 4 8 4 8 8s-8 4-8 8M16 4c0 4-8 4-8 8s8 4 8 8" /></>,
+    user: <><circle cx="12" cy="9" r="3" /><path d="M6 19c1-3 3.2-4.5 6-4.5S17 16 18 19" /></>,
+    pin: <><path d="M12 21s6-5 6-10a6 6 0 1 0-12 0c0 5 6 10 6 10Z" /><circle cx="12" cy="11" r="1.5" /></>,
+    card: <><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18" /></>,
+    file: <><path d="M7 3.5h7l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 20V5A1.5 1.5 0 0 1 7 3.5Z" /><path d="M14 3.5V8h4.5" /></>,
+    info: <><circle cx="12" cy="12" r="8" /><path d="M12 11v5M12 8h.01" /></>,
+    note: <><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" /><path d="M8 6H5.5A2.5 2.5 0 0 0 8 10.5M16 6h2.5A2.5 2.5 0 0 1 16 10.5M9 20h6M12 14v6" /></>,
+    close: <><circle cx="12" cy="12" r="8" /><path d="m9 9 6 6M15 9l-6 6" /></>,
+  }[name]
+  return <span className="sd-mark">{<svg {...common} aria-hidden="true">{shape}</svg>}</span>
 }
