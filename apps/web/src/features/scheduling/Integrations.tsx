@@ -23,12 +23,12 @@ const DAYS: [number, string][] = [
 const ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Sao_Paulo']
 const LENGTHS = [30, 45, 60, 90, 120]
 const CALENDARS = [
-  { id: 'internal', label: 'Detox Pass', mark: 'DP', ready: true },
-  { id: 'square', label: 'Square', mark: 'Sq', ready: true },
-  { id: 'acuity', label: 'Acuity', mark: 'Ac', ready: false },
-  { id: 'wix', label: 'Wix', mark: 'Wx', ready: false },
-  { id: 'zenoti', label: 'Zenoti', mark: 'Ze', ready: false },
-  { id: 'mindbody', label: 'Mindbody', mark: 'Mb', ready: false },
+  { id: 'internal', label: 'Detox Pass', mark: 'DP', note: 'Hours you keep here' },
+  { id: 'square', label: 'Square', mark: 'Sq', note: 'Sign in with Square' },
+  { id: 'acuity', label: 'Acuity', mark: 'Ac', note: 'Not on this screen yet' },
+  { id: 'wix', label: 'Wix', mark: 'Wx', note: 'Not on this screen yet' },
+  { id: 'zenoti', label: 'Zenoti', mark: 'Ze', note: 'Not on this screen yet' },
+  { id: 'mindbody', label: 'Mindbody', mark: 'Mb', note: 'Not on this screen yet' },
 ]
 
 type SquareOption = { id?: string; variationId?: string; name: string }
@@ -270,7 +270,7 @@ export function Integrations({ session, embedded, onReady }: {
   const open = CALENDARS.find((calendar) => calendar.id === openId)
 
   return (
-    <div className="stack">
+    <div className={embedded ? 'stack entry-calendars' : 'stack'}>
       <section className="account-card">
         <h2>Calendars</h2>
         <p>Each calendar keeps its own setup. Clients see one combined list of open times.</p>
@@ -280,6 +280,7 @@ export function Integrations({ session, embedded, onReady }: {
               <span className={`cal-mark cal-${calendar.id}`}>{calendar.mark}</span>
               <strong>{calendar.label}</strong>
               <small>{calendar.id === 'square' && squareOn ? 'Connected' : calendar.id === 'internal' && windows.length > 0 ? 'Hours published' : 'Set up'}</small>
+              {embedded ? <span className="entry-card-note">{calendar.note}</span> : null}
             </button>
           ))}
         </div>
