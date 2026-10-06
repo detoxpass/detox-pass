@@ -125,7 +125,11 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
       setLiveStream(stream)
       media.start()
       setPhase('recording')
-      window.setTimeout(() => { if (media.state === 'recording') media.stop() }, 60_000)
+      window.setTimeout(() => {
+        if (media.state !== 'recording') return
+        setPhase('processing')
+        media.stop()
+      }, 60_000)
     }).catch(() => setError('The microphone is not available.'))
   }
 
