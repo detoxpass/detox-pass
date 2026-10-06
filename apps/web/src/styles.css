@@ -564,7 +564,8 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 .sd-heart.on { background: #fff1f1; }
 .sd-heart.on svg { fill: currentColor; }
 .sd-city { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--muted); font-size: 14px; font-weight: 700; }
-.sd-id h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.045em; line-height: 1.05; }
+.sd-id { min-width: 0; }
+.sd-id h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.045em; line-height: 1.05; overflow-wrap: break-word; }
 .sd-id > p { margin: 6px 0 0; color: #3f3f3f; font-weight: 650; }
 .sd-id .status-pill { display: inline-flex; margin-top: 12px; }
 .sd-side { display: flex; flex-direction: column; gap: 10px; width: 230px; }
@@ -598,6 +599,14 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
   .sd-shot { position: static; }
   .sd-heart { top: 18px; right: 18px; }
   .sd-side { margin-top: 56px; }
+}
+@media (min-width: 768px) and (max-width: 1180px) {
+  .sd-hero { grid-template-columns: 148px minmax(0, 1fr); align-items: start; }
+  .sd-photo { width: 148px; height: 168px; }
+  .sd-id { padding-right: 56px; }
+  .sd-id h1 { font-size: 32px; }
+  .sd-side { grid-column: 1 / -1; width: auto; flex-direction: row; margin-top: 4px; }
+  .sd-reschedule, .sd-cancel { width: auto; flex: 1; }
 }
 @media (max-width: 767px) {
   .page.visit-page { width: 100%; padding-left: 16px; padding-right: 16px; }
