@@ -9,6 +9,7 @@ import { Account } from './screens/Account'
 import { DeleteAccount } from './screens/DeleteAccount'
 import { Home } from './screens/Home'
 import { Login } from './screens/Login'
+import { Partners } from './screens/Partners'
 import { Professional } from './screens/Professional'
 import { AppShell } from './shell/AppShell'
 import { allows, homePath, pathFor, screenFromPath, screenTitle, type Role } from './shell/nav'
@@ -75,6 +76,7 @@ export function App() {
   if (path === '/auth/callback') {
     return <AuthCallback onDone={(next) => { setSession(next); go(homePath(roleOf(next))) }} />
   }
+  if (path === '/partners') return <Partners onEnter={enter} onSignIn={() => go('/')} />
   if (!ready) return null
   if (!session || path === '/' || path === '/signup' || path === '/recover') {
     const initial = path === '/signup' ? 'signup' : path === '/recover' ? 'recover' : 'login'
@@ -83,6 +85,7 @@ export function App() {
         initial={initial}
         onEnter={enter}
         onMode={(mode) => go(mode === 'signup' ? '/signup' : mode === 'recover' ? '/recover' : '/')}
+        onPartner={() => go('/partners')}
       />
     )
   }

@@ -431,6 +431,30 @@ Responsável: Elias.
 
 ---
 
+## 2026-10-05 — O cadastro de parceiro cria profissional
+
+Contexto: o sign-up da página de entrada cria cliente. Elias pediu uma landing
+de parceiros em que o cadastro já nasce profissional, sem confirmação de e-mail,
+com os dados que o perfil da profissional pede no protótipo.
+
+Decisão: a página `/partners` cria a conta com papel `profissional` em
+`app_metadata`. A ficha nasce inativa e fora da busca da cliente. A confirmação
+de e-mail do projeto de produção fica desligada. O formulário pede nome, e-mail,
+nascimento, gênero opcional, telefone, bio, senha, endereço, cidade, estado,
+CEP, Instagram, especialidade e área de cobertura, mais o aceite dos termos.
+Preço, certificado e portfólio não entram neste cadastro: o preço continua com
+a operação, e não há módulo de análise de documento para receber arquivo.
+
+Motivo: parceiro e cliente não podem nascer do mesmo papel. A profissional só
+aparece para a cliente depois que a operação aprovar a ficha.
+
+Impacto: o sign-up em `/` continua criando cliente. A landing não publica a
+profissional e não grava valor de serviço.
+
+Responsável: Elias.
+
+---
+
 ## 2026-10-05 — A prova desta fase é o app publicado
 
 Contexto: não existe ambiente local de aceite nem staging. O relatório que citava

@@ -134,6 +134,35 @@ export async function signUp(email: string, password: string) {
   return { session: null, confirm: true }
 }
 
+export type PartnerApplication = {
+  full_name: string
+  email: string
+  password: string
+  birth_date: string
+  gender: string
+  phone: string
+  bio: string
+  address_line: string
+  postal_code: string
+  city_name: string
+  region: string
+  instagram: string
+  specialty_note: string
+  coverage_note: string
+  terms: boolean
+}
+
+export async function applyPartner(application: PartnerApplication) {
+  if (!supabaseConfigured) throw new Error('This deploy is missing the Supabase environment variables.')
+  const response = await fetch(`${url}/functions/v1/partner-apply`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(application),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not send the application.')
+}
+
 export async function recover(email: string) {
   if (!supabaseConfigured) throw new Error('This deploy is missing the Supabase environment variables.')
   const response = await fetch(`${url}/auth/v1/recover`, {

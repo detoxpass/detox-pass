@@ -448,6 +448,9 @@ verify_jwt = true
 [functions.gusto]
 verify_jwt = true
 
+[functions.partner-apply]
+verify_jwt = false
+
 # Directory under `supabase/` where declarative files are written.
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.

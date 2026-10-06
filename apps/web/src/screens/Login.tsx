@@ -4,7 +4,7 @@ import { Button, Field, Logo } from '../ui'
 
 type Mode = 'login' | 'signup' | 'recover' | 'sent'
 
-export function Login({ onEnter, initial = 'login', onMode }: { onEnter: () => void; initial?: Mode; onMode?: (mode: Mode) => void }) {
+export function Login({ onEnter, initial = 'login', onMode, onPartner }: { onEnter: () => void; initial?: Mode; onMode?: (mode: Mode) => void; onPartner?: () => void }) {
   const [mode, setMode] = useState<Mode>(initial)
   useEffect(() => { setMode(initial) }, [initial])
   const [email, setEmail] = useState('')
@@ -76,7 +76,10 @@ export function Login({ onEnter, initial = 'login', onMode }: { onEnter: () => v
               ) : null}
               <Button type="submit">{pending ? 'Please wait' : mode === 'login' ? 'Sign in' : 'Create account'}</Button>
               {mode === 'login' ? (
-                <p className="center">Don't have an account yet? <button type="button" className="link" onClick={() => { setError(''); setMode('signup'); onMode?.('signup') }}>Sign up</button></p>
+                <>
+                  <p className="center">Don't have an account yet? <button type="button" className="link" onClick={() => { setError(''); setMode('signup'); onMode?.('signup') }}>Sign up</button></p>
+                  <p className="center">Work with us? <button type="button" className="link" onClick={onPartner}>Apply as a partner</button></p>
+                </>
               ) : (
                 <p className="center">Already have an account? <button type="button" className="link" onClick={() => { setError(''); setMode('login'); onMode?.('login') }}>Sign in</button></p>
               )}
