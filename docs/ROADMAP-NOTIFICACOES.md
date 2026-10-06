@@ -65,6 +65,9 @@ nesta tabela.
 - Só `read_at` muda depois da inserção.
 - A mesma origem não duplica a linha da mesma pessoa e do mesmo tipo
   (`recipient_id`, `kind`, `source_id`).
+- A data do aviso de reserva é `booking_events.created_at`. A do cadastro de
+  parceiro é a data da ficha. Agenda escolhida e perfil visível nascem na
+  hora em que a caixa grava a linha.
 - Aprovar a ficha de novo não gera outra `profile_visible` para o mesmo id.
 - Escolher a agenda de novo, depois de já ter escolhido, não gera outra
   `calendar_chosen` para o mesmo id.
