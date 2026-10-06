@@ -339,8 +339,11 @@ function ServicePills({ offers, serviceId, length, onService }: {
         const amount = priceOf(offer)
         return (
           <button type="button" key={offer.id} className={on ? 'on' : ''} aria-pressed={on} onClick={() => onService(offer.id)}>
-            <span>{on ? '✓ ' : ''}{offer.name}</span>
-            <small>{[length, amount || 'Price pending'].filter(Boolean).join(' · ')}</small>
+            <i aria-hidden="true">{on ? '✓' : ''}</i>
+            <span>
+              <strong>{offer.name}</strong>
+              <small>{[length, amount || 'Price pending'].filter(Boolean).join(' · ')}</small>
+            </span>
           </button>
         )
       })}
@@ -380,7 +383,8 @@ function DateStep({ month, dates, day, loading, pendingCalendar, error, onMonth,
             const available = open.has(cell.date)
             return (
               <button type="button" key={cell.key} className={cell.date === day ? 'on' : available ? 'open' : ''} disabled={!available} aria-pressed={cell.date === day} onClick={() => onDay(cell.date!)}>
-                {cell.day}
+                <b>{cell.day}</b>
+                <i />
               </button>
             )
           })}
@@ -404,7 +408,7 @@ function TimeStep({ day, times, chosen, busy, pendingCalendar, onPick }: {
   const am = times.filter((time) => new Date(time).getHours() < 12)
   const pm = times.filter((time) => new Date(time).getHours() >= 12)
   return (
-    <div className="book-block">
+    <div className="book-block book-times-pane">
       <h3>Select a time</h3>
       {day ? <p className="book-day">{formatReviewDate(day)}</p> : <p className="muted">Select a date to see open times.</p>}
       {busy && times.length === 0 ? <LoadingBlock text="Checking times…" /> : null}
