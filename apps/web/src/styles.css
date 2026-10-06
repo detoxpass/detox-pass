@@ -505,10 +505,16 @@ td { padding: 12px 8px; border-top: 1px solid var(--line); }
 
 .btn:disabled { opacity: 0.55; cursor: progress; }
 .loading { min-height: 72px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 14px; font-weight: 700; }
+.shell-scroll:has(.loading) { display: flex; flex-direction: column; }
+.shell-scroll:has(.loading) > .page { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.page .loading, .entry .loading { flex: 1; }
+.entry:has(.loading) { min-height: 100dvh; }
+.chat-stream:has(.loading) { justify-content: center; flex: 1; }
+.chat .loading, .delete-card .loading, .book-sheet .loading { flex: none; min-height: 72px; }
 .loading-boot { position: fixed; inset: 0; z-index: 40; min-height: 100dvh; background: var(--bg); }
 .loading .spin { width: 18px; height: 18px; border-color: var(--pink); border-right-color: transparent; }
 .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; flex: none; animation: spin 0.55s linear infinite; }
-button.is-busy { display: inline-flex; align-items: center; justify-content: center; gap: 8px; opacity: 1; }
+button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity: 1; }
 .btn.is-busy, .btn.is-busy:disabled, .book-go.is-busy, .book-go.is-busy:disabled { opacity: 1; cursor: progress; }
 .book-go.is-busy, .book-go.is-busy:disabled { background: #ff5b7f; color: white; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -620,7 +626,7 @@ button.is-busy { display: inline-flex; align-items: center; justify-content: cen
 .book-review strong { font-size: 16px; line-height: 1.3; }
 .book-review button { min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: #ff5b7f; font-weight: 800; }
 .book-foot { padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; flex: none; }
-.book-summary, .book-price, .book-go-desk { display: none; }
+.book-summary, .book-price, .book-go-desk, .book-go-desk.is-busy { display: none; }
 .book-summary strong, .book-summary span { display: block; line-height: 1.3; }
 .book-summary span { margin-top: 2px; }
 .book-pay { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.3; text-align: center; }
@@ -691,7 +697,7 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .book-who h2 { font-size: 28px; }
   .book-body { flex: 1; padding: 8px 28px 20px; }
   .book-confirmed .book-done { padding: 12px 32px 32px; }
-  .book-steps, .book-mobile, .book-go-step, .book-back-btn { display: none; }
+  .book-steps, .book-mobile, .book-go-step, .book-go-step.is-busy, .book-back-btn { display: none; }
   .book-desk { display: flex; flex-direction: column; gap: 20px; }
   .book-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr); gap: 32px; align-items: stretch; }
   .book-split .book-block { min-height: 420px; }
@@ -701,7 +707,7 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .book-summary span { color: var(--muted); font-weight: 600; }
   .book-price { display: block; grid-area: price; font-size: 22px; line-height: 1; letter-spacing: -0.03em; }
   .book-actions { grid-area: action; }
-  .book-go-desk { display: inline-flex; align-items: center; justify-content: center; width: 210px; min-width: 210px; height: 52px; }
+  .book-go-desk, .book-go-desk.is-busy { display: inline-flex; align-items: center; justify-content: center; width: 210px; min-width: 210px; height: 52px; }
   .book-pay { grid-area: note; text-align: left; }
 }
 @media (min-width: 720px) {

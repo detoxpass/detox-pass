@@ -57,6 +57,7 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  const [slotsBusy, setSlotsBusy] = useState(false)
   const [reload, setReload] = useState(0)
 
   const service = offers.find((offer) => offer.id === serviceId) ?? offers[0]
@@ -105,7 +106,7 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
     setChosen('')
     setTimes([])
     setError('')
-    setBusy(true)
+    setSlotsBusy(true)
     try {
       const result = await callFunction(session, 'scheduling-offer', { action: 'availability', professional_id: professionalId, date: next })
       if (pending(result.body) || result.status === 422) {
@@ -116,7 +117,7 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not load times.')
     } finally {
-      setBusy(false)
+      setSlotsBusy(false)
     }
   }
 
@@ -216,7 +217,7 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
               <div className="book-mobile">
                 {step === 'service' ? <ServiceStep offers={offers} serviceId={serviceId} cityId={cityId} cities={cities} length={length} onService={setServiceId} onCity={setCityId} /> : null}
                 {step === 'date' ? <DateStep month={month} dates={dates} day={day} loading={loading} pendingCalendar={pendingCalendar} error={error} onMonth={(delta) => { setMonth(shiftMonth(month, delta)); setDay(''); setTimes([]); setChosen('') }} onDay={pickDay} onRetry={() => setReload((value) => value + 1)} /> : null}
-                {step === 'time' ? <TimeStep day={day} times={times} chosen={chosen} busy={busy} pendingCalendar={pendingCalendar} onPick={setChosen} /> : null}
+                {step === 'time' ? <TimeStep day={day} times={times} chosen={chosen} busy={slotsBusy} pendingCalendar={pendingCalendar} onPick={setChosen} /> : null}
                 {step === 'review' ? <Review service={service?.name} price={price} length={length} day={day} time={chosen} city={city?.name} onEdit={setStep} /> : null}
                 {error && step !== 'date' ? <ErrorBlock text={error} /> : null}
               </div>
@@ -231,7 +232,7 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
                 ) : null}
                 <div className="book-split">
                   <DateStep month={month} dates={dates} day={day} loading={loading} pendingCalendar={pendingCalendar} error={error} onMonth={(delta) => { setMonth(shiftMonth(month, delta)); setDay(''); setTimes([]); setChosen('') }} onDay={pickDay} onRetry={() => setReload((value) => value + 1)} />
-                  <TimeStep day={day} times={times} chosen={chosen} busy={busy} pendingCalendar={pendingCalendar} onPick={setChosen} />
+                  <TimeStep day={day} times={times} chosen={chosen} busy={slotsBusy} pendingCalendar={pendingCalendar} onPick={setChosen} />
                 </div>
               </div>
             </div>
