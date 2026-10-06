@@ -923,14 +923,63 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .week-columns { display: block; }
   .day-strip { display: none; }
 }
-.calendar-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 100%; }
-.calendar-panel h2 { font-size: 22px; letter-spacing: -0.04em; }
-.calendar-panel > p { margin: 0; color: #4d4d4d; line-height: 1.45; }
-.calendar-panel > .btn { align-self: start; }
-.calendar-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px 20px; min-width: 0; max-width: 100%; }
-.calendar-card { display: grid; gap: 6px; justify-items: start; min-width: 0; border: 0; border-radius: 18px; background: transparent; padding: 4px 2px 8px; text-align: left; }
-.calendar-card:hover { background: rgba(255, 255, 255, 0.7); }
-.cal-logo { display: block; height: 28px; width: 100%; max-width: 140px; object-fit: contain; object-position: left center; }
+.integ-hero, .integ-card { background: #fff; border: 1px solid var(--line); border-radius: 22px; }
+.integ-hero { display: grid; gap: 16px; padding: 18px; }
+.integ-hero-top { display: flex; gap: 14px; align-items: flex-start; }
+.integ-icon { width: 52px; height: 52px; border-radius: 16px; background: #ffe8ea; color: #e07a84; display: grid; place-items: center; flex: none; }
+.integ-hero-copy { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: center; }
+.integ-brand { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.integ-brand img { height: 22px; width: auto; max-width: 150px; object-fit: contain; }
+.integ-pill { background: #ffe4ea; color: #c45c68; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 750; }
+.integ-hero-copy p, .integ-head p, .integ-card p { color: #666; font-size: 14px; line-height: 1.4; margin: 0; }
+.integ-hero-side { display: flex; align-items: center; gap: 10px; flex: none; }
+.integ-live { display: inline-flex; align-items: center; gap: 6px; background: #e8f7ee; color: #1d8a4e; border-radius: 999px; padding: 4px 10px; font-weight: 750; font-size: 13px; }
+.integ-live i { width: 7px; height: 7px; border-radius: 50%; background: #22a35a; display: block; }
+.integ-quiet { background: #f3f3f3; color: #666; }
+.integ-quiet i { background: #b5b5b5; }
+.integ-outline { border: 1px solid #e4e4e4; background: #fff; border-radius: 12px; min-height: 40px; padding: 0 14px; font-weight: 700; }
+.integ-outline:disabled { opacity: 0.45; }
+.integ-manage.mob { display: none; width: 100%; }
+.integ-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.integ-stat { border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 4px; min-width: 0; }
+.integ-stat span, .integ-stat small { color: #8a8a8a; font-size: 13px; }
+.integ-stat strong { font-size: 28px; letter-spacing: -0.04em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.integ-stat strong.integ-when { font-size: 20px; }
+.integ-up, .integ-down { font-style: normal; font-size: 12px; font-weight: 750; border-radius: 999px; padding: 2px 6px; }
+.integ-up { color: #1d8a4e; background: #e8f7ee; }
+.integ-down { color: #b42318; background: #fdecec; }
+.integ-partners { display: grid; gap: 14px; }
+.integ-head { display: flex; justify-content: space-between; gap: 12px; align-items: end; }
+.integ-head h2 { font-size: 22px; letter-spacing: -0.04em; }
+.integ-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.integ-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "logo name more" "body body body" "action action action"; gap: 8px 12px; align-items: center; padding: 16px; min-width: 0; }
+.integ-card:has(.integ-menu) { z-index: 6; }
+.integ-card > img { grid-area: logo; height: 28px; width: auto; max-width: 96px; object-fit: contain; object-position: left center; }
+.integ-name { grid-area: name; display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.integ-name strong { font-size: 16px; }
+.integ-ok, .integ-off { font-style: normal; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 750; }
+.integ-ok { background: #e8f7ee; color: #1d8a4e; }
+.integ-off { background: #f2f2f2; color: #777; }
+.integ-card > p { grid-area: body; }
+.integ-more { grid-area: more; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: grid; place-items: center; justify-self: end; }
+.integ-action { grid-area: action; width: 100%; }
+.integ-menu { position: absolute; right: 12px; top: 52px; z-index: 7; background: #fff; border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14); padding: 6px; display: grid; min-width: 160px; }
+.integ-menu button { border: 0; background: transparent; text-align: left; padding: 8px 10px; border-radius: 8px; font-weight: 700; }
+.integ-menu button:hover { background: #f6f6f6; }
+.integ-scrim { position: fixed; inset: 0; z-index: 4; border: 0; background: transparent; }
+@media (max-width: 899px) {
+  .integ-grid { grid-template-columns: 1fr; }
+  .integ-manage.desk { display: none; }
+  .integ-manage.mob { display: inline-flex; }
+  .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+  .integ-hero-side { grid-column: 2; justify-self: end; }
+  .integ-card { grid-template-areas: "logo name action" "logo body more"; align-items: center; }
+  .integ-action { width: auto; justify-self: end; }
+  .integ-stat strong { font-size: 22px; }
+  .integ-stat strong.integ-when { font-size: 15px; }
+  .integ-stat { padding: 10px; }
+  .integ-head { align-items: stretch; flex-direction: column; }
+}
 .priority-back { position: fixed; inset: 0; z-index: 200; background: rgba(17, 17, 17, 0.48); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .priority-sheet { width: min(440px, 100%); max-height: min(80dvh, 560px); overflow: auto; background: #fff; border-radius: 24px; padding: 8px 8px 18px; display: flex; flex-direction: column; gap: 12px; }
 .priority-sheet > header { display: flex; align-items: center; gap: 12px; padding: 8px 8px 0; }

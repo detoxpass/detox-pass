@@ -6,6 +6,7 @@ import {
   completeEntryCalendar,
   loadBlocks,
   loadEntryState,
+  loadBookings,
   loadHours,
   loadMySchedule,
   removeBlock,
@@ -13,10 +14,11 @@ import {
   replaceHours,
   setScheduleChoice,
   setScheduleGrid,
+  type BookingRow,
   type MySchedule,
   type Session,
 } from '../../lib/supabase'
-import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice } from '../../ui'
+import { Button, EmptyBlock, ErrorBlock, Icon, LoadingBlock, Notice } from '../../ui'
 
 const DAYS: [number, string][] = [
   [1, 'Monday'], [2, 'Tuesday'], [3, 'Wednesday'], [4, 'Thursday'], [5, 'Friday'], [6, 'Saturday'], [7, 'Sunday'],
@@ -42,6 +44,50 @@ function timeToMinutes(value: string) {
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null
   return hour * 60 + minute
 }
+function monthStamp(value: Date) {
+  return value.getFullYear() * 12 + value.getMonth()
+}
+
+function hoursThisMonth(rows: Draft[], now = new Date()) {
+  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  let minutes = 0
+  for (let day = 1; day <= days; day += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth(), day)
+    const weekday = date.getDay() === 0 ? 7 : date.getDay()
+    for (const row of rows) {
+      if (row.weekday !== weekday) continue
+      const start = timeToMinutes(row.start)
+      const end = timeToMinutes(row.end)
+      if (start == null || end == null || end <= start) continue
+      minutes += end - start
+    }
+  }
+  return Math.round(minutes / 60)
+}
+
+function visitsInMonth(rows: BookingRow[], stamp: number, provider?: string) {
+  return rows.filter((row) => {
+    if (row.saga_status === 'cancelled') return false
+    if (provider && row.provider !== provider) return false
+    return monthStamp(new Date(row.starts_at)) === stamp
+  }).length
+}
+
+function nextVisit(rows: BookingRow[]) {
+  const now = Date.now()
+  return rows
+    .filter((row) => row.saga_status !== 'cancelled' && new Date(row.starts_at).getTime() >= now)
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0]
+}
+
+function visitWhen(row: BookingRow) {
+  const when = new Date(row.starts_at)
+  const time = when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const same = when.toDateString() === new Date().toDateString()
+  const day = same ? 'Today' : when.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${day}, ${time}`
+}
+
 function zonedInstant(date: string, time: string, timeZone: string) {
   const guess = new Date(`${date}T${time}:00Z`)
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
@@ -59,8 +105,10 @@ export function Integrations({ session, embedded, onReady }: {
   onReady?: () => void
 }) {
   const [schedule, setSchedule] = useState<MySchedule | null>(null)
+  const [visits, setVisits] = useState<BookingRow[]>([])
   const [order, setOrder] = useState<string[]>([])
   const [openId, setOpenId] = useState('')
+  const [menuId, setMenuId] = useState('')
   const [priorityOpen, setPriorityOpen] = useState(false)
   const [windows, setWindows] = useState<Draft[]>([])
   const [blocks, setBlocks] = useState<{ id: string; starts_at: string; ends_at: string }[]>([])
@@ -93,7 +141,12 @@ export function Integrations({ session, embedded, onReady }: {
         if (!row) return
         setTimezone(row.schedule_timezone)
         setSlot(row.slot_minutes)
-        const [hours, closed] = await Promise.all([loadHours(session, row.id), loadBlocks(session, row.id)])
+        const [hours, closed, bookings] = await Promise.all([
+          loadHours(session, row.id),
+          loadBlocks(session, row.id),
+          loadBookings(session).catch(() => [] as BookingRow[]),
+        ])
+        setVisits(bookings)
         setWindows(hours.map((hour) => ({
           weekday: hour.weekday,
           start: minutesToTime(hour.start_minute),
@@ -269,24 +322,97 @@ export function Integrations({ session, embedded, onReady }: {
   const squareOn = (schedule.schedule_connections ?? []).some((row) => row.provider === 'square' && (row.status === 'tested' || row.status === 'homologated'))
   const choosing = locations.length > 1 || members.length > 1 || services.length > 1
   const open = CALENDARS.find((calendar) => calendar.id === openId)
+  const now = new Date()
+  const thisMonth = monthStamp(now)
+  const reservationCount = visitsInMonth(visits, thisMonth)
+  const previousCount = visitsInMonth(visits, thisMonth - 1)
+  const change = previousCount > 0 ? Math.round(((reservationCount - previousCount) / previousCount) * 100) : null
+  const upcoming = nextVisit(visits)
+  const published = windows.length > 0
+  const partners = CALENDARS.filter((calendar) => calendar.id !== 'internal')
 
   return (
     <div className={embedded ? 'stack entry-calendars' : 'stack'}>
-      <section className="calendar-panel">
-        <h2>Calendars</h2>
-        <p>Each calendar keeps its own setup. Clients see one combined list of open times.</p>
-        <div className="calendar-cards">
-          {CALENDARS.map((calendar) => (
-            <button type="button" key={calendar.id} className="calendar-card" onClick={() => setOpenId(calendar.id)}>
-              <img className="cal-logo" src={calendar.logo} alt="" />
-              <strong>{calendar.label}</strong>
-              <small>{calendar.id === 'square' && squareOn ? 'Connected' : calendar.id === 'internal' && windows.length > 0 ? 'Hours published' : 'Set up'}</small>
-              {embedded ? <span className="entry-card-note">{calendar.note}</span> : null}
-            </button>
-          ))}
+      <section className="integ-hero">
+        <div className="integ-hero-top">
+          <span className="integ-icon" aria-hidden="true"><Icon name="calendar" /></span>
+          <div className="integ-hero-copy">
+            <div className="integ-brand">
+              <img src="/brand/logo-black.png" alt="Detox Pass" />
+              <span className="integ-pill">Primary calendar</span>
+            </div>
+            <p>{published ? 'Your main calendar. Set your availability and services.' : 'Your main calendar. Publish your hours so clients can book.'}</p>
+          </div>
+          <div className="integ-hero-side">
+            <span className={published ? 'integ-live' : 'integ-live integ-quiet'}>
+              <i />{published ? 'Active' : 'Set up'}
+            </span>
+            <button type="button" className="integ-outline integ-manage desk" onClick={() => setOpenId('internal')}>Manage calendar →</button>
+          </div>
         </div>
-        <Button kind="ghost" onClick={() => setPriorityOpen(true)} disabled={order.length === 0}>Set priority</Button>
+        <div className="integ-stats">
+          <div className="integ-stat">
+            <span>Hours published</span>
+            <strong>{hoursThisMonth(windows)}</strong>
+            <small>this month</small>
+          </div>
+          <div className="integ-stat">
+            <span>Total reservations</span>
+            <strong>
+              {reservationCount}
+              {change != null ? <em className={change >= 0 ? 'integ-up' : 'integ-down'}>{change >= 0 ? '↑' : '↓'}{Math.abs(change)}%</em> : null}
+            </strong>
+            <small>this month</small>
+          </div>
+          <div className="integ-stat">
+            <span>Next reservation</span>
+            <strong className="integ-when">{upcoming ? visitWhen(upcoming) : 'None'}</strong>
+            <small>{upcoming ? [upcoming.services?.name, upcoming.cities?.name].filter(Boolean).join(' · ') || 'Reservation' : 'Nothing scheduled'}</small>
+          </div>
+        </div>
+        <button type="button" className="integ-outline integ-manage mob" onClick={() => setOpenId('internal')}>Manage calendar →</button>
       </section>
+
+      <section className="integ-partners">
+        <header className="integ-head">
+          <div>
+            <h2>Connected calendars</h2>
+            <p>A connected calendar can receive the reservation. The first in the priority list wins.</p>
+          </div>
+          <button type="button" className="integ-outline" onClick={() => setPriorityOpen(true)} disabled={order.length === 0}>Set priority</button>
+        </header>
+        <div className="integ-grid">
+          {partners.map((calendar) => {
+            const connected = calendar.id === 'square' && squareOn
+            const count = visitsInMonth(visits, thisMonth, calendar.id)
+            return (
+              <article className="integ-card" key={calendar.id}>
+                <img src={calendar.logo} alt="" />
+                <div className="integ-name">
+                  <strong>{calendar.label}</strong>
+                  <em className={connected ? 'integ-ok' : 'integ-off'}>{connected ? 'Connected' : 'Not connected'}</em>
+                </div>
+                <p>{connected
+                  ? `${count} ${count === 1 ? 'reservation' : 'reservations'} this month`
+                  : calendar.id === 'square'
+                    ? 'Sign in with Square to receive reservations.'
+                    : `This screen does not connect ${calendar.label} yet.`}</p>
+                <button type="button" className="integ-more" aria-label={`${calendar.label} actions`} aria-expanded={menuId === calendar.id} onClick={() => setMenuId(menuId === calendar.id ? '' : calendar.id)}>
+                  <Icon name="more" />
+                </button>
+                {menuId === calendar.id ? (
+                  <div className="integ-menu">
+                    <button type="button" onClick={() => { setMenuId(''); setOpenId(calendar.id) }}>{connected ? 'Manage' : 'Connect'}</button>
+                    <button type="button" disabled={order.length === 0} onClick={() => { setMenuId(''); setPriorityOpen(true) }}>Set priority</button>
+                  </div>
+                ) : null}
+                <button type="button" className="integ-outline integ-action" onClick={() => setOpenId(calendar.id)}>{connected ? 'Manage →' : 'Connect →'}</button>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+      {menuId ? <button type="button" className="integ-scrim" aria-label="Close menu" onClick={() => setMenuId('')} /> : null}
       {embedded ? <Button disabled={busy} onClick={finishCalendar}>Continue</Button> : null}
       {error ? <ErrorBlock text={error} /> : null}
       {notice ? <Notice text={notice} /> : null}
