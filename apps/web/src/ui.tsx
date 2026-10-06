@@ -28,7 +28,7 @@ export function Icon({ name }: { name: string }) {
   if (name === 'card') return <svg {...common}><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18" /></svg>
   if (name === 'users') return <svg {...common}><circle cx="9" cy="9" r="2.4" /><path d="M5 17c.5-2.2 2-3.4 4-3.4s3.5 1.2 4 3.4" /><circle cx="16" cy="9.5" r="2" /><path d="M15 13.8c1.6.2 2.8 1.2 3.3 3.2" /></svg>
   if (name === 'file') return <svg {...common}><path d="M7 3.5h7l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 20V5A1.5 1.5 0 0 1 7 3.5Z" /><path d="M14 3.5V8h4.5" /></svg>
-  if (name === 'settings') return <svg {...common}><circle cx="12" cy="12" r="3" /><path d="M12 3v2M12 19v2M4.9 6.5l1.5 1.5M17.6 16l1.5 1.5M3 12h2M19 12h2M4.9 17.5l1.5-1.5M17.6 8l1.5-1.5" /></svg>
+  if (name === 'settings') return <svg {...common}><path d="M10.2 3.8h3.6l.5 2a6.4 6.4 0 0 1 1.5.9l1.9-.9 2.5 2.5-.9 1.9c.4.5.7 1 .9 1.5l2 .5v3.6l-2 .5a6.4 6.4 0 0 1-.9 1.5l.9 1.9-2.5 2.5-1.9-.9a6.4 6.4 0 0 1-1.5.9l-.5 2H10.2l-.5-2a6.4 6.4 0 0 1-1.5-.9l-1.9.9-2.5-2.5.9-1.9a6.4 6.4 0 0 1-.9-1.5l-2-.5V10.2l2-.5c.2-.5.5-1 .9-1.5l-.9-1.9 2.5-2.5 1.9.9c.5-.4 1-.7 1.5-.9l.5-2Z" /><circle cx="12" cy="12" r="2.4" /></svg>
   if (name === 'more') return <svg {...common}><circle cx="6" cy="12" r="1.2" fill="currentColor" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /><circle cx="18" cy="12" r="1.2" fill="currentColor" /></svg>
   if (name === 'rate') return <svg {...common}><path d="m12 3.5 2.2 4.6 5 .7-3.6 3.5.9 5.1L12 15.2 7.5 17.4l.9-5.1L4.8 8.8l5-.7L12 3.5Z" /></svg>
   return null
