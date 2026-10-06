@@ -872,7 +872,7 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .calendar-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px 20px; min-width: 0; max-width: 100%; }
 .calendar-card { display: grid; gap: 6px; justify-items: start; min-width: 0; border: 0; border-radius: 18px; background: transparent; padding: 4px 2px 8px; text-align: left; }
 .calendar-card:hover { background: rgba(255, 255, 255, 0.7); }
-.cal-logo { display: block; height: 28px; width: auto; max-width: min(140px, 100%); object-fit: contain; object-position: left center; }
+.cal-logo { display: block; height: 28px; width: 100%; max-width: 140px; object-fit: contain; object-position: left center; }
 .priority-back { position: fixed; inset: 0; z-index: 200; background: rgba(17, 17, 17, 0.48); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .priority-sheet { width: min(440px, 100%); max-height: min(80dvh, 560px); overflow: auto; background: #fff; border-radius: 24px; padding: 8px 8px 18px; display: flex; flex-direction: column; gap: 12px; }
 .priority-sheet > header { display: flex; align-items: center; gap: 12px; padding: 8px 8px 0; }
@@ -882,7 +882,7 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .priority-list { list-style: none; margin: 0; padding: 0 8px; display: grid; gap: 8px; }
 .priority-list li { display: grid; grid-template-columns: 28px 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; background: white; }
 .priority-list li b { width: 28px; height: 28px; border-radius: 50%; background: var(--pink-soft); display: grid; place-items: center; font-size: 13px; }
-.priority-list li img { height: 22px; width: 36px; object-fit: contain; object-position: left center; }
+.priority-list li img { height: 20px; width: 72px; object-fit: contain; object-position: left center; }
 .priority-list li span { min-width: 0; font-weight: 800; }
 .priority-list li div { display: flex; gap: 8px; }
 .priority-list li .btn { width: auto; min-width: 64px; flex: none; }
