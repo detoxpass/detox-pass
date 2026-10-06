@@ -387,9 +387,9 @@ export function Integrations({ session, embedded, onReady }: {
             const count = visitsInMonth(visits, thisMonth, calendar.id)
             return (
               <article className="integ-card" key={calendar.id}>
-                <img src={calendar.logo} alt="" />
+                <img src={calendar.logo} alt={calendar.label} />
                 <div className="integ-name">
-                  <strong>{calendar.label}</strong>
+                  {calendar.id === 'square' || calendar.id === 'wix' ? <strong>{calendar.label}</strong> : null}
                   <em className={connected ? 'integ-ok' : 'integ-off'}>{connected ? 'Connected' : 'Not connected'}</em>
                 </div>
                 <p>{connected

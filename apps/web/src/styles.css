@@ -971,10 +971,12 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .integ-grid { grid-template-columns: 1fr; }
   .integ-manage.desk { display: none; }
   .integ-manage.mob { display: inline-flex; }
-  .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr); }
-  .integ-hero-side { grid-column: 2; justify-self: end; }
-  .integ-card { grid-template-areas: "logo name action" "logo body more"; align-items: center; }
-  .integ-action { width: auto; justify-self: end; }
+  .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
+  .integ-hero-side { justify-self: end; align-self: start; }
+  .integ-card { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "logo name action" "logo body action"; align-items: center; }
+  .integ-name { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .integ-more { display: none; }
+  .integ-action { width: auto; justify-self: end; align-self: center; }
   .integ-stat strong { font-size: 22px; }
   .integ-stat strong.integ-when { font-size: 15px; }
   .integ-stat { padding: 10px; }
