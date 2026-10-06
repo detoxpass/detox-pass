@@ -542,7 +542,7 @@ td { padding: 12px 8px; border-top: 1px solid var(--line); }
 .reserve-card h2 { font-size: 22px; letter-spacing: -0.03em; }
 .reserve-card p { color: #3f3f3f; margin-top: 6px; }
 .reserve-card .btn { flex: none; }
-.book-back { position: fixed; inset: 0; z-index: 90; background: rgba(17, 17, 17, 0.48); display: flex; align-items: flex-end; justify-content: center; }
+.book-back { position: fixed; inset: 0; z-index: 200; background: rgba(17, 17, 17, 0.48); display: flex; align-items: flex-end; justify-content: center; }
 .book-sheet { width: min(560px, 100%); max-height: min(92dvh, 780px); background: #fff; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; overflow: hidden; text-align: left; }
 .book-sheet > header { display: flex; align-items: center; gap: 12px; padding: 16px 16px 8px; }
 .book-sheet > header h2 { flex: 1; font-size: 24px; letter-spacing: -0.04em; }
@@ -865,12 +865,30 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .cal-wix { background: #e4d7f0; }
 .cal-zenoti { background: #f3e2c8; }
 .cal-mindbody { background: #d5ecec; }
-.calendar-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 12px 0; }
-.calendar-card { display: grid; gap: 6px; justify-items: start; border: 1px solid var(--line); border-radius: 18px; background: white; padding: 14px; text-align: left; }
-.cal-mark { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
-.priority-list { list-style: none; padding: 0; display: grid; gap: 8px; }
-.priority-list li { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: white; }
-.priority-list li span { flex: 1; }
+.calendar-panel { display: flex; flex-direction: column; gap: 12px; }
+.calendar-panel h2 { font-size: 22px; letter-spacing: -0.04em; }
+.calendar-panel > p { margin: 0; color: #4d4d4d; line-height: 1.45; }
+.calendar-panel > .btn { align-self: start; }
+.calendar-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+@media (min-width: 900px) {
+  .calendar-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.calendar-card { display: grid; gap: 6px; justify-items: start; border: 0; border-radius: 18px; background: transparent; padding: 4px 2px 8px; text-align: left; }
+.calendar-card:hover { background: rgba(255, 255, 255, 0.7); }
+.cal-logo { height: 28px; width: auto; max-width: 132px; object-fit: contain; object-position: left center; }
+.priority-back { position: fixed; inset: 0; z-index: 200; background: rgba(17, 17, 17, 0.48); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.priority-sheet { width: min(440px, 100%); max-height: min(80dvh, 560px); overflow: auto; background: #fff; border-radius: 24px; padding: 8px 8px 18px; display: flex; flex-direction: column; gap: 12px; }
+.priority-sheet > header { display: flex; align-items: center; gap: 12px; padding: 8px 8px 0; }
+.priority-sheet > header h2 { flex: 1; margin: 0; font-size: 24px; letter-spacing: -0.04em; }
+.priority-sheet > header button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-size: 22px; }
+.priority-sheet > p { margin: 0; padding: 0 8px; color: #4d4d4d; line-height: 1.45; }
+.priority-list { list-style: none; margin: 0; padding: 0 8px; display: grid; gap: 8px; }
+.priority-list li { display: grid; grid-template-columns: 28px 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; background: white; }
+.priority-list li b { width: 28px; height: 28px; border-radius: 50%; background: var(--pink-soft); display: grid; place-items: center; font-size: 13px; }
+.priority-list li img { height: 22px; width: 36px; object-fit: contain; object-position: left center; }
+.priority-list li span { min-width: 0; font-weight: 800; }
+.priority-list li div { display: flex; gap: 8px; }
+.priority-list li .btn { width: auto; min-width: 64px; flex: none; }
 .terms-scroll { max-height: 240px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; }
 .terms-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .terms-table th, .terms-table td { text-align: left; border-bottom: 1px solid var(--line); padding: 8px; vertical-align: top; }

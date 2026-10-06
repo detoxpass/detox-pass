@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 import {
   addBlock,
   callFunction,
@@ -23,12 +24,12 @@ const DAYS: [number, string][] = [
 const ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Sao_Paulo']
 const LENGTHS = [30, 45, 60, 90, 120]
 const CALENDARS = [
-  { id: 'internal', label: 'Detox Pass', mark: 'DP', note: 'Hours you keep here' },
-  { id: 'square', label: 'Square', mark: 'Sq', note: 'Sign in with Square' },
-  { id: 'acuity', label: 'Acuity', mark: 'Ac', note: 'Not on this screen yet' },
-  { id: 'wix', label: 'Wix', mark: 'Wx', note: 'Not on this screen yet' },
-  { id: 'zenoti', label: 'Zenoti', mark: 'Ze', note: 'Not on this screen yet' },
-  { id: 'mindbody', label: 'Mindbody', mark: 'Mb', note: 'Not on this screen yet' },
+  { id: 'internal', label: 'Detox Pass', logo: '/brand/logo-black.png', note: 'Hours you keep here' },
+  { id: 'square', label: 'Square', logo: '/brand/calendars/square.svg', note: 'Sign in with Square' },
+  { id: 'acuity', label: 'Acuity', logo: '/brand/calendars/acuity.svg', note: 'Not on this screen yet' },
+  { id: 'wix', label: 'Wix', logo: '/brand/calendars/wix.svg', note: 'Not on this screen yet' },
+  { id: 'zenoti', label: 'Zenoti', logo: '/brand/calendars/zenoti.svg', note: 'Not on this screen yet' },
+  { id: 'mindbody', label: 'Mindbody', logo: '/brand/calendars/mindbody.svg', note: 'Not on this screen yet' },
 ]
 
 type SquareOption = { id?: string; variationId?: string; name: string }
@@ -271,13 +272,13 @@ export function Integrations({ session, embedded, onReady }: {
 
   return (
     <div className={embedded ? 'stack entry-calendars' : 'stack'}>
-      <section className="account-card">
+      <section className="calendar-panel">
         <h2>Calendars</h2>
         <p>Each calendar keeps its own setup. Clients see one combined list of open times.</p>
         <div className="calendar-cards">
           {CALENDARS.map((calendar) => (
             <button type="button" key={calendar.id} className="calendar-card" onClick={() => setOpenId(calendar.id)}>
-              <span className={`cal-mark cal-${calendar.id}`}>{calendar.mark}</span>
+              <img className="cal-logo" src={calendar.logo} alt="" />
               <strong>{calendar.label}</strong>
               <small>{calendar.id === 'square' && squareOn ? 'Connected' : calendar.id === 'internal' && windows.length > 0 ? 'Hours published' : 'Set up'}</small>
               {embedded ? <span className="entry-card-note">{calendar.note}</span> : null}
@@ -290,7 +291,7 @@ export function Integrations({ session, embedded, onReady }: {
       {error ? <ErrorBlock text={error} /> : null}
       {notice ? <Notice text={notice} /> : null}
 
-      {open ? (
+      {open ? createPortal(
         <div className="book-back" role="presentation" onClick={() => setOpenId('')}>
           <div className="book-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-setup-title" onClick={(event) => event.stopPropagation()}>
             <header>
@@ -379,48 +380,52 @@ export function Integrations({ session, embedded, onReady }: {
               ) : null}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
 
-      {priorityOpen ? (
-        <div className="book-back" role="presentation" onClick={() => setPriorityOpen(false)}>
-          <div className="book-sheet" role="dialog" aria-modal="true" aria-labelledby="priority-title" onClick={(event) => event.stopPropagation()}>
+      {priorityOpen ? createPortal(
+        <div className="priority-back" role="presentation" onClick={() => setPriorityOpen(false)}>
+          <div className="priority-sheet" role="dialog" aria-modal="true" aria-labelledby="priority-title" onClick={(event) => event.stopPropagation()}>
             <header>
               <h2 id="priority-title">Priority</h2>
               <button type="button" aria-label="Close" onClick={() => setPriorityOpen(false)}>×</button>
             </header>
-            <div className="book-body stack">
-              <p className="muted">The first calendar wins when the same time is open on more than one.</p>
-              <ol className="priority-list">
-                {order.map((key) => {
-                  const calendar = CALENDARS.find((item) => item.id === key)
-                  return (
-                    <li
-                      key={key}
-                      draggable
-                      onDragStart={() => { drag.current = key }}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={() => {
-                        const from = order.indexOf(drag.current)
-                        const to = order.indexOf(key)
-                        if (from < 0 || to < 0 || from === to) return
-                        const next = [...order]
-                        const [item] = next.splice(from, 1)
-                        next.splice(to, 0, item)
-                        setOrder(next)
-                        reorderCalendars(session, next).catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Could not save the priority.'))
-                      }}
-                    >
-                      <span>{calendar?.label ?? key}</span>
-                      <Button kind="ghost" onClick={() => move(key, -1)}>Up</Button>
-                      <Button kind="ghost" onClick={() => move(key, 1)}>Down</Button>
-                    </li>
-                  )
-                })}
-              </ol>
-            </div>
+            <p>The first calendar wins when the same time is open on more than one.</p>
+            <ol className="priority-list">
+              {order.map((key, index) => {
+                const calendar = CALENDARS.find((item) => item.id === key)
+                return (
+                  <li
+                    key={key}
+                    draggable
+                    onDragStart={() => { drag.current = key }}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => {
+                      const from = order.indexOf(drag.current)
+                      const to = order.indexOf(key)
+                      if (from < 0 || to < 0 || from === to) return
+                      const next = [...order]
+                      const [item] = next.splice(from, 1)
+                      next.splice(to, 0, item)
+                      setOrder(next)
+                      reorderCalendars(session, next).catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Could not save the priority.'))
+                    }}
+                  >
+                    <b>{index + 1}</b>
+                    {calendar ? <img src={calendar.logo} alt="" /> : null}
+                    <span>{calendar?.label ?? key}</span>
+                    <div>
+                      <Button kind="ghost" disabled={index === 0} onClick={() => move(key, -1)}>Up</Button>
+                      <Button kind="ghost" disabled={index === order.length - 1} onClick={() => move(key, 1)}>Down</Button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   )
