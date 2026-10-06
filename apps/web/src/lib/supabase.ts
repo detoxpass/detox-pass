@@ -612,3 +612,36 @@ export type BookingEvent = {
 export function loadBookingEvents(session: Session, bookingId: string) {
   return rows<BookingEvent>(session, `booking_events?select=id,event_type,from_status,to_status,from_starts_at,to_starts_at,origin,created_at&booking_id=eq.${encodeURIComponent(bookingId)}&order=created_at.asc`)
 }
+
+export type Notice = {
+  id: string
+  audience: string
+  kind: string
+  title: string
+  body: string
+  href: string | null
+  read_at: string | null
+  created_at: string
+}
+
+export function loadNotices(session: Session) {
+  return rows<Notice>(session, 'notifications?select=id,audience,kind,title,body,href,read_at,created_at&order=created_at.desc')
+}
+
+export async function loadUnreadCount(session: Session) {
+  const items = await rows<{ id: string }>(session, 'notifications?select=id&read_at=is.null')
+  return items.length
+}
+
+export async function markNoticesRead(session: Session, id?: string) {
+  const filter = id ? `id=eq.${encodeURIComponent(id)}` : 'read_at=is.null'
+  const response = await fetch(`${url}/rest/v1/notifications?${filter}`, {
+    method: 'PATCH',
+    headers: authHeaders(session, { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+    body: JSON.stringify({ read_at: new Date().toISOString() }),
+  })
+  if (!response.ok) {
+    const body = await readJson(response)
+    throw new Error(messageOf(body) || 'Could not update the notification.')
+  }
+}

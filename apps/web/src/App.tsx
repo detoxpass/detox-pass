@@ -4,11 +4,14 @@ import { SchedulePrompt } from './features/scheduling/SchedulePrompt'
 import { BookingPanel } from './features/booking/BookingPanel'
 import { SessionDetail, SessionList } from './features/booking/Sessions'
 import { ServicesScreen, SpecialtiesScreen, CitiesScreen, TherapistEditor, TherapistsScreen, UsersScreen } from './features/catalog/Admin'
-import { avatarUrl, completeAuthCallback, displayName, loadProfile, loadSession, roleOf, signOut, type Session } from './lib/supabase'
+import { avatarUrl, completeAuthCallback, displayName, loadProfile, loadSession, loadUnreadCount, roleOf, signOut, type Session } from './lib/supabase'
+import { readLoved, writeLoved } from './lib/loved'
 import { Account } from './screens/Account'
 import { DeleteAccount } from './screens/DeleteAccount'
+import { Favorites } from './screens/Favorites'
 import { Home } from './screens/Home'
 import { Login } from './screens/Login'
+import { Notifications } from './screens/Notifications'
 import { Partners } from './screens/Partners'
 import { Professional } from './screens/Professional'
 import { AppShell } from './shell/AppShell'
@@ -39,6 +42,7 @@ export function App() {
   const [ready, setReady] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [avatar, setAvatar] = useState('')
+  const [unread, setUnread] = useState(0)
 
   useEffect(() => {
     loadSession().then((next) => {
@@ -64,6 +68,18 @@ export function App() {
     if (!session) return
     if (path === '/' || path === '/signup' || path === '/recover') go(homePath(role))
   }, [session, path, role])
+
+  useEffect(() => {
+    if (!session) {
+      setUnread(0)
+      return
+    }
+    let alive = true
+    loadUnreadCount(session).then((count) => {
+      if (alive) setUnread(count)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [session, path])
 
   function enter() {
     loadSession().then((next) => {
@@ -101,11 +117,12 @@ export function App() {
       name={profileName || displayName(session)}
       avatar={avatar}
       title={title}
+      unread={unread}
       onNavigate={(id) => go(pathFor(role, id))}
       onSignOut={() => { signOut(); setSession(null); setProfileName(''); setAvatar(''); go('/') }}
     >
       {role === 'therapist' ? <SchedulePrompt session={session} /> : null}
-      {allows(role, path) ? <Screen path={path} role={role} session={session} go={go} onSession={setSession} onName={setProfileName} onAvatar={setAvatar} /> : <ForbiddenBlock />}
+      {allows(role, path) ? <Screen path={path} role={role} session={session} go={go} onSession={setSession} onName={setProfileName} onAvatar={setAvatar} onUnread={setUnread} /> : <ForbiddenBlock />}
     </AppShell>
   )
 }
@@ -125,7 +142,7 @@ function AuthCallback({ onDone }: { onDone: (session: Session) => void }) {
   return <div className="page"><LoadingBlock text="Opening your account…" /></div>
 }
 
-function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
+function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread }: {
   path: string
   role: Role
   session: Session
@@ -133,6 +150,7 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
   onSession: (session: Session) => void
   onName: (name: string) => void
   onAvatar: (avatar: string) => void
+  onUnread: (count: number) => void
 }) {
   if (path === '/account') return <Account session={session} onSession={onSession} onName={onName} onAvatar={onAvatar} />
   if (path === '/find') return <Home session={session} onOpen={(id) => go(`/therapists/${id}`)} />
@@ -160,8 +178,9 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar }: {
   if (path.startsWith('/admin/booking/')) return <SessionDetail session={session} id={path.split('/')[3]} canChange canRead onBack={() => go('/admin/booking')} />
   if (path === '/admin/reviews') return <EmptyBlock title="Reviews" text="Reviews are not a module of Detox Pass." />
   if (path === '/admin/financial') return <EmptyBlock title="Financial" text="Paid, pending and released reports arrive with charging. Nothing here is a payout." />
-  if (path === '/favorites') return <EmptyBlock title="Favorites" text="Saved therapists stay on this device from the search page." />
-  if (path === '/notifications' || path === '/support' || path === '/admin/gamification' || path === '/admin/docs' || path === '/admin/settings') {
+  if (path === '/favorites') return <Favorites session={session} onOpen={role === 'client' ? (id) => go(`/therapists/${id}`) : undefined} onFind={role === 'client' ? () => go('/find') : undefined} />
+  if (path === '/notifications') return <Notifications session={session} go={go} onChange={onUnread} />
+  if (path === '/support' || path === '/admin/gamification' || path === '/admin/docs' || path === '/admin/settings') {
     return <EmptyBlock title={screenTitle(role, screenFromPath(path))} text="There is nothing to show here yet." />
   }
   return <EmptyBlock title="Not found" text="This page is not part of the app." />
@@ -191,14 +210,7 @@ function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
   const [rows, setRows] = useState<ProfessionalRow[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [loved, setLoved] = useState<string[]>(() => {
-    try {
-      const parsed = JSON.parse(localStorage.getItem('detox-pass-loved') || '[]') as unknown
-      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
-    } catch {
-      return []
-    }
-  })
+  const [loved, setLoved] = useState<string[]>(readLoved)
 
   useEffect(() => {
     catalog(session)
@@ -252,7 +264,7 @@ function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
       onOpen={onOpen}
       onToggleLove={() => {
         const next = loved.includes(row.id) ? loved.filter((item) => item !== row.id) : [...loved, row.id]
-        localStorage.setItem('detox-pass-loved', JSON.stringify(next))
+        writeLoved(next)
         setLoved(next)
       }}
       schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} onReserved={onReserved} />}

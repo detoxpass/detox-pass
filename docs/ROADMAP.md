@@ -13,6 +13,8 @@ Quando uma decisão pendente for aprovada por Samuel ou Elias, ela entra em
 O corte das entregas 1 a 4, com a auditoria e os parâmetros de aceite, está em
 [`ROADMAP-01-04.md`](./ROADMAP-01-04.md). A agenda interna e a escolha da
 profissional estão em [`ROADMAP-AGENDA-INTERNA.md`](./ROADMAP-AGENDA-INTERNA.md).
+A caixa de avisos e a página de favoritos estão em
+[`ROADMAP-NOTIFICACOES.md`](./ROADMAP-NOTIFICACOES.md).
 
 ## Como ler cada entrega
 

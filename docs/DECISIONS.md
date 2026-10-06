@@ -481,6 +481,31 @@ Responsável: Elias.
 
 ---
 
+## 2026-10-05 — A caixa de notificações é uma linha por destinatário
+
+Contexto: o sino e o coração abriam páginas vazias. O protótipo histórico
+mostra avaliação, valor a receber e pontos. Essas cópias não têm regra no
+produto.
+
+Decisão: `public.notifications` guarda um aviso por pessoa. A cliente, a
+profissional e a operação recebem tipos diferentes do mesmo fato, quando o
+fato diz respeito àquele papel. Marcar lido só preenche `read_at` da própria
+linha. `intent_opened` não vira aviso. Valor só entra no texto se a reserva
+já tiver `amount_cents` e `currency`. Confirmar visita não escreve pontos.
+Favoritos continuam no aparelho, em `detox-pass-loved`. Não há push nesta fase.
+
+Motivo: Elias pediu todas as notificações possíveis, por papel, de forma
+individual, e uma tela de favoritos no padrão visual. O protótipo não autoriza
+avaliação, dólar ou pontos inventados.
+
+Impacto: a migration faz o fan-out dos eventos já gravados e dos próximos.
+Ficha que já nasceu ativa não recebe “perfil visível” retroativo. Sem conta
+`operacao`, a caixa dela não é aberta e `partner_applied` fica em zero.
+
+Responsável: Elias.
+
+---
+
 # Pendência de transferência / handover
 
 > A **propriedade** dos ativos já está decidida (pertence à Detox Pass/cliente —

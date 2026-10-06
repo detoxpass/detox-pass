@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { catalog, type ProfessionalRow, type Session } from '../lib/supabase'
+import { readLoved, writeLoved } from '../lib/loved'
 import { money, type Offer, type Therapist } from './Professional'
 import { Button, Icon } from '../ui'
 
@@ -57,17 +58,6 @@ function fromPrice(offers: Offer[]) {
   if (amounts.length === 0) return 'Price pending'
   const lowest = amounts.reduce((best, offer) => ((offer.price ?? 0) < (best.price ?? 0) ? offer : best))
   return amounts.length > 1 ? `From ${money(lowest.price ?? 0, lowest.currency ?? 'USD')}` : money(lowest.price ?? 0, lowest.currency ?? 'USD')
-}
-
-const lovedKey = 'detox-pass-loved'
-
-function readLoved() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(lovedKey) || '[]') as unknown
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
-  } catch {
-    return []
-  }
 }
 
 export function Home({ session, onOpen }: { session: Session; onOpen: (id: string) => void }) {
@@ -152,7 +142,7 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
   function toggleLove(id: string) {
     setLoved((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-      localStorage.setItem(lovedKey, JSON.stringify(next))
+      writeLoved(next)
       return next
     })
   }

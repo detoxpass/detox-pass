@@ -6,6 +6,7 @@ export function Header({
   name,
   avatar,
   title,
+  unread = 0,
   screen,
   accountOpen,
   onToggleAccount,
@@ -17,6 +18,7 @@ export function Header({
   name: string
   avatar?: string
   title: string
+  unread?: number
   screen: string
   accountOpen: boolean
   onToggleAccount: () => void
@@ -35,7 +37,10 @@ export function Header({
             <button type="button" aria-label="Favorites" className={screen === 'favorites' ? 'on' : ''} onClick={() => onNavigate('favorites')}><Icon name="heart" /></button>
           </>
         ) : null}
-        <button type="button" aria-label="Notifications" className={screen === 'notifications' ? 'on' : ''} onClick={() => onNavigate('notifications')}><Icon name="bell" /></button>
+        <button type="button" aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'} className={screen === 'notifications' ? 'on shell-bell' : 'shell-bell'} onClick={() => onNavigate('notifications')}>
+          <Icon name="bell" />
+          {unread > 0 ? <span className="bell-count">{unread > 9 ? '9+' : unread}</span> : null}
+        </button>
         <button type="button" className="who" aria-expanded={accountOpen} aria-haspopup="menu" onClick={onToggleAccount}>
           <span className="avatar">{avatar ? <img src={avatar} alt="" /> : name.slice(0, 1).toUpperCase()}</span>
           <span className="who-name">{name}</span>

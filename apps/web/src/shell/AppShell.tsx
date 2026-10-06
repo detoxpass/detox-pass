@@ -11,6 +11,7 @@ export function AppShell({
   name,
   avatar,
   title,
+  unread = 0,
   onNavigate,
   onSignOut,
   children,
@@ -20,6 +21,7 @@ export function AppShell({
   name: string
   avatar?: string
   title: string
+  unread?: number
   onNavigate: (id: string) => void
   onSignOut: () => void
   children: ReactNode
@@ -42,6 +44,7 @@ export function AppShell({
           name={name}
           avatar={avatar}
           title={title}
+          unread={unread}
           screen={screen}
           accountOpen={account}
           onToggleAccount={() => setAccount((value) => !value)}
