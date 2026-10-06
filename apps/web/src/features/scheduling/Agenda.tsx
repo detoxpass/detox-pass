@@ -295,9 +295,9 @@ export function AgendaManager({ session }: { session: Session }) {
           <p className="muted">{CALENDARS.find((calendar) => calendar.id === picked)?.label} is listed, and this screen does not connect it yet.</p>
         ) : null}
         {activeCalendar === 'square' && picked !== 'square' ? (
-          <p className="muted">{squareVia === 'paste'
-            ? 'Square is the calendar clients book. Operation saved an access token. Sign in with Square when you want it to renew on its own.'
-            : 'Square is the calendar clients book. The sign-in stays on Square and renews on its own.'}</p>
+          <p className="muted">{squareVia === 'oauth'
+            ? 'Square is the calendar clients book. The sign-in stays on Square and renews on its own.'
+            : 'Square is the calendar clients book. Operation saved an access token. Sign in with Square when you want it to renew on its own.'}</p>
         ) : null}
       </section>
       {picked === 'square' ? (
