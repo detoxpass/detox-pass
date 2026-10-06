@@ -67,7 +67,7 @@ export function Favorites({
   const saved = cards.filter((item) => loved.includes(item.id))
   const hidden = loved.filter((id) => !cards.some((item) => item.id === id)).length
 
-  if (loading) return <div className="page"><LoadingBlock text="Loading favorites…" /></div>
+  if (loading) return <div className="page"><LoadingBlock kind="cards" text="Loading favorites…" /></div>
 
   return (
     <div className="page fav">

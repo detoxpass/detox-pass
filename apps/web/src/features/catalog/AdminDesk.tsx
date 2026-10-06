@@ -79,7 +79,7 @@ export function AdminHome({ session, go }: { session: Session; go: (path: string
 
   useEffect(() => { reload() }, [session])
 
-  if (loading) return <div className="page"><LoadingBlock text="Loading the desk…" /></div>
+  if (loading) return <div className="page"><LoadingBlock kind="desk" text="Loading the desk…" /></div>
   if (error) return <div className="page"><ErrorBlock text={error} onRetry={reload} /></div>
 
   const calendarDone = new Set(steps.filter((step) => step.step === 'calendar').map((step) => step.professional_id))
@@ -317,7 +317,7 @@ export function MoneyScreen({ session }: { session: Session }) {
     }
   }
 
-  if (loading) return <div className="page"><LoadingBlock text="Loading the report…" /></div>
+  if (loading) return <div className="page"><LoadingBlock kind="dash" text="Loading the report…" /></div>
   if (error) return <div className="page"><ErrorBlock text={error} onRetry={reload} /></div>
   const byId = new Map(bookings.map((row) => [row.id, row]))
   const professionals = [...new Map(bookings.map((row) => [row.professional_id, row.professionals?.display_name || 'Therapist'])).entries()]

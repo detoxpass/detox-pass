@@ -19,7 +19,7 @@ export function AgendaManager({ session, onOpen, onSettings }: {
       .finally(() => setLoading(false))
   }, [session])
 
-  if (loading) return <LoadingBlock text="Loading your calendar…" />
+  if (loading) return <LoadingBlock kind="board" text="Loading your calendar…" />
   if (error) return <ErrorBlock text={error} />
 
   return (

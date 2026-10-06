@@ -90,7 +90,7 @@ export function Notifications({
     }
   }
 
-  if (loading) return <div className="page"><LoadingBlock text="Loading notifications…" /></div>
+  if (loading) return <div className="page"><LoadingBlock kind="page" text="Loading notifications…" /></div>
 
   return (
     <div className="page inbox">

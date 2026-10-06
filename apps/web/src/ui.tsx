@@ -34,8 +34,13 @@ export function Icon({ name }: { name: string }) {
   return null
 }
 
-export function Button({ children, kind = 'primary', onClick, type = 'button', disabled = false }: { children: ReactNode; kind?: 'primary' | 'ghost' | 'soft'; onClick?: () => void; type?: 'button' | 'submit'; disabled?: boolean }) {
-  return <button type={type} className={`btn ${kind}`} onClick={onClick} disabled={disabled}>{children}</button>
+export function Button({ children, kind = 'primary', onClick, type = 'button', disabled = false, busy = false }: { children: ReactNode; kind?: 'primary' | 'ghost' | 'soft'; onClick?: () => void; type?: 'button' | 'submit'; disabled?: boolean; busy?: boolean }) {
+  return (
+    <button type={type} className={`btn ${kind}${busy ? ' is-busy' : ''}`} onClick={onClick} disabled={disabled || busy} aria-busy={busy || undefined}>
+      {busy ? <span className="spin" aria-hidden="true" /> : null}
+      {children}
+    </button>
+  )
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -71,8 +76,225 @@ export function Status({ value }: { value: string }) {
   return <span className={`status-pill ${value.toLowerCase()}`}>{value}</span>
 }
 
-export function LoadingBlock({ text = 'Loading…' }: { text?: string }) {
-  return <p className="state" role="status">{text}</p>
+export type SkeletonKind = 'page' | 'cards' | 'rows' | 'desk' | 'dash' | 'profile' | 'detail' | 'form' | 'account' | 'board' | 'calendar' | 'times' | 'chat' | 'typing' | 'boot'
+
+export function LoadingBlock({ text = 'Loading…', kind = 'page' }: { text?: string; kind?: SkeletonKind }) {
+  return (
+    <div className={`sk sk-${kind}`} role="status" aria-live="polite" aria-busy="true">
+      <span className="sr">{text}</span>
+      {kind === 'boot' ? <BootMark /> : null}
+      {kind === 'page' || kind === 'desk' ? <HeadBones /> : null}
+      {kind === 'cards' ? <CardBones count={6} /> : null}
+      {kind === 'rows' || kind === 'page' ? <RowBones count={5} /> : null}
+      {kind === 'desk' ? <><QueueBones count={7} /><RowBones count={3} /></> : null}
+      {kind === 'dash' ? <><MetricBones /><RowBones count={3} /></> : null}
+      {kind === 'profile' ? <ProfileBones /> : null}
+      {kind === 'detail' ? <DetailBones /> : null}
+      {kind === 'form' ? <FormBones /> : null}
+      {kind === 'account' ? <AccountBones /> : null}
+      {kind === 'board' ? <BoardBones /> : null}
+      {kind === 'calendar' ? <CalendarBones /> : null}
+      {kind === 'times' ? <TimeBones /> : null}
+      {kind === 'chat' ? <ChatBones /> : null}
+      {kind === 'typing' ? <TypingBones /> : null}
+    </div>
+  )
+}
+
+function BootMark() {
+  return (
+    <>
+      <img src="/brand/logo-black.png" alt="" />
+      <span className="bone boot-bar" />
+    </>
+  )
+}
+
+function HeadBones() {
+  return (
+    <div className="sk-head">
+      <span className="bone w-36 h-28" />
+      <span className="bone w-62 h-14" />
+    </div>
+  )
+}
+
+function CardBones({ count }: { count: number }) {
+  return (
+    <div className="sk-cards">
+      {Array.from({ length: count }, (_, index) => (
+        <article className="sk-card" key={index}>
+          <span className="bone sk-photo" />
+          <span className="bone w-62 h-16" />
+          <span className="bone w-36 h-12" />
+          <span className="sk-pills"><span className="bone" /><span className="bone" /></span>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function RowBones({ count }: { count: number }) {
+  return (
+    <div className="sk-rows">
+      {Array.from({ length: count }, (_, index) => (
+        <div className="sk-row" key={index}>
+          <span className="bone sk-when" />
+          <span className="sk-lines">
+            <span className="bone w-46 h-16" />
+            <span className="bone w-72 h-12" />
+          </span>
+          <span className="bone sk-pill" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function QueueBones({ count }: { count: number }) {
+  return (
+    <div className="sk-queues">
+      {Array.from({ length: count }, (_, index) => (
+        <div className="sk-queue" key={index}>
+          <span className="bone w-28 h-28" />
+          <span className="bone w-80 h-12" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function MetricBones() {
+  return (
+    <div className="sk-metrics">
+      {Array.from({ length: 4 }, (_, index) => (
+        <div className="sk-metric" key={index}>
+          <span className="bone w-40 h-12" />
+          <span className="bone w-28 h-32" />
+          <span className="bone w-70 h-12" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ProfileBones() {
+  return (
+    <div className="sk-profile">
+      <span className="bone sk-portrait" />
+      <div className="sk-lines">
+        <span className="bone w-28 h-12" />
+        <span className="bone w-70 h-40" />
+        <span className="bone w-36 h-22" />
+        <span className="bone sk-field" />
+        <span className="bone sk-field" />
+        <span className="bone sk-field" />
+      </div>
+    </div>
+  )
+}
+
+function DetailBones() {
+  return (
+    <>
+      <span className="bone w-24 h-14" />
+      <div className="sk-sheet">
+        <span className="bone w-46 h-28" />
+        <span className="bone w-70 h-14" />
+      </div>
+      <div className="sk-facts">
+        <span className="bone" />
+        <span className="bone" />
+        <span className="bone" />
+      </div>
+      <RowBones count={3} />
+    </>
+  )
+}
+
+function FormBones() {
+  return (
+    <>
+      <HeadBones />
+      <div className="sk-sheet">
+        <span className="bone w-30 h-16" />
+        <span className="bone sk-field" />
+        <span className="bone sk-field" />
+        <span className="bone sk-area" />
+        <span className="bone sk-btn" />
+      </div>
+    </>
+  )
+}
+
+function AccountBones() {
+  return (
+    <div className="sk-account">
+      <span className="bone sk-avatar" />
+      <span className="bone w-46 h-22" />
+      <span className="bone w-36 h-12" />
+      <div className="sk-sheet">
+        <span className="bone w-30 h-16" />
+        <span className="bone sk-field" />
+        <span className="bone sk-field" />
+        <span className="bone sk-btn" />
+      </div>
+      <div className="sk-sheet">
+        <span className="bone w-30 h-16" />
+        <span className="bone sk-field" />
+        <span className="bone sk-field" />
+      </div>
+    </div>
+  )
+}
+
+function BoardBones() {
+  return (
+    <div className="sk-sheet">
+      <div className="sk-board-head">
+        <span className="bone w-36 h-22" />
+        <span className="bone sk-btn" />
+      </div>
+      <div className="sk-cal tall">
+        {Array.from({ length: 35 }, (_, index) => <span className="bone" key={index} />)}
+      </div>
+    </div>
+  )
+}
+
+function CalendarBones() {
+  return (
+    <div className="sk-cal">
+      {Array.from({ length: 35 }, (_, index) => <span className="bone" key={index} />)}
+    </div>
+  )
+}
+
+function TimeBones() {
+  return (
+    <div className="sk-times">
+      {Array.from({ length: 6 }, (_, index) => <span className="bone" key={index} />)}
+    </div>
+  )
+}
+
+function ChatBones() {
+  return (
+    <div className="sk-chat">
+      <div className="sk-bubble"><span className="bone w-90" /><span className="bone w-58" /></div>
+      <div className="sk-bubble me"><span className="bone w-64" /></div>
+      <div className="sk-bubble"><span className="bone w-80" /><span className="bone w-42" /></div>
+    </div>
+  )
+}
+
+function TypingBones() {
+  return (
+    <div className="sk-bubble">
+      <span className="bone w-80" />
+      <span className="bone w-48" />
+    </div>
+  )
 }
 
 export function EmptyBlock({ title, text }: { title: string; text: string }) {

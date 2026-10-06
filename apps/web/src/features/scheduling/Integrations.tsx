@@ -316,7 +316,7 @@ export function Integrations({ session, embedded, onReady }: {
     }
   }
 
-  if (loading) return <LoadingBlock text="Loading calendars…" />
+  if (loading) return <LoadingBlock kind="rows" text="Loading calendars…" />
   if (!schedule) return <EmptyBlock title="No professional profile" text="This account is not a professional yet." />
 
   const squareOn = (schedule.schedule_connections ?? []).some((row) => row.provider === 'square' && (row.status === 'tested' || row.status === 'homologated'))

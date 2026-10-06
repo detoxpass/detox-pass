@@ -99,7 +99,7 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
         <h1>{title}</h1>
         <p>{hint}</p>
       </header>
-      {loading ? <LoadingBlock /> : null}
+      {loading ? <LoadingBlock kind="rows" /> : null}
       {error ? <ErrorBlock text={error} /> : null}
       {ops ? (
         <div className="admin-filters">
@@ -234,7 +234,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
     return () => { alive = false }
   }, [session, canChange, booking?.professional_id, booking?.saga_status, door, month])
 
-  if (loading) return <div className="page narrow"><LoadingBlock /></div>
+  if (loading) return <div className="page narrow"><LoadingBlock kind="detail" text="Loading this session…" /></div>
   if (error && !booking) return <div className="page narrow"><ErrorBlock text={error} onRetry={() => { setError(''); void refresh() }} /></div>
   if (!booking) return <div className="page narrow"><EmptyBlock title="Session not found" text="This reservation is not on your account." /></div>
 
@@ -379,7 +379,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
             <strong>{formatMonth(month)}</strong>
             <button type="button" aria-label="Next month" onClick={() => { setMonth(shiftMonth(month, 1)); setDay(''); setTimes([]); setNextTime('') }}>Next</button>
           </div>
-          {datesLoading ? <LoadingBlock text="Checking open days…" /> : null}
+          {datesLoading ? <LoadingBlock kind="calendar" text="Checking open days…" /> : null}
           {pendingCalendar ? <p className="muted">The calendar did not return a time. Nothing was changed.</p> : null}
           {!datesLoading && dates.length === 0 && !pendingCalendar ? <p className="muted">No openings this month.</p> : null}
           {dates.length > 0 ? (
@@ -389,6 +389,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
               ))}
             </div>
           ) : null}
+          {busy && day && times.length === 0 ? <LoadingBlock kind="times" text="Checking times…" /> : null}
           {day && times.length === 0 && !busy && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
           {times.length > 0 ? (
             <div className="choice-grid times">
@@ -398,7 +399,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
             </div>
           ) : null}
           <div className="visit-actions">
-            <Button disabled={busy || !nextTime} onClick={reschedule}>{busy ? 'Please wait' : 'Move to this time'}</Button>
+            <Button busy={busy} disabled={!nextTime} onClick={reschedule}>Move to this time</Button>
             {confirmCancel ? (
               <div className="confirm-box">
                 <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>

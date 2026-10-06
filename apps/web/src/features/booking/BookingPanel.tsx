@@ -242,8 +242,8 @@ export function BookingPanel({ session, professionalId, name, photo, minutes, of
               </div>
               {price ? <strong className="book-price">{price}</strong> : null}
               <div className="book-actions">
-                <button type="button" className="book-go book-go-step" disabled={!canForward || busy} onClick={step === 'review' ? reserve : forward}>{busy ? 'Please wait' : step === 'review' ? confirmLabel : 'Continue'}</button>
-                <button type="button" className="book-go book-go-desk" disabled={!chosen || busy} onClick={reserve}>{busy ? 'Please wait' : reserveLabel}</button>
+                <button type="button" className={`book-go book-go-step${busy ? ' is-busy' : ''}`} disabled={!canForward || busy} aria-busy={busy || undefined} onClick={step === 'review' ? reserve : forward}>{busy ? <span className="spin" aria-hidden="true" /> : null}{step === 'review' ? confirmLabel : 'Continue'}</button>
+                <button type="button" className={`book-go book-go-desk${busy ? ' is-busy' : ''}`} disabled={!chosen || busy} aria-busy={busy || undefined} onClick={reserve}>{busy ? <span className="spin" aria-hidden="true" /> : null}{reserveLabel}</button>
               </div>
               <p className="book-pay">Payment is not taken here.</p>
             </footer>
@@ -374,7 +374,7 @@ function DateStep({ month, dates, day, loading, pendingCalendar, error, onMonth,
         </div>
       </div>
       <div className="book-week" aria-hidden="true">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => <span key={label}>{label}</span>)}</div>
-      {loading ? <LoadingBlock text="Checking the calendar…" /> : null}
+      {loading ? <LoadingBlock kind="calendar" text="Checking the calendar…" /> : null}
       {pendingCalendar ? <PendingBlock text="This professional has not published an open time yet." /> : null}
       {!loading && !pendingCalendar ? (
         <div className="book-grid">
@@ -411,7 +411,7 @@ function TimeStep({ day, times, chosen, busy, pendingCalendar, onPick }: {
     <div className="book-block book-times-pane">
       <h3>Select a time</h3>
       {day ? <p className="book-day">{formatReviewDate(day)}</p> : <p className="muted">Select a date to see open times.</p>}
-      {busy && times.length === 0 ? <LoadingBlock text="Checking times…" /> : null}
+      {busy && times.length === 0 ? <LoadingBlock kind="times" text="Checking times…" /> : null}
       {pendingCalendar ? <PendingBlock text="This professional has not published an open time yet." /> : null}
       {day && !busy && times.length === 0 && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
       <TimeGroup label="AM" times={am} chosen={chosen} onPick={onPick} />

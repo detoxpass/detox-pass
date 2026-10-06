@@ -43,7 +43,7 @@ export function PartnerHome({ session, go }: { session: Session; go: (path: stri
     return () => { alive = false }
   }, [session])
 
-  if (loading) return <LoadingBlock text="Loading your dashboard…" />
+  if (loading) return <div className="page"><LoadingBlock kind="dash" text="Loading your dashboard…" /></div>
   if (error) return <ErrorBlock text={error} />
 
   const now = new Date()

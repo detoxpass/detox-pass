@@ -74,7 +74,7 @@ export function Login({ onEnter, initial = 'login', onMode, onPartner }: { onEnt
                   <button type="button" className="link" onClick={() => { setError(''); setMode('recover'); onMode?.('recover') }}>Forgot your password?</button>
                 </div>
               ) : null}
-              <Button type="submit">{pending ? 'Please wait' : mode === 'login' ? 'Sign in' : 'Create account'}</Button>
+              <Button type="submit" busy={pending}>{mode === 'login' ? 'Sign in' : 'Create account'}</Button>
               {mode === 'login' ? (
                 <>
                   <p className="center">Don't have an account yet? <button type="button" className="link" onClick={() => { setError(''); setMode('signup'); onMode?.('signup') }}>Sign up</button></p>
@@ -93,7 +93,7 @@ export function Login({ onEnter, initial = 'login', onMode, onPartner }: { onEnt
                 <input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Enter your email address" required />
               </Field>
               {error ? <p className="error">{error}</p> : null}
-              <Button type="submit">{pending ? 'Please wait' : 'Send recovery link'}</Button>
+              <Button type="submit" busy={pending}>Send recovery link</Button>
               <button type="button" className="btn ghost full" onClick={() => { setError(''); setMode('login') }}>Cancel</button>
             </>
           ) : null}

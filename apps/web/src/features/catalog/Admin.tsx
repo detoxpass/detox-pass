@@ -510,7 +510,7 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
     window.history.replaceState(null, '', `${window.location.pathname}${next ? `?${next}` : ''}`)
   }, [])
 
-  if (loading) return <LoadingBlock />
+  if (loading) return <div className="page"><LoadingBlock kind="form" text="Loading this profile…" /></div>
   if (error) return <ErrorBlock text={error} onRetry={reload} />
   if (!row) return <EmptyBlock title="Professional not found" text="This profile is not in the catalog." />
 

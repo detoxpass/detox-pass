@@ -57,7 +57,7 @@ export function Entry({ session, onDone }: { session: Session; onDone: () => voi
     return (
       <div className="entry">
         <div className="account-brand"><Logo onDark={false} /></div>
-        <LoadingBlock text="Opening your account…" />
+        <LoadingBlock kind="form" text="Opening your account…" />
       </div>
     )
   }
@@ -195,7 +195,7 @@ function ProfileStep({ session, state, onDone }: { session: Session; state: Entr
 
       <p className="hint">Service prices are set by the team. This step does not set a rate.</p>
       {error ? <p className="error">{error}</p> : null}
-      <Button type="submit" disabled={busy || uploading}>{busy ? 'Saving' : 'Continue'}</Button>
+      <Button type="submit" busy={busy || uploading}>Continue</Button>
     </form>
   )
 }
@@ -264,7 +264,7 @@ function TermsStep({ session, onDone }: { session: Session; onDone: () => void }
     }
   }
 
-  if (!terms) return error ? <ErrorBlock text={error} /> : <LoadingBlock text="Loading the terms…" />
+  if (!terms) return error ? <ErrorBlock text={error} /> : <LoadingBlock kind="form" text="Loading the terms…" />
 
   return (
     <div className="entry-form">
@@ -288,7 +288,7 @@ function TermsStep({ session, onDone }: { session: Session; onDone: () => void }
         </label>
       </section>
       {error ? <p className="error">{error}</p> : null}
-      <Button disabled={busy || !scrolled || !checked} onClick={accept}>{busy ? 'Saving' : 'Accept and continue'}</Button>
+      <Button busy={busy} disabled={!scrolled || !checked} onClick={accept}>Accept and continue</Button>
     </div>
   )
 }

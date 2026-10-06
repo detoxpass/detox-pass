@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { avatarUrl, changePassword, loadProfile, saveProfile, updateEmail, uploadAvatar, type Session } from '../lib/supabase'
-import { Icon, Logo } from '../ui'
+import { Icon, LoadingBlock, Logo } from '../ui'
 
 function roleLabel(role: string) {
   if (role === 'profissional') return 'Therapist'
@@ -161,6 +161,8 @@ export function Account({
 
   const initial = (fullName || email || 'A').slice(0, 1).toUpperCase()
 
+  if (loading) return <div className="page"><LoadingBlock kind="account" text="Opening your account…" /></div>
+
   return (
     <div className="page">
       <div className="account">
@@ -199,7 +201,7 @@ export function Account({
           <p className="hint">A confirmation message is sent before the email changes.</p>
           {profileError ? <p className="error">{profileError}</p> : null}
           {profileNote ? <p className="account-note">{profileNote}</p> : null}
-          <button type="submit" className="btn full" disabled={loading || saving}>{saving ? 'Saving' : 'Save profile'}</button>
+          <button type="submit" className={`btn full${saving ? ' is-busy' : ''}`} disabled={saving} aria-busy={saving || undefined}>{saving ? <span className="spin" aria-hidden="true" /> : null}Save profile</button>
         </form>
 
         <form className="account-card" onSubmit={savePassword}>
@@ -218,7 +220,7 @@ export function Account({
           </label>
           {passwordError ? <p className="error">{passwordError}</p> : null}
           {passwordNote ? <p className="account-note">{passwordNote}</p> : null}
-          <button type="submit" className="btn full" disabled={updatingPassword}>{updatingPassword ? 'Updating' : 'Update password'}</button>
+          <button type="submit" className={`btn full${updatingPassword ? ' is-busy' : ''}`} disabled={updatingPassword} aria-busy={updatingPassword || undefined}>{updatingPassword ? <span className="spin" aria-hidden="true" /> : null}Update password</button>
         </form>
 
         <section className="account-card">

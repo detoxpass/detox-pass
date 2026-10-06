@@ -217,7 +217,7 @@ export function Partners({ onEnter, onSignIn }: { onEnter: () => void; onSignIn:
             </>
           ) : <p className="hint">Terms are not published yet. This form cannot be sent until they are.</p>}
           {error ? <p className="error">{error}</p> : null}
-          <Button type="submit" disabled={pending}>{pending ? 'Please wait' : 'Send application'}</Button>
+          <Button type="submit" busy={pending}>Send application</Button>
           <p className="center">Already have an account? <button type="button" className="link" onClick={onSignIn}>Sign in</button></p>
         </form>
       </section>

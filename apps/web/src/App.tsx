@@ -111,7 +111,7 @@ export function App() {
     return <AuthCallback onDone={(next) => { setSession(next); go(homePath(roleOf(next))) }} />
   }
   if (path === '/partners') return <Partners onEnter={enter} onSignIn={() => go('/')} />
-  if (!ready) return null
+  if (!ready) return <LoadingBlock kind="boot" text="Opening your account…" />
   if (!session || path === '/' || path === '/signup' || path === '/recover') {
     const initial = path === '/signup' ? 'signup' : path === '/recover' ? 'recover' : 'login'
     return (
@@ -127,7 +127,7 @@ export function App() {
   const screen = screenFromPath(path)
   const title = screen === 'missing' ? 'Not found' : screenTitle(role, screen)
 
-  if (role === 'therapist' && hold === null) return <div className="page"><LoadingBlock text="Opening your account…" /></div>
+  if (role === 'therapist' && hold === null) return <LoadingBlock kind="boot" text="Opening your account…" />
   if (role === 'therapist' && hold) return <Entry session={session} onDone={() => setHold(false)} />
 
   return (
@@ -158,7 +158,7 @@ function AuthCallback({ onDone }: { onDone: (session: Session) => void }) {
     return () => { alive = false }
   }, [])
   if (error) return <div className="page"><ErrorBlock text={error} /></div>
-  return <div className="page"><LoadingBlock text="Opening your account…" /></div>
+  return <LoadingBlock kind="boot" text="Opening your account…" />
 }
 
 function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread }: {
@@ -232,7 +232,7 @@ function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
       .finally(() => setLoading(false))
   }, [session])
 
-  if (loading) return <LoadingBlock />
+  if (loading) return <div className="page"><LoadingBlock kind="profile" text="Loading this therapist…" /></div>
   if (error) return <ErrorBlock text={error} />
   const row = rows.find((item) => item.id === id)
   if (!row) return <EmptyBlock title="Therapist not available" text="This professional is inactive or not in the catalog." />

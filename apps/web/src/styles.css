@@ -504,6 +504,68 @@ td { padding: 12px 8px; border-top: 1px solid var(--line); }
 .delete-card .account-note a { color: var(--ink); }
 
 .btn:disabled { opacity: 0.55; cursor: progress; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.bone { display: block; width: 100%; height: 12px; border-radius: 8px; background: linear-gradient(100deg, #ececee 18%, #fff6f7 40%, #f4f4f5 52%, #ececee 74%); background-size: 220% 100%; animation: bone 0.9s ease-in-out infinite; }
+.bone.w-24 { width: 24%; } .bone.w-28 { width: 28%; } .bone.w-30 { width: 30%; } .bone.w-36 { width: 36%; } .bone.w-40 { width: 40%; } .bone.w-42 { width: 42%; } .bone.w-46 { width: 46%; } .bone.w-48 { width: 48%; } .bone.w-58 { width: 58%; } .bone.w-62 { width: 62%; } .bone.w-64 { width: 64%; } .bone.w-70 { width: 70%; } .bone.w-72 { width: 72%; } .bone.w-80 { width: 80%; } .bone.w-90 { width: 90%; }
+.bone.h-12 { height: 12px; } .bone.h-14 { height: 14px; } .bone.h-16 { height: 16px; } .bone.h-22 { height: 22px; } .bone.h-28 { height: 28px; } .bone.h-32 { height: 32px; } .bone.h-40 { height: 40px; }
+.sk { position: relative; display: flex; flex-direction: column; gap: 14px; }
+.sk-head { display: flex; flex-direction: column; gap: 8px; }
+.sk-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.sk-card { background: white; border-radius: 18px; min-height: 292px; overflow: hidden; display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
+.sk-photo { width: 100%; height: 190px; border-radius: 0; }
+.sk-card > .bone:not(.sk-photo) { margin-left: 12px; }
+.sk-pills { display: flex; gap: 8px; padding: 0 12px; }
+.sk-pills .bone { width: 72px; height: 28px; border-radius: 999px; }
+.sk-rows { display: flex; flex-direction: column; gap: 10px; }
+.sk-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) 84px; gap: 14px; align-items: center; min-height: 84px; background: white; border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+.sk-when { width: 72px; height: 36px; border-radius: 12px; }
+.sk-lines { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sk-pill { width: 72px; height: 26px; border-radius: 999px; }
+.sk-queues { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.sk-queue { min-height: 92px; background: white; border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+.sk-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.sk-metric { min-height: 128px; background: white; border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+.sk-profile { display: grid; grid-template-columns: minmax(220px, 340px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.sk-portrait { width: 100%; aspect-ratio: 3 / 4; height: auto; border-radius: 28px; }
+.sk-sheet { background: white; border: 1px solid var(--line); border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.sk-field { height: 48px; border-radius: 14px; }
+.sk-area { height: 120px; border-radius: 14px; }
+.sk-btn { width: 148px; height: 48px; border-radius: 16px; }
+.sk-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.sk-facts .bone { height: 72px; border-radius: 16px; }
+.sk-board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sk-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.sk-cal .bone { height: 40px; border-radius: 12px; }
+.sk-cal.tall .bone { height: 72px; }
+.sk-times { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.sk-times .bone { height: 48px; border-radius: 14px; }
+.sk-account { width: min(480px, 100%); margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.sk-account .sk-sheet { width: 100%; }
+.sk-avatar { width: 112px; height: 112px; border-radius: 50%; }
+.sk-chat { display: flex; flex-direction: column; gap: 12px; }
+.sk-bubble { width: min(320px, 86%); background: white; border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.sk-bubble .bone { height: 12px; }
+.sk-bubble.me { align-self: flex-end; background: var(--pink-soft); border-color: transparent; }
+.sk-boot { position: fixed; inset: 0; z-index: 40; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 18px; background: var(--bg); }
+.sk-boot img { height: 32px; width: auto; max-width: none; }
+.boot-bar { width: 112px; height: 4px; border-radius: 999px; }
+.spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; flex: none; animation: spin 0.55s linear infinite; }
+button.is-busy { display: inline-flex; align-items: center; justify-content: center; gap: 8px; opacity: 1; }
+.btn.is-busy, .btn.is-busy:disabled, .book-go.is-busy, .book-go.is-busy:disabled { opacity: 1; cursor: progress; }
+.book-go.is-busy, .book-go.is-busy:disabled { background: #ff5b7f; color: white; }
+@keyframes bone { from { background-position: 100% 0; } to { background-position: -20% 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .bone, .spin { animation: none; }
+  .bone { background: #eeeef0; }
+}
+@media (max-width: 800px) {
+  .sk-profile, .sk-facts { grid-template-columns: 1fr; }
+  .sk-metrics { grid-template-columns: 1fr 1fr; }
+  .sk-row { grid-template-columns: 72px minmax(0, 1fr); }
+  .sk-pill { display: none; }
+  .sk-cal.tall .bone { height: 44px; }
+}
 .state { background: white; border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 8px; }
 .state h2 { font-size: 22px; letter-spacing: -0.03em; }
 .state p, .notice { color: #3f3f3f; }

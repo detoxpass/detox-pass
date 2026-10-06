@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { formatWhen } from '../features/booking/when'
 import { loadChat, postChat, type ChatBlock, type Session } from '../lib/supabase'
 import { money } from './Professional'
-import { Button, Icon } from '../ui'
+import { Button, Icon, LoadingBlock } from '../ui'
 
 type Person = {
   id: string
@@ -20,6 +20,7 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
   const [text, setText] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [opening, setOpening] = useState(true)
   const [phase, setPhase] = useState<'idle' | 'recording' | 'processing'>('idle')
   const [elapsed, setElapsed] = useState(0)
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null)
@@ -35,7 +36,7 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
       setBlocks(loaded.messages.flatMap((message) => Array.isArray(message.blocks) ? message.blocks : []))
     }).catch((caught: unknown) => {
       if (alive) setError(caught instanceof Error ? caught.message : 'Could not open the chat.')
-    })
+    }).finally(() => { if (alive) setOpening(false) })
     return () => { alive = false }
   }, [session])
 
@@ -161,7 +162,7 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
     <div className="page chat">
       <div className="chat-log" ref={scroller}>
         <div className="chat-stream">
-          {blocks.length === 0 ? (
+          {opening ? <LoadingBlock kind="chat" text="Opening the chat…" /> : blocks.length === 0 ? (
             <section className="fav-empty">
               <span className="heart-lg" aria-hidden="true"><Icon name="chat" /></span>
               <h2>Ask for a therapist</h2>
@@ -171,7 +172,7 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
           {blocks.map((block, index) => (
             <BlockView key={`${block.type}-${index}`} block={block} go={go} busy={busy} onOpenings={askOpenings} onBook={book} />
           ))}
-          {busy ? <p className="muted">Looking that up.</p> : null}
+          {busy ? <LoadingBlock kind="typing" text="Looking that up." /> : null}
           {error ? <p className="error">{error}</p> : null}
         </div>
       </div>

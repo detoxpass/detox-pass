@@ -84,7 +84,7 @@ export function TermsAdmin({ session, onOpen }: { session: Session; onOpen?: (id
     }
   }
 
-  if (loading) return <LoadingBlock text="Loading terms…" />
+  if (loading) return <div className="page"><LoadingBlock kind="form" text="Loading terms…" /></div>
 
   const published = versions.filter((row) => row.status === 'published').sort((a, b) => (b.version_number ?? 0) - (a.version_number ?? 0))[0]
   const accepted = new Set(acceptances.filter((row) => published && row.version_number === published.version_number).map((row) => row.professional_id))

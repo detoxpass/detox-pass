@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { deleteOwnAccount, loadSession, signIn, type Session } from '../lib/supabase'
-import { Logo } from '../ui'
+import { LoadingBlock, Logo } from '../ui'
 
 export function DeleteAccount() {
   const [session, setSession] = useState<Session | null>(null)
@@ -63,7 +63,7 @@ export function DeleteAccount() {
         {done ? (
           <p className="account-note">This account has been deleted. <a href="/">Back to Detox Pass</a></p>
         ) : !ready ? (
-          <p className="hint">Loading the account.</p>
+          <LoadingBlock kind="form" text="Loading the account." />
         ) : session ? (
           <form onSubmit={remove}>
             <p className="delete-email">{session.user.email}</p>
@@ -72,7 +72,7 @@ export function DeleteAccount() {
               <input value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="off" required />
             </label>
             {error ? <p className="error">{error}</p> : null}
-            <button type="submit" className="account-delete" disabled={pending}>{pending ? 'Deleting' : 'Delete account'}</button>
+            <button type="submit" className={`account-delete${pending ? ' is-busy' : ''}`} disabled={pending} aria-busy={pending || undefined}>{pending ? <span className="spin" aria-hidden="true" /> : null}Delete account</button>
           </form>
         ) : (
           <form onSubmit={enter}>
@@ -86,7 +86,7 @@ export function DeleteAccount() {
               <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
             </label>
             {error ? <p className="error">{error}</p> : null}
-            <button type="submit" className="btn full" disabled={pending}>{pending ? 'Please wait' : 'Sign in'}</button>
+            <button type="submit" className={`btn full${pending ? ' is-busy' : ''}`} disabled={pending} aria-busy={pending || undefined}>{pending ? <span className="spin" aria-hidden="true" /> : null}Sign in</button>
           </form>
         )}
       </section>

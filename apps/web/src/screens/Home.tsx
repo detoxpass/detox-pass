@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { catalog, type ProfessionalRow, type Session } from '../lib/supabase'
 import { readLoved, writeLoved } from '../lib/loved'
 import { money, type Offer, type Therapist } from './Professional'
-import { Button, Icon } from '../ui'
+import { Button, Icon, LoadingBlock } from '../ui'
 
 type Portrait = { id: string; photo: string }
 
@@ -197,7 +197,7 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
           <h2>Featured therapists</h2>
           {!loading && !error ? <p className="muted">{visible.length} {visible.length === 1 ? 'therapist' : 'therapists'}</p> : null}
         </div>
-        {loading ? <p className="muted">Loading the catalog.</p> : null}
+        {loading ? <LoadingBlock kind="cards" text="Loading the catalog." /> : null}
         {error ? <p className="error">{error}</p> : null}
         {!loading && !error && visible.length === 0 ? (
           <p className="finder-empty">No therapists match these filters. <button type="button" className="link" onClick={clearFilters}>Clear filters</button></p>
