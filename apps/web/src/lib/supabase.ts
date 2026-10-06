@@ -805,19 +805,19 @@ export type BookingRow = {
   amount_cents: number | null
   currency?: string | null
   services: { name: string } | null
-  professionals: { display_name: string } | null
+  professionals: { display_name: string; portrait_path?: string | null } | null
   cities: { name: string } | null
   client?: { full_name: string | null } | null
   provider: string
 }
 
 export function loadBookings(session: Session) {
-  const select = 'id,professional_id,starts_at,ends_at,saga_status,external_booking_id,amount_cents,provider,services(name),professionals(display_name),cities(name)'
+  const select = 'id,professional_id,starts_at,ends_at,saga_status,external_booking_id,amount_cents,currency,provider,services(name),professionals(display_name,portrait_path),cities(name)'
   return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
 }
 
 export function loadAdminBookings(session: Session) {
-  const select = 'id,client_id,professional_id,service_id,city_id,starts_at,ends_at,saga_status,external_booking_id,external_charge_ref,amount_cents,currency,provider,services(name),professionals(display_name),cities(name),client:profiles!bookings_client_id_fkey(full_name)'
+  const select = 'id,client_id,professional_id,service_id,city_id,starts_at,ends_at,saga_status,external_booking_id,external_charge_ref,amount_cents,currency,provider,services(name),professionals(display_name,portrait_path),cities(name),client:profiles!bookings_client_id_fkey(full_name)'
   return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
 }
 

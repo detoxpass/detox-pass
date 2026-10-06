@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { authorizePayout, calendarDoor, callFunction, loadAdminBookings, loadAttendance, loadBookingEvents, loadBookings, loadFinanceReport, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
-import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice, SagaStatus } from '../../ui'
+import { Button, EmptyBlock, ErrorBlock, Icon, LoadingBlock, Notice, SagaStatus } from '../../ui'
 import { appointmentParts, formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
 const eventLabels: Record<string, string> = {
@@ -21,6 +22,26 @@ function eventLabel(type: string) {
 function datesOf(body: unknown) {
   if (!body || typeof body !== 'object' || !('dates' in body) || !Array.isArray(body.dates)) return []
   return body.dates.filter((item): item is string => typeof item === 'string')
+}
+
+function photoOf(row: BookingRow) {
+  return row.professionals?.portrait_path || '/people/splash.jpg'
+}
+
+function lengthOf(start: string, end?: string) {
+  if (!end) return ''
+  const minutes = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000)
+  return Number.isFinite(minutes) && minutes > 0 ? `${minutes} min` : ''
+}
+
+function money(cents: number, currency: string) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(cents / 100)
+}
+
+function amountOf(row: BookingRow) {
+  if (row.amount_cents == null) return 'Payment is not taken here.'
+  if (row.currency) return money(row.amount_cents, row.currency)
+  return 'An amount is recorded. This screen does not take payment.'
 }
 
 function timesOf(body: unknown) {
@@ -44,6 +65,7 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(() => new URLSearchParams(window.location.search))
+  const [page, setPage] = useState(0)
 
   function setFilter(key: string, value: string) {
     const next = new URLSearchParams(window.location.search)
@@ -93,14 +115,80 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
   const cities = [...new Map(rows.flatMap((row) => row.city_id ? [[row.city_id, row.cities?.name || 'City'] as const] : [])).entries()]
   const services = [...new Map(rows.flatMap((row) => row.service_id ? [[row.service_id, row.services?.name || 'Service'] as const] : [])).entries()]
 
+  const now = Date.now()
+  const upcoming = shown
+    .filter((row) => row.saga_status !== 'cancelled' && new Date(row.starts_at).getTime() >= now)
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+  const history = shown
+    .filter((row) => row.saga_status === 'cancelled' || new Date(row.starts_at).getTime() < now)
+    .sort((a, b) => b.starts_at.localeCompare(a.starts_at))
+  const next = upcoming[0]
+  const later = upcoming.slice(1)
+  const pageSize = 6
+  const pageCount = Math.max(1, Math.ceil(history.length / pageSize))
+  const safePage = Math.min(page, pageCount - 1)
+  const historyPage = history.slice(safePage * pageSize, safePage * pageSize + pageSize)
+  const cancelledCount = shown.filter((row) => row.saga_status === 'cancelled').length
+
   const body = (
     <>
       <header className="page-head">
         <h1>{title}</h1>
         <p>{hint}</p>
       </header>
-      {loading ? <LoadingBlock kind="rows" /> : null}
+      {loading ? <LoadingBlock text="Loading sessions…" /> : null}
       {error ? <ErrorBlock text={error} /> : null}
+      {!ops && bare && shown.length > 0 ? (
+        <ul className="visit-list">
+          {shown.map((row) => <li key={row.id}><VisitButton row={row} ops={false} onOpen={onOpen} /></li>)}
+        </ul>
+      ) : null}
+      {!ops && !bare && !loading && !error && shown.length > 0 ? (
+        <>
+          <div className="session-kpis" aria-label="Session totals">
+            <article><span>Upcoming</span><strong>{upcoming.length}</strong></article>
+            <article><span>Past</span><strong>{history.length - cancelledCount}</strong></article>
+            <article><span>Cancelled</span><strong>{cancelledCount}</strong></article>
+          </div>
+          {next ? (
+            <button type="button" className="session-next" onClick={() => onOpen(next.id)}>
+              <img src={photoOf(next)} alt="" />
+              <span>
+                <em>Next session</em>
+                <strong>{next.professionals?.display_name || 'Therapist'}</strong>
+                <span>{next.services?.name || 'Service'} · {next.cities?.name || 'City'}</span>
+                <span>{appointmentParts(next.starts_at).long} · {appointmentParts(next.starts_at).time}</span>
+                <SagaStatus status={next.saga_status} />
+              </span>
+            </button>
+          ) : <EmptyBlock title="No upcoming session" text="A future reservation appears here after the calendar confirms it." />}
+          {later.length > 0 ? (
+            <section className="session-block">
+              <h2>Coming up</h2>
+              <ul className="visit-list">
+                {later.map((row) => <li key={row.id}><VisitButton row={row} ops={false} onOpen={onOpen} /></li>)}
+              </ul>
+            </section>
+          ) : null}
+          <section className="session-block">
+            <h2>History</h2>
+            {history.length === 0 ? <p className="muted">Past and cancelled reservations show up here.</p> : (
+              <>
+                <ul className="visit-list">
+                  {historyPage.map((row) => <li key={row.id}><VisitButton row={row} ops={false} onOpen={onOpen} /></li>)}
+                </ul>
+                {pageCount > 1 ? (
+                  <div className="session-pages">
+                    <Button kind="ghost" disabled={safePage === 0} onClick={() => setPage(Math.max(0, safePage - 1))}>Previous</Button>
+                    <span>{safePage + 1} / {pageCount}</span>
+                    <Button kind="ghost" disabled={safePage + 1 >= pageCount} onClick={() => setPage(safePage + 1)}>Next</Button>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </section>
+        </>
+      ) : null}
       {ops ? (
         <div className="admin-filters">
           <label className="field"><span>Status</span>
@@ -138,32 +226,33 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
         </div>
       ) : null}
       {!loading && !error && shown.length === 0 ? <EmptyBlock title="No sessions yet" text={ops ? 'Nothing matches these filters.' : 'A reservation appears here after the calendar confirms it.'} /> : null}
-      {shown.length > 0 ? (
+      {ops && shown.length > 0 ? (
         <ul className="visit-list">
-          {shown.map((row) => {
-            const when = appointmentParts(row.starts_at)
-            return (
-              <li key={row.id}>
-                <button type="button" className={`visit-card cal-${row.provider}`} onClick={() => onOpen(row.id)}>
-                  <span className="visit-when">
-                    <strong>{when.day}</strong>
-                    <em>{when.time}</em>
-                  </span>
-                  <span className="visit-who">
-                    <strong>{row.professionals?.display_name || 'Therapist'}</strong>
-                    <span>{ops && row.client?.full_name ? `${row.client.full_name} · ` : ''}{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
-                  </span>
-                  <SagaStatus status={row.saga_status} />
-                </button>
-              </li>
-            )
-          })}
+          {shown.map((row) => <li key={row.id}><VisitButton row={row} ops onOpen={onOpen} /></li>)}
         </ul>
       ) : null}
     </>
   )
   if (bare) return <section className="visit-embed">{body}</section>
   return <div className="page narrow">{body}</div>
+}
+
+function VisitButton({ row, ops, onOpen }: { row: BookingRow; ops: boolean; onOpen: (id: string) => void }) {
+  const when = appointmentParts(row.starts_at)
+  return (
+    <button type="button" className={`visit-card cal-${row.provider}`} onClick={() => onOpen(row.id)}>
+      <img className="visit-photo" src={photoOf(row)} alt="" />
+      <span className="visit-when">
+        <strong>{when.day}</strong>
+        <em>{when.time}</em>
+      </span>
+      <span className="visit-who">
+        <strong>{row.professionals?.display_name || 'Therapist'}</strong>
+        <span>{ops && row.client?.full_name ? `${row.client.full_name} · ` : ''}{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
+      </span>
+      <SagaStatus status={row.saga_status} />
+    </button>
+  )
 }
 
 export function SessionDetail({ session, id, canChange, canRead, ops = false, onBack }: {
@@ -182,6 +271,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  const [slotsBusy, setSlotsBusy] = useState(false)
   const [nextTime, setNextTime] = useState('')
   const [times, setTimes] = useState<string[]>([])
   const [month, setMonth] = useState(monthOf(new Date()))
@@ -190,6 +280,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [datesLoading, setDatesLoading] = useState(false)
   const [pendingCalendar, setPendingCalendar] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [moveOpen, setMoveOpen] = useState(false)
   const [external, setExternal] = useState('')
 
   function refresh() {
@@ -215,7 +306,13 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const door = calendarDoor(booking?.provider)
 
   useEffect(() => {
-    if (!canChange || !booking || !door || booking.saga_status !== 'provider_confirmed') return
+    if (!moveOpen) return
+    document.body.classList.add('modal-open')
+    return () => document.body.classList.remove('modal-open')
+  }, [moveOpen])
+
+  useEffect(() => {
+    if (!moveOpen || !canChange || !booking || !door || booking.saga_status !== 'provider_confirmed') return
     let alive = true
     setDatesLoading(true)
     setPendingCalendar(false)
@@ -232,7 +329,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
       .catch(() => { if (alive) setDates([]) })
       .finally(() => { if (alive) setDatesLoading(false) })
     return () => { alive = false }
-  }, [session, canChange, booking?.professional_id, booking?.saga_status, door, month])
+  }, [moveOpen, session, canChange, booking?.professional_id, booking?.saga_status, door, month])
 
   if (loading) return <div className="page narrow"><LoadingBlock kind="detail" text="Loading this session…" /></div>
   if (error && !booking) return <div className="page narrow"><ErrorBlock text={error} onRetry={() => { setError(''); void refresh() }} /></div>
@@ -268,7 +365,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
     setNextTime('')
     setTimes([])
     setError('')
-    setBusy(true)
+    setSlotsBusy(true)
     try {
       const result = await callFunction(session, door, {
         action: 'availability',
@@ -283,7 +380,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not load times.')
     } finally {
-      setBusy(false)
+      setSlotsBusy(false)
     }
   }
 
@@ -299,6 +396,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
         return
       }
       setNotice('Moved. Payment is not part of this step.')
+      setMoveOpen(false)
       setNextTime('')
       setDay('')
       setTimes([])
@@ -334,21 +432,35 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   return (
     <div className="page narrow visit-page">
       <button type="button" className="back" onClick={onBack}>Back</button>
-      <article className="session-hero">
-        <p className="kicker">{when.long}</p>
-        <h1>{when.time || when.day}</h1>
-        <SagaStatus status={booking.saga_status} />
-        <dl className="session-facts">
-          <div><dt>Therapist</dt><dd>{booking.professionals?.display_name || 'Therapist'}</dd></div>
-          <div><dt>Service</dt><dd>{booking.services?.name || 'Service'}</dd></div>
-          <div><dt>City</dt><dd>{booking.cities?.name || 'City'}</dd></div>
-          {ops && booking.client?.full_name ? <div><dt>Client</dt><dd>{booking.client.full_name}</dd></div> : null}
-          {ops ? <div><dt>Calendar</dt><dd>{booking.provider}</dd></div> : null}
-          {ops && confirmedAt ? <div><dt>Visit confirmed</dt><dd>{formatWhen(confirmedAt)}</dd></div> : null}
-          {ops && booking.external_charge_ref ? <div><dt>Charge reference</dt><dd>{booking.external_charge_ref}</dd></div> : null}
-        </dl>
-        <p className="muted">{booking.amount_cents == null ? 'Payment is not taken on this reservation.' : `An amount is recorded${booking.currency ? ` in ${booking.currency}` : ''}. This screen does not take payment.`}</p>
+      <article className="session-hero session-person">
+        <img src={photoOf(booking)} alt="" />
+        <div>
+          <p className="kicker">{booking.cities?.name || 'City not set'}</p>
+          <h1>{booking.professionals?.display_name || 'Therapist'}</h1>
+          <p>{booking.services?.name || 'Service'}</p>
+          <SagaStatus status={booking.saga_status} />
+        </div>
       </article>
+      <dl className="session-facts">
+        <div><dt>Date</dt><dd>{when.long}</dd></div>
+        <div><dt>Time</dt><dd>{when.time || 'Time not set'}</dd></div>
+        {lengthOf(booking.starts_at, booking.ends_at) ? <div><dt>Length</dt><dd>{lengthOf(booking.starts_at, booking.ends_at)}</dd></div> : null}
+        <div><dt>Service</dt><dd>{booking.services?.name || 'Service'}</dd></div>
+        <div><dt>City</dt><dd>{booking.cities?.name || 'City'}</dd></div>
+        <div><dt>Amount</dt><dd>{amountOf(booking)}</dd></div>
+        {ops && booking.client?.full_name ? <div><dt>Client</dt><dd>{booking.client.full_name}</dd></div> : null}
+        {ops ? <div><dt>Calendar</dt><dd>{booking.provider}</dd></div> : null}
+        {ops && confirmedAt ? <div><dt>Visit confirmed</dt><dd>{formatWhen(confirmedAt)}</dd></div> : null}
+        {ops && booking.external_charge_ref ? <div><dt>Charge reference</dt><dd>{booking.external_charge_ref}</dd></div> : null}
+      </dl>
+      <section className="account-card">
+        <h2>Details</h2>
+        <ul className="session-notes">
+          <li>Payment is not taken on this reservation.</li>
+          <li>The current time stays until the calendar accepts a change.</li>
+          <li>Cancelling does not refund anything, because payment is not connected.</li>
+        </ul>
+      </section>
       <section className="account-card">
         <h2>What happened</h2>
         {events.length === 0 ? <p className="muted">Changes will be listed here.</p> : (
@@ -371,46 +483,65 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
       </section>
       {canChange && open && !door ? <p className="muted">This calendar is not connected yet. Nothing was changed.</p> : null}
       {canChange && open && door ? (
-        <section className="account-card">
-          <h2>Move this session</h2>
-          <p className="muted">Pick another open day and time. The current time stays until the calendar accepts the change.</p>
-          <div className="month-row">
-            <button type="button" aria-label="Previous month" onClick={() => { setMonth(shiftMonth(month, -1)); setDay(''); setTimes([]); setNextTime('') }}>Prev</button>
-            <strong>{formatMonth(month)}</strong>
-            <button type="button" aria-label="Next month" onClick={() => { setMonth(shiftMonth(month, 1)); setDay(''); setTimes([]); setNextTime('') }}>Next</button>
-          </div>
-          {datesLoading ? <LoadingBlock kind="calendar" text="Checking open days…" /> : null}
-          {pendingCalendar ? <p className="muted">The calendar did not return a time. Nothing was changed.</p> : null}
-          {!datesLoading && dates.length === 0 && !pendingCalendar ? <p className="muted">No openings this month.</p> : null}
-          {dates.length > 0 ? (
-            <div className="choice-grid">
-              {dates.map((date) => (
-                <button type="button" key={date} className={date === day ? 'on' : ''} aria-pressed={date === day} onClick={() => pickDay(date)}>{formatDay(date)}</button>
-              ))}
+        <div className="visit-actions">
+          <Button disabled={busy} onClick={() => setMoveOpen(true)}>Move this session</Button>
+          {confirmCancel ? (
+            <div className="confirm-box">
+              <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>
+              <div className="visit-actions">
+                <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(false)}>Keep it</Button>
+                <Button disabled={busy} onClick={cancel}>Cancel reservation</Button>
+              </div>
             </div>
-          ) : null}
-          {busy && day && times.length === 0 ? <LoadingBlock kind="times" text="Checking times…" /> : null}
-          {day && times.length === 0 && !busy && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
-          {times.length > 0 ? (
-            <div className="choice-grid times">
-              {times.map((time) => (
-                <button type="button" key={time} className={time === nextTime ? 'on' : ''} aria-pressed={time === nextTime} onClick={() => setNextTime(time)}>{formatClock(time)}</button>
-              ))}
-            </div>
-          ) : null}
-          <div className="visit-actions">
-            <Button busy={busy} disabled={!nextTime} onClick={reschedule}>Move to this time</Button>
-            {confirmCancel ? (
-              <div className="confirm-box">
-                <p>Cancel this reservation? Payment is not connected, so this does not refund anything.</p>
-                <div className="visit-actions">
-                  <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(false)}>Keep it</Button>
-                  <Button disabled={busy} onClick={cancel}>Cancel reservation</Button>
+          ) : <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel reservation</Button>}
+        </div>
+      ) : null}
+      {moveOpen ? createPortal(
+        <div className="book-back" role="presentation" onClick={() => { if (!busy) setMoveOpen(false) }}>
+          <div className="book-sheet move-sheet" role="dialog" aria-modal="true" aria-labelledby="move-title" onClick={(event) => event.stopPropagation()}>
+            <header className="book-head">
+              <div className="book-who">
+                <img src={photoOf(booking)} alt="" />
+                <div>
+                  <h2 id="move-title">Move this session</h2>
+                  <p>The current time stays until the calendar accepts the change.</p>
                 </div>
               </div>
-            ) : <Button kind="ghost" disabled={busy} onClick={() => setConfirmCancel(true)}>Cancel reservation</Button>}
+              <button type="button" className="book-icon" aria-label="Close" onClick={() => { if (!busy) setMoveOpen(false) }}><Icon name="close" /></button>
+            </header>
+            <div className="book-body">
+              <div className="month-row">
+                <button type="button" aria-label="Previous month" onClick={() => { setMonth(shiftMonth(month, -1)); setDay(''); setTimes([]); setNextTime('') }}>Prev</button>
+                <strong>{formatMonth(month)}</strong>
+                <button type="button" aria-label="Next month" onClick={() => { setMonth(shiftMonth(month, 1)); setDay(''); setTimes([]); setNextTime('') }}>Next</button>
+              </div>
+              {datesLoading ? <LoadingBlock text="Checking open days…" /> : null}
+              {pendingCalendar ? <p className="muted">The calendar did not return a time. Nothing was changed.</p> : null}
+              {!datesLoading && dates.length === 0 && !pendingCalendar ? <p className="muted">No openings this month.</p> : null}
+              {dates.length > 0 ? (
+                <div className="choice-grid">
+                  {dates.map((date) => (
+                    <button type="button" key={date} className={date === day ? 'on' : ''} aria-pressed={date === day} onClick={() => pickDay(date)}>{formatDay(date)}</button>
+                  ))}
+                </div>
+              ) : null}
+              {slotsBusy ? <LoadingBlock text="Checking times…" /> : null}
+              {day && times.length === 0 && !slotsBusy && !pendingCalendar ? <p className="muted">No open times that day.</p> : null}
+              {times.length > 0 ? (
+                <div className="choice-grid times">
+                  {times.map((time) => (
+                    <button type="button" key={time} className={time === nextTime ? 'on' : ''} aria-pressed={time === nextTime} onClick={() => setNextTime(time)}>{formatClock(time)}</button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <footer className="book-foot">
+              <button type="button" className={`book-go${busy ? ' is-busy' : ''}`} disabled={!nextTime || busy} aria-busy={busy || undefined} onClick={reschedule}>{busy ? <span className="spin" aria-hidden="true" /> : null}Move to this time</button>
+              <p className="book-pay">Payment is not taken here.</p>
+            </footer>
           </div>
-        </section>
+        </div>,
+        document.body,
       ) : null}
       {ops ? (
         <section className="account-card">
