@@ -975,9 +975,10 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .integ-hero-side { justify-self: end; align-self: start; }
   .integ-card { display: flex; align-items: center; gap: 12px; }
   .integ-card > img { width: 72px; height: 28px; max-width: 72px; flex: none; align-self: center; }
-  .integ-copy { display: grid; gap: 2px; flex: 1; min-width: 0; justify-items: start; }
+  .integ-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1; min-width: 0; }
+  .integ-name, .integ-copy > p { grid-area: auto; }
   .integ-name { flex-direction: row; align-items: center; justify-content: flex-start; }
-  .integ-card > p, .integ-copy > p { text-align: left; }
+  .integ-copy > p { text-align: left; }
   .integ-more { display: none; }
   .integ-action { width: auto; flex: none; align-self: center; white-space: nowrap; }
   .integ-stat strong { font-size: 22px; }
