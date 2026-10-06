@@ -929,7 +929,8 @@ body.modal-open .shell-scroll { overflow: hidden; }
 .integ-hero-copy { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: center; }
 .integ-brand { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .integ-brand img { height: 22px; width: auto; max-width: 150px; object-fit: contain; }
-.integ-pill { background: #ffe4ea; color: #c45c68; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 750; }
+.integ-pill { background: #ffe4ea; color: #c45c68; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 750; white-space: nowrap; }
+.integ-short { display: none; }
 .integ-hero-copy p, .integ-head p, .integ-card p { color: #666; font-size: 14px; line-height: 1.4; margin: 0; }
 .integ-hero-side { display: flex; align-items: center; gap: 10px; flex: none; }
 .integ-live { display: inline-flex; align-items: center; gap: 6px; background: #e8f7ee; color: #1d8a4e; border-radius: 999px; padding: 4px 10px; font-weight: 750; font-size: 13px; }
@@ -972,8 +973,19 @@ body.modal-open .shell-scroll { overflow: hidden; }
   .integ-grid { grid-template-columns: 1fr; }
   .integ-manage.desk { display: none; }
   .integ-manage.mob { display: inline-flex; }
-  .integ-hero-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
-  .integ-hero-side { justify-self: end; align-self: start; }
+  .integ-hero { padding: 14px; gap: 12px; }
+  .integ-hero-top { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; grid-template-areas: "icon brand live" "text text text"; align-items: center; gap: 8px 12px; }
+  .integ-icon { grid-area: icon; }
+  .integ-hero-copy { display: contents; }
+  .integ-brand { grid-area: brand; min-width: 0; }
+  .integ-hero-copy p { grid-area: text; }
+  .integ-hero-side { grid-area: live; justify-self: end; align-self: center; }
+  .integ-brand img { height: 18px; max-width: 120px; }
+  .integ-short { display: inline; }
+  .integ-long { display: none; }
+  .integ-stats { gap: 8px; }
+  .integ-stat { overflow: hidden; }
+  .integ-stat span, .integ-stat small { font-size: 11px; line-height: 1.25; overflow-wrap: anywhere; }
   .integ-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
   .integ-card > img { width: 36px; height: 36px; max-width: 36px; }
   .integ-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; min-width: 0; }

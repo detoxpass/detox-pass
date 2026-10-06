@@ -352,12 +352,12 @@ export function Integrations({ session, embedded, onReady }: {
         </div>
         <div className="integ-stats">
           <div className="integ-stat">
-            <span>Hours published</span>
+            <span><span className="integ-long">Hours published</span><span className="integ-short">Hours</span></span>
             <strong>{hoursThisMonth(windows)}</strong>
             <small>this month</small>
           </div>
           <div className="integ-stat">
-            <span>Total reservations</span>
+            <span><span className="integ-long">Total reservations</span><span className="integ-short">Bookings</span></span>
             <strong>
               {reservationCount}
               {change != null ? <em className={change >= 0 ? 'integ-up' : 'integ-down'}>{change >= 0 ? '↑' : '↓'}{Math.abs(change)}%</em> : null}
@@ -365,7 +365,7 @@ export function Integrations({ session, embedded, onReady }: {
             <small>this month</small>
           </div>
           <div className="integ-stat">
-            <span>Next reservation</span>
+            <span><span className="integ-long">Next reservation</span><span className="integ-short">Next</span></span>
             <strong className="integ-when">{upcoming ? visitWhen(upcoming) : 'None'}</strong>
             <small>{upcoming ? [upcoming.services?.name, upcoming.cities?.name].filter(Boolean).join(' · ') || 'Reservation' : 'Nothing scheduled'}</small>
           </div>
