@@ -354,7 +354,9 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
           }
           if (!body.ok) throw new Error(typeof body.error === 'string' ? body.error : 'Square did not connect.')
           setSquareToken('')
-          setNotice('Square connected. The token is not shown again. Status stays pending until a live booking.')
+          setNotice(body.status === 'tested'
+            ? 'Square connected. The token is not shown again.'
+            : 'Square connected. The token is not shown again. Status stays pending until a live booking.')
           reload()
         } catch (caught) {
           setNotice(caught instanceof Error ? caught.message : 'Could not connect Square.')

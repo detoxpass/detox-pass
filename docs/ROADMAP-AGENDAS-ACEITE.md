@@ -15,7 +15,7 @@ externa. A reserva dela de 12 de outubro não foi mexida.
 | Formulário da profissional | Agenda lista Detox Pass, Square, Acuity, Wix, Zenoti e Mindbody. Só Detox Pass e Square conectam. Square pede ambiente e access token. |
 | Signature key da Square | Ainda não está no projeto. |
 | Ficha Detox Pass | Voltou a inativa, sem serviço e sem cidade, com agenda externa. |
-| Tela no site publicado | Entra com este código. A prova no navegador fica registrada quando o deploy estiver no ar. |
+| Tela no site publicado | Provada em `https://detox-pass.vercel.app/agenda`, na conta da profissional. |
 
 ## Parâmetros e resultado
 
@@ -56,12 +56,24 @@ Rodaram com Deno, 9 passaram. O nono cobre a busca que não começa no passado.
 | 32 | O mesmo mês depois do ajuste, ficha ativa só na prova | Dias a partir de hoje. Dia 1 de outubro vazio. | 200, 19 dias, o primeiro `2026-10-06`. Dia passado: 200 e zero horários. A ficha voltou a inativa. |
 | 33 | Novembro, horário, criar, reagendar, cancelar e ler pela função publicada | Ciclo fechado e as duas pontas iguais. | `dates` 21 dias. Dia `2026-11-02`, 16 horários. Reserva `fa458a4d-ade7-4f87-a50d-68429ce9ffb4` `provider_confirmed`. Reagendamento 200. Cancelamento 200. Leitura: local e Square cancelados, `diverged` falso. |
 | 34 | Status depois do ciclo | `tested` na Square. Ficha inativa, zero serviços, zero cidades. | Passou. Acuity e Wix continuam `pending`. |
+| 35 | Agenda publicada, conta da profissional | Lista Detox Pass, Square, Acuity, Wix, Zenoti e Mindbody. Square aparece como a agenda ligada. | Passou. A reserva de prova de 2 de novembro aparece cancelada. |
+| 36 | Acuity na mesma lista | A tela não abre formulário. | Passou. O texto diz que esta tela ainda não conecta. |
+| 37 | Token inválido no formulário | A Square recusa e a frase cabe na tela. | Passou. "Square did not accept this access token." |
+| 38 | Token válido, vários serviços | A tela pede a escolha e não mostra unidade nem pessoa, porque há uma de cada. | Passou. A lista tem cinco serviços, inclusive Sessão Detox 30 min. |
+| 39 | Salvar Sessão Detox | O formulário some, o token não volta, a Square continua ligada. | Passou. A frase de sucesso nomeou o serviço. |
+| 40 | Sarah Anderson | Agenda interna, ativa, zero conexões. | Passou, leitura. |
+| 41 | Ficha da operação | Formulário da Square com status `tested`, token vazio, botão desligado até colar. Acuity continua `pending`. | Passou. Não enviei o token de novo por ali. A ficha segue inativa, sem serviço e sem cidade. |
 | 23 | Acuity `/me`, calendários e tipos | 403, API só no plano Powerhouse. | Passou como recusa. Sem lista, sem criar. |
 | 24 | Wix com App ID e App secret, sem instance | Bearer de 4 horas. Serviços e instance respondem 403. | Passou como recusa. O HTML de example.com não foi gravado. |
 
 ## O que este aceite não diz
 
-A Square desta ficha passou pela porta publicada da cliente. O aviso de volta
-não chegou, porque a Signature key ainda não foi salva. Acuity, Wix, Zenoti e
-Mindbody continuam sem conexão por esta tela. Nenhuma agenda está homologada.
-A ficha Detox Pass não fica na busca da cliente.
+A Square desta ficha passou pela porta publicada da cliente e pelo formulário
+da Agenda. O aviso de volta não chegou, porque a Signature key ainda não foi
+salva. Acuity, Wix, Zenoti e Mindbody continuam sem conexão por esta tela.
+Nenhuma agenda está homologada. A ficha Detox Pass não fica na busca da cliente.
+
+O salvamento pela tela, na versão que estava no ar, gravou `pending` de novo.
+A variação era a mesma do ciclo que já tinha fechado, então o status voltou
+para `tested`. Um salvamento seguinte da mesma variação mantém `tested`.
+Trocar o serviço volta para `pending`.

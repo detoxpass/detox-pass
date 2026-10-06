@@ -174,7 +174,10 @@ export function AgendaManager({ session }: { session: Session }) {
       setServices([])
       setPicked('')
       const service = body.service && typeof body.service === 'object' ? body.service as SquareOption : null
-      setNotice(`Square is connected${service?.name ? `: ${service.name}` : ''}. It stays pending until a live booking is completed.`)
+      const name = service?.name ? `: ${service.name}` : ''
+      setNotice(body.status === 'tested'
+        ? `Square is connected${name}.`
+        : `Square is connected${name}. It stays pending until a live booking is completed.`)
       reload()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not connect Square.')

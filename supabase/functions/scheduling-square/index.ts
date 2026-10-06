@@ -100,16 +100,19 @@ async function connectSquare(caller: Caller, body: Body) {
   await admin.from('schedule_connections').update({ is_source: false }).eq('professional_id', gate.professionalId).neq('provider', 'square')
   const { data: existing } = await admin
     .from('schedule_connections')
-    .select('id')
+    .select('id, status, external_resource_id')
     .eq('professional_id', gate.professionalId)
     .eq('provider', 'square')
     .maybeSingle()
+  const status = existing?.status === 'tested' && existing.external_resource_id === service.variationId
+    ? 'tested'
+    : 'pending'
   let connectionId = existing?.id as string | undefined
   if (connectionId) {
     const { error } = await admin.from('schedule_connections').update({
       external_resource_id: service.variationId,
       is_source: true,
-      status: 'pending',
+      status,
     }).eq('id', connectionId)
     if (error) return json({ error: error.message }, 400)
   } else {
@@ -136,12 +139,17 @@ async function connectSquare(caller: Caller, body: Body) {
   return json({
     ok: true,
     provider: 'square',
-    status: 'pending',
+    status,
     homologated: false,
     location: location,
     member,
     service,
   })
+}
+
+function squareFailure(status: number, payload: unknown) {
+  if (status === 401) return json({ error: 'Square did not accept this access token.' }, 401)
+  return json({ status: 'pending', supported: false, detail: payload }, status)
 }
 
 function pickOne<T>(rows: T[], id: string | undefined, read: (row: T) => string): T | null {
@@ -186,8 +194,8 @@ async function discover(environment: string | undefined, accessToken: string | u
   ])
   const locationsBody = await locationsResponse.json().catch(() => null)
   const membersBody = await membersResponse.json().catch(() => null)
-  if (!locationsResponse.ok) return { error: json({ status: 'pending', supported: false, detail: locationsBody }, locationsResponse.status) } as const
-  if (!membersResponse.ok) return { error: json({ status: 'pending', supported: false, detail: membersBody }, membersResponse.status) } as const
+  if (!locationsResponse.ok) return { error: squareFailure(locationsResponse.status, locationsBody) } as const
+  if (!membersResponse.ok) return { error: squareFailure(membersResponse.status, membersBody) } as const
   if (services.error) return { error: services.error } as const
   const locations = (Array.isArray(locationsBody?.locations) ? locationsBody.locations : []).flatMap((row: { id?: string; name?: string; timezone?: string; status?: string }) => {
     if (row.status && row.status !== 'ACTIVE') return []
@@ -214,7 +222,7 @@ async function listBookableServices(secret: Secret) {
     const path = `/v2/catalog/list?types=${encodeURIComponent('ITEM')}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
     const response = await square(secret, path)
     const payload = await response.json().catch(() => null)
-    if (!response.ok) return { error: json({ status: 'pending', supported: false, detail: payload }, response.status) }
+    if (!response.ok) return { error: squareFailure(response.status, payload) }
     const objects = Array.isArray(payload?.objects) ? payload.objects : []
     for (const object of objects) {
       const item = object?.item_data
