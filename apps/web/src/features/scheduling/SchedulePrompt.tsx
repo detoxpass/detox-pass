@@ -45,14 +45,25 @@ export function SchedulePrompt({ session }: { session: Session }) {
         <h2 id="schedule-choice-title">Choose your calendar</h2>
         <p>Each professional keeps their own calendar. Detox Pass does not share one login across the team.</p>
         <p>Internal keeps the openings on Detox Pass. You publish the weekly hours, and clients book those times.</p>
-        <p>External writes the booking to your own Acuity, Square, Wix, Zenoti, or Mindbody account. Operation stores that account's key on your profile. Your password stays yours.</p>
+        <p>Square is connected from Agenda. Paste the access token there. Acuity, Wix, Zenoti, and Mindbody stay on the list and are not connected from this screen yet.</p>
         <label className="check-row">
           <input type="checkbox" checked={dismiss} onChange={(event) => setDismiss(event.target.checked)} />
           Do not show this again
         </label>
         {error ? <p className="muted">{error}</p> : null}
         <Button disabled={busy} onClick={() => choose('internal')}>Use Detox Pass calendar</Button>
-        <Button kind="ghost" disabled={busy} onClick={() => choose('external')}>Use my external calendar</Button>
+        <Button kind="ghost" disabled={busy} onClick={async () => {
+          setBusy(true)
+          setError('')
+          try {
+            await setScheduleChoice(session, null, true)
+            setOpen(false)
+          } catch (caught) {
+            setError(caught instanceof Error ? caught.message : 'Could not save the choice.')
+          } finally {
+            setBusy(false)
+          }
+        }}>Connect Square on Agenda</Button>
         <Button kind="ghost" disabled={busy || !dismiss} onClick={() => choose(null)}>Continue without choosing</Button>
       </div>
     </div>

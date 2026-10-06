@@ -269,7 +269,7 @@ function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
         writeLoved(next)
         setLoved(next)
       }}
-      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} onReserved={onReserved} />}
+      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} source={(row.schedule_connections ?? []).find((item) => item.is_source)?.provider ?? null} onReserved={onReserved} />}
     />
   )
 }

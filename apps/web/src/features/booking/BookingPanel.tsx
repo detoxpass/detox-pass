@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { callFunction, type Session } from '../../lib/supabase'
+import { calendarDoor, callFunction, type Session } from '../../lib/supabase'
 import { Button, ErrorBlock, Icon, LoadingBlock, PendingBlock } from '../../ui'
 import { formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
@@ -27,12 +27,13 @@ function pending(body: unknown) {
   return Boolean(body && typeof body === 'object' && 'supported' in body && body.supported === false)
 }
 
-export function BookingPanel({ session, professionalId, offers, cities, mode, onReserved }: {
+export function BookingPanel({ session, professionalId, offers, cities, mode, source, onReserved }: {
   session: Session
   professionalId: string
   offers: Offer[]
   cities: City[]
   mode: 'internal' | 'external' | null
+  source: string | null
   onReserved?: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -52,7 +53,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, on
 
   const service = offers.find((offer) => offer.id === serviceId) ?? offers[0]
   const city = cities.find((item) => item.id === cityId) ?? cities[0]
-  const door = mode === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
+  const door = calendarDoor(mode === 'internal' ? 'internal' : source)
 
   useEffect(() => {
     if (!open) return
@@ -68,7 +69,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, on
   }, [open, busy])
 
   useEffect(() => {
-    if (!open || !mode) return
+    if (!open || !mode || !door) return
     let alive = true
     setLoading(true)
     setError('')
@@ -94,6 +95,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, on
   }, [session, professionalId, month, reload, mode, open, door])
 
   async function pickDay(next: string) {
+    if (!door) return
     setDay(next)
     setChosen('')
     setTimes([])
@@ -114,6 +116,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, on
   }
 
   async function reserve() {
+    if (!door) return
     setError('')
     setNotice('')
     setBusy(true)
@@ -155,6 +158,9 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, on
 
   if (mode == null) {
     return <PendingBlock text="This professional has not chosen a calendar yet. No time is offered." />
+  }
+  if (mode === 'external' && !door) {
+    return <PendingBlock text="This external calendar is not the one clients book yet. No time is offered." />
   }
   if (offers.length === 0 || cities.length === 0) {
     return <PendingBlock text="This professional has no service and city linked yet, so no time is offered." />

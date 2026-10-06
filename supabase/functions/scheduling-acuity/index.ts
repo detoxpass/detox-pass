@@ -128,6 +128,7 @@ async function book(clientId: string, body: Body) {
     p_service_id: body.service_id,
     p_city_id: body.city_id,
     p_starts_at: body.starts_at,
+    p_provider: 'acuity',
   })
   if (openError || !bookingId) return json({ error: openError?.message ?? 'não abriu a intenção' }, 400)
 

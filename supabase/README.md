@@ -43,7 +43,9 @@ Objetos finais do Stripe Connect (repasse para a conta da profissional) e o prov
 | `scheduling-acuity` | sim | disponibilidade, reserva, reagendar, cancelar, gravar token |
 | `stripe-charge` | sim | abre a sessão de pagamento da reserva já confirmada no provedor |
 | `stripe-webhook` | não | assinatura Stripe, grava pago ou compensação |
-| `scheduling-square`, `wix`, `zenoti`, `mindbody` | sim | respondem pendente, sem simular sucesso |
+| `scheduling-square` | sim | disponibilidade, reserva, reagendar, cancelar, gravar token |
+| `scheduling-square-webhook` | não | aviso assinado da Square; sem a chave, recusa |
+| `scheduling-wix`, `zenoti`, `mindbody` | sim | respondem pendente, sem simular sucesso |
 | `gusto` | sim | desligado até a cliente optar |
 
 Segredos desta conta, gravados com `supabase secrets set`, nunca no Git:

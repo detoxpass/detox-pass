@@ -320,6 +320,7 @@ export async function catalog(session: Session) {
     'schedule_mode',
     'professional_services(service_id,services(id,name,price_cents,currency))',
     'professional_cities(city_id,cities(id,name))',
+    'schedule_connections(provider,is_source)',
   ].join(',')
   const response = await fetch(`${url}/rest/v1/professionals?select=${encodeURIComponent(select)}&active=eq.true&order=display_name.asc`, {
     headers: {
@@ -339,6 +340,13 @@ export type ProfessionalRow = {
   schedule_mode: 'internal' | 'external' | null
   professional_services: { service_id: string; services: { id: string; name: string; price_cents: number | null; currency: string | null } | null }[] | null
   professional_cities: { city_id: string; cities: { id: string; name: string } | null }[] | null
+  schedule_connections: { provider: string; is_source: boolean }[] | null
+}
+
+export function calendarDoor(provider: string | null | undefined): string | null {
+  if (provider === 'internal') return 'scheduling-internal'
+  if (provider === 'acuity' || provider === 'square') return `scheduling-${provider}`
+  return null
 }
 
 export async function completeAuthCallback() {
@@ -529,10 +537,11 @@ export type MySchedule = {
   slot_minutes: number
   active: boolean
   display_name: string
+  schedule_connections?: { provider: string; is_source: boolean; status: string }[] | null
 }
 
 export function loadMySchedule(session: Session) {
-  return rows<MySchedule>(session, `professionals?select=id,schedule_mode,schedule_prompt_dismissed,schedule_timezone,slot_minutes,active,display_name&profile_id=eq.${encodeURIComponent(session.user.id)}`)
+  return rows<MySchedule>(session, `professionals?select=id,schedule_mode,schedule_prompt_dismissed,schedule_timezone,slot_minutes,active,display_name,schedule_connections(provider,is_source,status)&profile_id=eq.${encodeURIComponent(session.user.id)}`)
 }
 
 export type HourWindow = { id: string; weekday: number; start_minute: number; end_minute: number }

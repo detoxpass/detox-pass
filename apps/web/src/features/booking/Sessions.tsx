@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { callFunction, loadBookingEvents, loadBookings, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
+import { calendarDoor, callFunction, loadBookingEvents, loadBookings, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
 import { Button, EmptyBlock, ErrorBlock, LoadingBlock, Notice, SagaStatus } from '../../ui'
 import { appointmentParts, formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
@@ -125,10 +125,10 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   useEffect(() => { void refresh() }, [session, id])
 
   const booking = rows.find((row) => row.id === id)
-  const door = booking?.provider === 'internal' ? 'scheduling-internal' : 'scheduling-acuity'
+  const door = calendarDoor(booking?.provider)
 
   useEffect(() => {
-    if (!canChange || !booking || booking.saga_status !== 'provider_confirmed') return
+    if (!canChange || !booking || !door || booking.saga_status !== 'provider_confirmed') return
     let alive = true
     setDatesLoading(true)
     setPendingCalendar(false)
@@ -155,6 +155,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   const open = booking.saga_status === 'provider_confirmed'
 
   async function cancel() {
+    if (!door) return
     setBusy(true)
     setError('')
     try {
@@ -175,6 +176,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   }
 
   async function pickDay(next: string) {
+    if (!door) return
     setDay(next)
     setNextTime('')
     setTimes([])
@@ -199,6 +201,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   }
 
   async function reschedule() {
+    if (!door) return
     setBusy(true)
     setError('')
     try {
@@ -221,6 +224,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
   }
 
   async function readExternal() {
+    if (!door) return
     setBusy(true)
     setExternal('')
     try {
@@ -274,7 +278,8 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
           </ol>
         )}
       </section>
-      {canChange && open ? (
+      {canChange && open && !door ? <p className="muted">This calendar is not connected yet. Nothing was changed.</p> : null}
+      {canChange && open && door ? (
         <section className="account-card">
           <h2>Move this session</h2>
           <p className="muted">Pick another open day and time. The current time stays until the calendar accepts the change.</p>
@@ -315,7 +320,7 @@ export function SessionDetail({ session, id, canChange, canRead, onBack }: {
           </div>
         </section>
       ) : null}
-      {canRead ? <Button kind="ghost" disabled={busy} onClick={readExternal}>Check the calendar</Button> : null}
+      {canRead && door ? <Button kind="ghost" disabled={busy} onClick={readExternal}>Check the calendar</Button> : null}
       {external ? <Notice text={external} /> : null}
       {notice ? <Notice text={notice} /> : null}
       {error ? <ErrorBlock text={error} /> : null}

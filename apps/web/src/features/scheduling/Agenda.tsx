@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   addBlock,
+  callFunction,
   loadBlocks,
   loadHours,
   loadMySchedule,
@@ -32,6 +33,17 @@ const ZONES = [
 ]
 
 const LENGTHS = [30, 45, 60, 90, 120]
+
+const CALENDARS: { id: string; label: string; ready: boolean }[] = [
+  { id: 'internal', label: 'Detox Pass', ready: true },
+  { id: 'square', label: 'Square', ready: true },
+  { id: 'acuity', label: 'Acuity', ready: false },
+  { id: 'wix', label: 'Wix', ready: false },
+  { id: 'zenoti', label: 'Zenoti', ready: false },
+  { id: 'mindbody', label: 'Mindbody', ready: false },
+]
+
+type SquareOption = { id?: string; variationId?: string; name: string; timezone?: string; minutes?: number }
 
 function minutesToTime(value: number) {
   return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
@@ -74,6 +86,15 @@ export function AgendaManager({ session }: { session: Session }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  const [picked, setPicked] = useState('')
+  const [environment, setEnvironment] = useState<'sandbox' | 'production'>('sandbox')
+  const [accessToken, setAccessToken] = useState('')
+  const [locations, setLocations] = useState<SquareOption[]>([])
+  const [members, setMembers] = useState<SquareOption[]>([])
+  const [services, setServices] = useState<SquareOption[]>([])
+  const [locationId, setLocationId] = useState('')
+  const [memberId, setMemberId] = useState('')
+  const [variationId, setVariationId] = useState('')
 
   function reload() {
     setLoading(true)
@@ -98,15 +119,65 @@ export function AgendaManager({ session }: { session: Session }) {
 
   useEffect(() => { reload() }, [session])
 
-  async function choose(mode: 'internal' | 'external') {
+  async function chooseInternal() {
     setBusy(true)
     setError('')
+    setPicked('internal')
     try {
-      await setScheduleChoice(session, mode, true)
-      setNotice(mode === 'internal' ? 'Detox Pass calendar is on.' : 'External calendar is on. Operation still stores that account key on your profile.')
+      await setScheduleChoice(session, 'internal', true)
+      setNotice('Detox Pass calendar is on. Clients book the hours you publish here.')
       reload()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not change the calendar.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function applyChoices(body: Record<string, unknown>) {
+    const nextLocations = Array.isArray(body.locations) ? body.locations as SquareOption[] : []
+    const nextMembers = Array.isArray(body.members) ? body.members as SquareOption[] : []
+    const nextServices = Array.isArray(body.services) ? body.services as SquareOption[] : []
+    setLocations(nextLocations)
+    setMembers(nextMembers)
+    setServices(nextServices)
+    setLocationId(nextLocations[0]?.id ?? '')
+    setMemberId(nextMembers[0]?.id ?? '')
+    setVariationId(nextServices[0]?.variationId ?? '')
+  }
+
+  async function connectSquare(event: FormEvent) {
+    event.preventDefault()
+    if (!schedule) return
+    setBusy(true)
+    setError('')
+    try {
+      const result = await callFunction(session, 'scheduling-square', {
+        action: 'connect',
+        professional_id: schedule.id,
+        environment,
+        access_token: accessToken,
+        location_id: locationId || undefined,
+        team_member_id: memberId || undefined,
+        service_variation_id: variationId || undefined,
+      })
+      const body = result.body && typeof result.body === 'object' ? result.body as Record<string, unknown> : {}
+      if (body.status === 'choose') {
+        applyChoices(body)
+        setNotice('Square has more than one option. Pick the location, person, and service, then save again.')
+        return
+      }
+      if (!body.ok) throw new Error(typeof body.error === 'string' ? body.error : 'Square did not connect.')
+      setAccessToken('')
+      setLocations([])
+      setMembers([])
+      setServices([])
+      setPicked('')
+      const service = body.service && typeof body.service === 'object' ? body.service as SquareOption : null
+      setNotice(`Square is connected${service?.name ? `: ${service.name}` : ''}. It stays pending until a live booking is completed.`)
+      reload()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not connect Square.')
     } finally {
       setBusy(false)
     }
@@ -154,16 +225,70 @@ export function AgendaManager({ session }: { session: Session }) {
   if (loading) return <LoadingBlock text="Loading your calendar…" />
   if (!schedule) return <EmptyBlock title="No professional profile" text="This account is not a professional yet." />
 
+  const source = (schedule.schedule_connections ?? []).find((row) => row.is_source)?.provider ?? ''
+  const activeCalendar = schedule.schedule_mode === 'internal' ? 'internal' : source
+  const shown = picked || activeCalendar
+
   return (
     <div className="stack">
       <section className="account-card">
         <h2>Calendar</h2>
-        <p>{schedule.schedule_mode === 'internal' ? 'Clients book the hours you publish here.' : schedule.schedule_mode === 'external' ? 'Bookings go to your own external account. The key stays on your profile, stored by operation.' : 'Choose a calendar before clients can see times.'}</p>
+        <p>Pick one calendar. Clients book that one. Square asks only for the access token; the location, person, and service are filled in from the account.</p>
         <div className="shortcuts">
-          <Button disabled={busy || schedule.schedule_mode === 'internal'} onClick={() => choose('internal')}>Detox Pass calendar</Button>
-          <Button kind="ghost" disabled={busy || schedule.schedule_mode === 'external'} onClick={() => choose('external')}>External calendar</Button>
+          {CALENDARS.map((calendar) => (
+            <Button
+              key={calendar.id}
+              kind={shown === calendar.id ? 'primary' : 'ghost'}
+              disabled={busy}
+              onClick={() => calendar.id === 'internal' ? chooseInternal() : setPicked(calendar.id)}
+            >
+              {calendar.label}{activeCalendar === calendar.id ? ' · on' : ''}
+            </Button>
+          ))}
         </div>
+        {picked && picked !== 'internal' && picked !== 'square' ? (
+          <p className="muted">{CALENDARS.find((calendar) => calendar.id === picked)?.label} is listed, and this screen does not connect it yet.</p>
+        ) : null}
+        {activeCalendar === 'square' && picked !== 'square' ? (
+          <p className="muted">Square is the calendar clients book. The token is stored and is not shown again.</p>
+        ) : null}
       </section>
+      {picked === 'square' ? (
+        <form className="account-card" onSubmit={connectSquare}>
+          <h2>Square</h2>
+          <label className="field"><span>Environment</span>
+            <select value={environment} onChange={(event) => setEnvironment(event.target.value === 'production' ? 'production' : 'sandbox')}>
+              <option value="sandbox">Sandbox</option>
+              <option value="production">Live</option>
+            </select>
+          </label>
+          <label className="field"><span>Access token</span>
+            <input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} autoComplete="off" required />
+          </label>
+          {locations.length > 1 ? (
+            <label className="field"><span>Location</span>
+              <select value={locationId} onChange={(event) => setLocationId(event.target.value)}>
+                {locations.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+              </select>
+            </label>
+          ) : null}
+          {members.length > 1 ? (
+            <label className="field"><span>Team member</span>
+              <select value={memberId} onChange={(event) => setMemberId(event.target.value)}>
+                {members.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+              </select>
+            </label>
+          ) : null}
+          {services.length > 1 ? (
+            <label className="field"><span>Service</span>
+              <select value={variationId} onChange={(event) => setVariationId(event.target.value)}>
+                {services.map((row) => <option key={row.variationId} value={row.variationId}>{row.name}</option>)}
+              </select>
+            </label>
+          ) : null}
+          <Button type="submit" disabled={busy || accessToken.trim() === ''}>Connect Square</Button>
+        </form>
+      ) : null}
       {schedule.schedule_mode === 'internal' ? (
         <>
           <form className="account-card" onSubmit={saveGrid}>

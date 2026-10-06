@@ -204,6 +204,8 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
   const [userId, setUserId] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [typeId, setTypeId] = useState('')
+  const [squareEnvironment, setSquareEnvironment] = useState<'sandbox' | 'production'>('sandbox')
+  const [squareToken, setSquareToken] = useState('')
 
   function reload() {
     setLoading(true)
@@ -336,6 +338,39 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
           </div>
         )}
       </section>
+      <form className="account-card" onSubmit={async (event) => {
+        event.preventDefault()
+        try {
+          const result = await callFunction(session, 'scheduling-square', {
+            action: 'connect',
+            professional_id: current.id,
+            environment: squareEnvironment,
+            access_token: squareToken,
+          })
+          const body = result.body && typeof result.body === 'object' ? result.body as Record<string, unknown> : {}
+          if (body.status === 'choose') {
+            setNotice('This Square account has more than one location, person, or service. The professional picks them on Agenda.')
+            return
+          }
+          if (!body.ok) throw new Error(typeof body.error === 'string' ? body.error : 'Square did not connect.')
+          setSquareToken('')
+          setNotice('Square connected. The token is not shown again. Status stays pending until a live booking.')
+          reload()
+        } catch (caught) {
+          setNotice(caught instanceof Error ? caught.message : 'Could not connect Square.')
+        }
+      }}>
+        <h2>Square</h2>
+        <p>Status: {current.schedule_connections?.find((item) => item.provider === 'square')?.status ?? 'not connected'}. Paste the access token. Location, person, and service come from the account when there is only one of each.</p>
+        <Field label="Environment">
+          <select value={squareEnvironment} onChange={(event) => setSquareEnvironment(event.target.value === 'production' ? 'production' : 'sandbox')}>
+            <option value="sandbox">Sandbox</option>
+            <option value="production">Live</option>
+          </select>
+        </Field>
+        <Field label="Access token"><input value={squareToken} onChange={(event) => setSquareToken(event.target.value)} type="password" autoComplete="off" required /></Field>
+        <Button type="submit" disabled={squareToken.trim() === ''}>Connect Square</Button>
+      </form>
       <form className="account-card" onSubmit={saveConnection}>
         <h2>Acuity</h2>
         <p>Status: {connection?.status ?? 'pending'}. Homologated is not a choice on this form.</p>
