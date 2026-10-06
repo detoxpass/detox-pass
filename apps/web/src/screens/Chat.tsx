@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { formatWhen } from '../features/booking/when'
 import { loadChat, postChat, type ChatBlock, type Session } from '../lib/supabase'
 import { money } from './Professional'
@@ -21,8 +21,11 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [recording, setRecording] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const recorder = useRef<MediaRecorder | null>(null)
+  const fieldRef = useRef<HTMLTextAreaElement>(null)
   const started = useRef(0)
 
   useEffect(() => {
@@ -39,7 +42,20 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
-  }, [blocks, busy])
+  }, [blocks, busy, recording])
+
+  useEffect(() => {
+    const field = fieldRef.current
+    if (!field) return
+    field.style.height = '0px'
+    field.style.height = `${Math.min(field.scrollHeight, 140)}px`
+  }, [text])
+
+  useEffect(() => {
+    if (!recording) return
+    const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - started.current) / 1000)), 200)
+    return () => window.clearInterval(timer)
+  }, [recording])
 
   async function send(value = text, fromAudio = false) {
     const message = value.trim()
@@ -106,12 +122,15 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
       media.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data) }
       media.onstop = () => {
         stream.getTracks().forEach((track) => track.stop())
+        setLiveStream(null)
         const duration = (Date.now() - started.current) / 1000
         const blob = new Blob(chunks, { type: mime })
         void blob.arrayBuffer().then((buffer) => transcribe(new Uint8Array(buffer), mime, duration))
       }
       recorder.current = media
       started.current = Date.now()
+      setElapsed(0)
+      setLiveStream(stream)
       media.start()
       setRecording(true)
       window.setTimeout(() => { if (media.state === 'recording') media.stop() }, 60_000)
@@ -145,27 +164,84 @@ export function Chat({ session, go }: { session: Session; go: (path: string) => 
   return (
     <div className="page chat">
       <div className="chat-log" ref={scroller}>
-        {blocks.length === 0 ? (
-          <section className="fav-empty">
-            <span className="heart-lg" aria-hidden="true"><Icon name="chat" /></span>
-            <h2>Ask for a therapist</h2>
-            <p>Name a service or a city. Times come from the calendar, and a booking happens when you tap one.</p>
-          </section>
-        ) : null}
-        {blocks.map((block, index) => (
-          <BlockView key={`${block.type}-${index}`} block={block} go={go} busy={busy} onOpenings={askOpenings} onBook={book} />
-        ))}
-        {busy ? <p className="muted">Looking that up.</p> : null}
-        {error ? <p className="error">{error}</p> : null}
+        <div className="chat-stream">
+          {blocks.length === 0 ? (
+            <section className="fav-empty">
+              <span className="heart-lg" aria-hidden="true"><Icon name="chat" /></span>
+              <h2>Ask for a therapist</h2>
+              <p>Name a service or a city. Times come from the calendar, and a booking happens when you tap one.</p>
+            </section>
+          ) : null}
+          {blocks.map((block, index) => (
+            <BlockView key={`${block.type}-${index}`} block={block} go={go} busy={busy} onOpenings={askOpenings} onBook={book} />
+          ))}
+          {busy ? <p className="muted">Looking that up.</p> : null}
+          {error ? <p className="error">{error}</p> : null}
+        </div>
       </div>
       <form className="chat-dock" onSubmit={(event) => { event.preventDefault(); void send() }}>
-        <button type="button" className={recording ? 'mic on' : 'mic'} aria-label={recording ? 'Stop recording' : 'Record audio'} onClick={recording ? stopRecording : startRecording}>
-          <Icon name="mic" />
-        </button>
-        <input value={text} placeholder="Service, city, or therapist" aria-label="Message" onChange={(event) => setText(event.target.value)} />
-        <Button kind="primary" type="submit" disabled={busy || !text.trim()}>Send</Button>
+        <div className={recording ? 'composer rec' : 'composer'}>
+          <button type="button" className={recording ? 'mic on' : 'mic'} aria-label={recording ? 'Stop recording' : 'Record audio'} onClick={recording ? stopRecording : startRecording}>
+            <Icon name="mic" />
+          </button>
+          {recording ? (
+            <>
+              <Waveform stream={liveStream} />
+              <time>{clock(elapsed)}</time>
+              <button type="button" className="send" aria-label="Stop recording" onClick={stopRecording}><Icon name="stop" /></button>
+            </>
+          ) : (
+            <>
+              <textarea
+                ref={fieldRef}
+                rows={1}
+                value={text}
+                placeholder="Service, city, or therapist"
+                aria-label="Message"
+                onChange={(event) => setText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault()
+                    void send()
+                  }
+                }}
+              />
+              <button type="submit" className="send" aria-label="Send" disabled={busy || !text.trim()}><Icon name="arrow" /></button>
+            </>
+          )}
+        </div>
       </form>
     </div>
+  )
+}
+
+function Waveform({ stream }: { stream: MediaStream | null }) {
+  const [levels, setLevels] = useState<number[]>(() => Array.from({ length: 32 }, () => 0.2))
+  useEffect(() => {
+    if (!stream) return
+    const audio = new AudioContext()
+    const source = audio.createMediaStreamSource(stream)
+    const analyser = audio.createAnalyser()
+    analyser.fftSize = 128
+    source.connect(analyser)
+    const data = new Uint8Array(analyser.frequencyBinCount)
+    let frame = 0
+    const tick = () => {
+      analyser.getByteFrequencyData(data)
+      const next = Array.from({ length: 32 }, (_, index) => (data[index] ?? 0) / 255)
+      setLevels(next)
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(frame)
+      void audio.close()
+    }
+  }, [stream])
+  return (
+    <span className={stream ? 'wave live' : 'wave'} aria-hidden="true">
+      {levels.map((level, index) => <i key={index} style={stream ? { height: `${8 + level * 22}px` } : undefined} />)}
+    </span>
   )
 }
 
@@ -177,9 +253,9 @@ function BlockView({ block, go, busy, onOpenings, onBook }: {
   onBook: (token: string) => void
 }) {
   if (block.type === 'user') {
-    return <p className="bubble user">{block.from_audio ? <Icon name="mic" /> : null}{String(block.text ?? '')}</p>
+    return <div className="bubble user">{block.from_audio ? <Icon name="mic" /> : null}<RichText text={String(block.text ?? '')} /></div>
   }
-  if (block.type === 'text') return <p className="bubble">{String(block.text ?? '')}</p>
+  if (block.type === 'text') return <div className="bubble"><RichText text={String(block.text ?? '')} /></div>
   if (block.type === 'professional_cards') {
     const people = Array.isArray(block.people) ? block.people as Person[] : []
     const relaxed = Array.isArray(block.relaxed) ? block.relaxed.map(String) : []
@@ -305,6 +381,89 @@ function relaxedLabel(relaxed: string[]) {
   if (relaxed.includes('cities')) return 'Nobody in that city for the specialty. These therapists still offer the service.'
   if (relaxed.includes('query')) return 'That wording is not a name in the catalog. These therapists still offer the service.'
   return 'No therapist matches that search.'
+}
+
+function RichText({ text }: { text: string }) {
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  const blocks: ReactNode[] = []
+  let index = 0
+  let cursor = 0
+  while (cursor < lines.length) {
+    const line = lines[cursor]
+    if (!line.trim()) {
+      cursor += 1
+      continue
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (cursor < lines.length && /^\s*[-*]\s+/.test(lines[cursor])) {
+        items.push(lines[cursor].replace(/^\s*[-*]\s+/, ''))
+        cursor += 1
+      }
+      const key = index
+      index += 1
+      blocks.push(<ul key={key}>{items.map((item, itemIndex) => <li key={itemIndex}>{inline(item, `${key}-${itemIndex}`)}</li>)}</ul>)
+      continue
+    }
+    if (/^\s*\d+[.)]\s+/.test(line)) {
+      const items: string[] = []
+      while (cursor < lines.length && /^\s*\d+[.)]\s+/.test(lines[cursor])) {
+        items.push(lines[cursor].replace(/^\s*\d+[.)]\s+/, ''))
+        cursor += 1
+      }
+      const key = index
+      index += 1
+      blocks.push(<ol key={key}>{items.map((item, itemIndex) => <li key={itemIndex}>{inline(item, `${key}-${itemIndex}`)}</li>)}</ol>)
+      continue
+    }
+    const paragraph = [line]
+    cursor += 1
+    while (cursor < lines.length && lines[cursor].trim() && !/^\s*([-*]|\d+[.)])\s+/.test(lines[cursor])) {
+      paragraph.push(lines[cursor])
+      cursor += 1
+    }
+    const key = index
+    index += 1
+    blocks.push(<p key={key}>{inline(paragraph.join('\n'), String(key))}</p>)
+  }
+  return <div className="md">{blocks}</div>
+}
+
+function inline(text: string, key: string): ReactNode[] {
+  const pattern = /(!\[[^\]]*\]\((?:https?:\/\/[^)\s]+|\/[^)\s]+)\)|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|\*\*[^*]+\*\*|__[^_]+__|`[^`]+`|(?<!\*)\*[^*\n]+\*(?!\*))/g
+  const nodes: ReactNode[] = []
+  let last = 0
+  let count = 0
+  for (const match of text.matchAll(pattern)) {
+    const token = match[0]
+    const at = match.index ?? 0
+    if (at > last) nodes.push(text.slice(last, at))
+    const id = `${key}-${count}`
+    count += 1
+    if (token.startsWith('![')) {
+      const alt = token.slice(2, token.indexOf(']'))
+      const src = token.slice(token.indexOf('(') + 1, -1)
+      nodes.push(<img key={id} src={src} alt={alt} />)
+    } else if (token.startsWith('[')) {
+      const label = token.slice(1, token.indexOf(']'))
+      const href = token.slice(token.indexOf('(') + 1, -1)
+      nodes.push(<a key={id} href={href} target="_blank" rel="noreferrer">{label}</a>)
+    } else if (token.startsWith('**') || token.startsWith('__')) {
+      nodes.push(<strong key={id}>{token.slice(2, -2)}</strong>)
+    } else if (token.startsWith('`')) {
+      nodes.push(<code key={id}>{token.slice(1, -1)}</code>)
+    } else {
+      nodes.push(<em key={id}>{token.slice(1, -1)}</em>)
+    }
+    last = at + token.length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
+}
+
+function clock(seconds: number) {
+  const safe = Math.max(0, seconds)
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
 }
 
 function localDay() {
