@@ -436,6 +436,12 @@ verify_jwt = false
 [functions.scheduling-square]
 verify_jwt = true
 
+[functions.scheduling-offer]
+verify_jwt = true
+
+[functions.terms-accept]
+verify_jwt = true
+
 [functions.scheduling-square-webhook]
 verify_jwt = false
 

@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { applyPartner, signIn } from '../lib/supabase'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { applyPartner, loadPublishedTerms, signIn } from '../lib/supabase'
 import { Button, Field, Logo } from '../ui'
 
 const empty = {
@@ -26,6 +26,20 @@ export function Partners({ onEnter, onSignIn }: { onEnter: () => void; onSignIn:
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState(false)
+  const [termsText, setTermsText] = useState<{ title: string; body: string; content_sha256: string; version_number: number } | null>(null)
+  const [scrolled, setScrolled] = useState(false)
+  const termsBox = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    loadPublishedTerms()
+      .then((row) => setTermsText(row))
+      .catch(() => setTermsText(null))
+  }, [])
+
+  useEffect(() => {
+    const node = termsBox.current
+    if (node && node.scrollHeight <= node.clientHeight + 8) setScrolled(true)
+  }, [termsText])
 
   function set<K extends keyof typeof empty>(key: K, value: (typeof empty)[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -38,8 +52,12 @@ export function Partners({ onEnter, onSignIn }: { onEnter: () => void; onSignIn:
       setError('Passwords do not match.')
       return
     }
-    if (!form.terms) {
-      setError('Agree to the Terms of Service and Privacy Policy to apply.')
+    if (!termsText) {
+      setError('Terms are not published yet.')
+      return
+    }
+    if (!scrolled || !form.terms) {
+      setError('Scroll through the terms and check the box.')
       return
     }
     setPending(true)
@@ -60,6 +78,9 @@ export function Partners({ onEnter, onSignIn }: { onEnter: () => void; onSignIn:
         specialty_note: form.specialty_note,
         coverage_note: form.coverage_note,
         terms: true,
+        content_sha256: termsText.content_sha256,
+        scrolled_to_end: true,
+        checkbox_confirmed: true,
       })
       await signIn(form.email, form.password)
       setDone(true)
@@ -177,10 +198,24 @@ export function Partners({ onEnter, onSignIn }: { onEnter: () => void; onSignIn:
           </div>
           <p className="hint">Service prices are set by the team after approval. This form does not set a rate.</p>
 
-          <label className="check partner-terms">
-            <input type="checkbox" checked={form.terms} onChange={(event) => set('terms', event.target.checked)} required />
-            <span>I agree to the Terms of Service and Privacy Policy</span>
-          </label>
+          {termsText ? (
+            <>
+              <h3>{termsText.title}</h3>
+              <p className="hint">Version {termsText.version_number}</p>
+              <div
+                className="terms-scroll"
+                ref={termsBox}
+                onScroll={(event) => {
+                  const node = event.currentTarget
+                  if (node.scrollTop + node.clientHeight >= node.scrollHeight - 8) setScrolled(true)
+                }}
+              >{termsText.body}</div>
+              <label className="check partner-terms">
+                <input type="checkbox" checked={form.terms} onChange={(event) => set('terms', event.target.checked)} required />
+                <span>I agree to these terms</span>
+              </label>
+            </>
+          ) : <p className="hint">Terms are not published yet. This form cannot be sent until they are.</p>}
           {error ? <p className="error">{error}</p> : null}
           <Button type="submit" disabled={pending}>{pending ? 'Please wait' : 'Send application'}</Button>
           <p className="center">Already have an account? <button type="button" className="link" onClick={onSignIn}>Sign in</button></p>

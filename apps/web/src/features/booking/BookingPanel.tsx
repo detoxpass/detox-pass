@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { calendarDoor, callFunction, type Session } from '../../lib/supabase'
+import { callFunction, type Session } from '../../lib/supabase'
 import { Button, ErrorBlock, Icon, LoadingBlock, PendingBlock } from '../../ui'
 import { formatClock, formatDay, formatMonth, formatWhen, monthOf, shiftMonth } from './when'
 
@@ -27,13 +27,11 @@ function pending(body: unknown) {
   return Boolean(body && typeof body === 'object' && 'supported' in body && body.supported === false)
 }
 
-export function BookingPanel({ session, professionalId, offers, cities, mode, source, onReserved }: {
+export function BookingPanel({ session, professionalId, offers, cities, onReserved }: {
   session: Session
   professionalId: string
   offers: Offer[]
   cities: City[]
-  mode: 'internal' | 'external' | null
-  source: string | null
   onReserved?: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -53,7 +51,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, so
 
   const service = offers.find((offer) => offer.id === serviceId) ?? offers[0]
   const city = cities.find((item) => item.id === cityId) ?? cities[0]
-  const door = calendarDoor(mode === 'internal' ? 'internal' : source)
+  const door = 'scheduling-offer'
 
   useEffect(() => {
     if (!open) return
@@ -69,7 +67,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, so
   }, [open, busy])
 
   useEffect(() => {
-    if (!open || !mode || !door) return
+    if (!open) return
     let alive = true
     setLoading(true)
     setError('')
@@ -92,7 +90,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, so
       })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
-  }, [session, professionalId, month, reload, mode, open, door])
+  }, [session, professionalId, month, reload, open])
 
   async function pickDay(next: string) {
     if (!door) return
@@ -156,12 +154,6 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, so
     setError('')
   }
 
-  if (mode == null) {
-    return <PendingBlock text="This professional has not chosen a calendar yet. No time is offered." />
-  }
-  if (mode === 'external' && !door) {
-    return <PendingBlock text="This external calendar is not the one clients book yet. No time is offered." />
-  }
   if (offers.length === 0 || cities.length === 0) {
     return <PendingBlock text="This professional has no service and city linked yet, so no time is offered." />
   }
@@ -228,7 +220,7 @@ export function BookingPanel({ session, professionalId, offers, cities, mode, so
                       <button type="button" aria-label="Next month" onClick={() => setMonth(shiftMonth(month, 1))}>Next</button>
                     </div>
                     {loading ? <LoadingBlock text="Checking the calendar…" /> : null}
-                    {pendingCalendar ? <PendingBlock text={mode === 'internal' ? 'This professional has not published openings on their Detox Pass calendar.' : 'Availability did not come from the external calendar. No time is offered.'} /> : null}
+                    {pendingCalendar ? <PendingBlock text="This professional has not published an open time yet." /> : null}
                     {!loading && !pendingCalendar && dates.length === 0 && !error ? <p className="muted">No openings this month.</p> : null}
                     {dates.length > 0 ? (
                       <div className="choice-grid">

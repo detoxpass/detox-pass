@@ -195,7 +195,7 @@ export function squareReturnUrl(surface: string, professionalId: string, result:
   if (surface === 'admin' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(professionalId)) {
     return `${SQUARE_APP_ORIGIN}/admin/therapists/${professionalId}?square=${safe}`
   }
-  return `${SQUARE_APP_ORIGIN}/agenda?square=${safe}`
+  return `${SQUARE_APP_ORIGIN}/integrations?square=${safe}`
 }
 
 export function shouldRefreshSquareToken(input: {

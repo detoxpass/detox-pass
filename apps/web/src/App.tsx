@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Entry } from './features/entry/Entry'
+import { TermsAdmin } from './features/catalog/TermsAdmin'
 import { AgendaManager } from './features/scheduling/Agenda'
-import { SchedulePrompt } from './features/scheduling/SchedulePrompt'
+import { Integrations } from './features/scheduling/Integrations'
 import { BookingPanel } from './features/booking/BookingPanel'
 import { SessionDetail, SessionList } from './features/booking/Sessions'
 import { ServicesScreen, SpecialtiesScreen, CitiesScreen, TherapistEditor, TherapistsScreen, UsersScreen } from './features/catalog/Admin'
-import { avatarUrl, completeAuthCallback, displayName, loadProfile, loadSession, loadUnreadCount, roleOf, signOut, type Session } from './lib/supabase'
+import { avatarUrl, completeAuthCallback, displayName, loadEntryState, loadProfile, loadSession, loadUnreadCount, roleOf, signOut, type Session } from './lib/supabase'
 import { readLoved, writeLoved } from './lib/loved'
 import { Account } from './screens/Account'
 import { Chat } from './screens/Chat'
@@ -44,6 +46,7 @@ export function App() {
   const [profileName, setProfileName] = useState('')
   const [avatar, setAvatar] = useState('')
   const [unread, setUnread] = useState(0)
+  const [hold, setHold] = useState<boolean | null>(null)
 
   useEffect(() => {
     loadSession().then((next) => {
@@ -64,6 +67,18 @@ export function App() {
   }, [session])
 
   const role: Role = session ? roleOf(session) : 'client'
+
+  useEffect(() => {
+    if (!session || role !== 'therapist') {
+      setHold(false)
+      return
+    }
+    let alive = true
+    loadEntryState(session)
+      .then((state) => { if (alive) setHold(Boolean(state.applies && state.step)) })
+      .catch(() => { if (alive) setHold(false) })
+    return () => { alive = false }
+  }, [session, role, path])
 
   useEffect(() => {
     if (!session) return
@@ -111,6 +126,9 @@ export function App() {
   const screen = screenFromPath(path)
   const title = screen === 'missing' ? 'Not found' : screenTitle(role, screen)
 
+  if (role === 'therapist' && hold === null) return <div className="page"><LoadingBlock text="Opening your account…" /></div>
+  if (role === 'therapist' && hold) return <Entry session={session} onDone={() => setHold(false)} />
+
   return (
     <AppShell
       role={role}
@@ -122,7 +140,6 @@ export function App() {
       onNavigate={(id) => go(pathFor(role, id))}
       onSignOut={() => { signOut(); setSession(null); setProfileName(''); setAvatar(''); go('/') }}
     >
-      {role === 'therapist' ? <SchedulePrompt session={session} /> : null}
       {allows(role, path) ? <Screen path={path} role={role} session={session} go={go} onSession={setSession} onName={setProfileName} onAvatar={setAvatar} onUnread={setUnread} /> : <ForbiddenBlock />}
     </AppShell>
   )
@@ -160,11 +177,12 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread
   if (path === '/sessions') return <SessionList session={session} title="My sessions" hint="Times the calendar confirmed. Payment is not taken here." onOpen={(id) => go(`/sessions/${id}`)} />
   if (path.startsWith('/sessions/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange canRead={false} onBack={() => go('/sessions')} />
   if (path === '/agenda') return (
-    <div className="page narrow stack">
-      <AgendaManager session={session} />
+    <div className="page agenda-page">
+      <AgendaManager session={session} onOpen={(id) => go(`/agenda/${id}`)} onSettings={() => go('/integrations')} />
       <SessionList bare session={session} title="Reservations" hint="Clients book these times. You can see them. The client changes or cancels." onOpen={(id) => go(`/agenda/${id}`)} />
     </div>
   )
+  if (path === '/integrations') return <div className="page"><Integrations session={session} /></div>
   if (path.startsWith('/agenda/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange={false} canRead={false} onBack={() => go('/agenda')} />
   if (path === '/rewards') return <EmptyBlock title="Rewards" text="Points show up only after a confirmed visit. Nothing here is a reward yet." />
   if (path === '/payments') return <EmptyBlock title="Payments" text="There is no payout to release from this account." />
@@ -182,6 +200,7 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread
   if (path === '/admin/financial') return <EmptyBlock title="Financial" text="Paid, pending and released reports arrive with charging. Nothing here is a payout." />
   if (path === '/favorites') return <Favorites session={session} onOpen={role === 'client' ? (id) => go(`/therapists/${id}`) : undefined} onFind={role === 'client' ? () => go('/find') : undefined} />
   if (path === '/notifications') return <Notifications session={session} go={go} onChange={onUnread} />
+  if (path === '/admin/terms') return <TermsAdmin session={session} />
   if (path === '/support' || path === '/admin/gamification' || path === '/admin/docs' || path === '/admin/settings') {
     return <EmptyBlock title={screenTitle(role, screenFromPath(path))} text="There is nothing to show here yet." />
   }
@@ -269,7 +288,7 @@ function TherapistPage({ session, id, onBack, onOpen, onReserved }: {
         writeLoved(next)
         setLoved(next)
       }}
-      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} mode={row.schedule_mode} source={(row.schedule_connections ?? []).find((item) => item.is_source)?.provider ?? null} onReserved={onReserved} />}
+      schedule={<BookingPanel session={session} professionalId={row.id} offers={offers} cities={places} onReserved={onReserved} />}
     />
   )
 }

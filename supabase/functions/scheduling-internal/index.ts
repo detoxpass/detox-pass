@@ -77,6 +77,7 @@ async function book(caller: { id: string; role: string }, body: Body) {
     p_service_id: body.service_id,
     p_city_id: body.city_id,
     p_starts_at: body.starts_at,
+    p_provider: 'internal',
   })
   if (openError || !bookingId) {
     const message = openError?.message ?? 'não abriu a intenção'

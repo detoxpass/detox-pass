@@ -23,6 +23,7 @@ export const navigation: Record<Role, NavItem[]> = {
   therapist: [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid', path: '/dashboard' },
     { id: 'agenda', label: 'Agenda', icon: 'calendar', path: '/agenda' },
+    { id: 'integrations', label: 'Integrations', icon: 'grid', path: '/integrations' },
     { id: 'rewards', label: 'Rewards', icon: 'trophy', path: '/rewards' },
     { id: 'payments', label: 'Payments', icon: 'card', path: '/payments' },
   ],
@@ -39,6 +40,7 @@ export const navigation: Record<Role, NavItem[]> = {
     { id: 'reviews', label: 'Reviews', icon: 'rate', path: '/admin/reviews' },
     { id: 'docs', label: 'Docs', icon: 'file', path: '/admin/docs' },
     { id: 'settings', label: 'Settings', icon: 'settings', path: '/admin/settings' },
+    { id: 'terms', label: 'Terms', icon: 'file', path: '/admin/terms' },
   ],
 }
 
@@ -78,7 +80,7 @@ export function allows(role: Role, path: string) {
   if (path.startsWith('/account') || path.startsWith('/favorites') || path.startsWith('/notifications') || path.startsWith('/support') || path.startsWith('/chat')) return true
   if (path.startsWith('/rewards')) return role === 'client' || role === 'therapist'
   if (path.startsWith('/find') || path.startsWith('/therapists') || path.startsWith('/sessions')) return role === 'client'
-  if (path.startsWith('/dashboard') || path.startsWith('/agenda') || path.startsWith('/payments')) return role === 'therapist'
+  if (path.startsWith('/dashboard') || path.startsWith('/agenda') || path.startsWith('/integrations') || path.startsWith('/payments')) return role === 'therapist'
   if (path.startsWith('/admin')) return role === 'admin'
   return false
 }

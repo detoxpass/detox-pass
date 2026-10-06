@@ -562,7 +562,15 @@ async function readyFor(client: SupabaseClient, professionalId: string, skipVisi
       .maybeSingle()
     if (!visible) return { error: json({ error: 'profissional indisponível' }, 404) } as const
     if (visible.schedule_mode !== 'external') {
-      return { error: json({ status: 'pending', supported: false, detail: 'profissional sem agenda externa' }, 422) } as const
+      const { data: ordered } = await serviceClient()
+        .from('calendar_order')
+        .select('position')
+        .eq('professional_id', professionalId)
+        .eq('calendar_key', 'square')
+        .maybeSingle()
+      if (!ordered) {
+        return { error: json({ status: 'pending', supported: false, detail: 'profissional sem agenda externa' }, 422) } as const
+      }
     }
   }
   const { data: connection } = await serviceClient()

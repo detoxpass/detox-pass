@@ -219,8 +219,8 @@ Deno.test('state do login não aceita troca nem prazo vencido', async () => {
   assertEquals(await readOAuthState(secret, `${token}x`, now), null, 'assinatura trocada')
   assertEquals(await readOAuthState(secret, token, now + 120_000), null, 'vencido')
   assertEquals(squareReturnUrl('admin', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'choose'), 'https://detox-pass.vercel.app/admin/therapists/9a038721-84f0-4584-bf91-6e6a341ad9e0?square=choose', 'admin')
-  assertEquals(squareReturnUrl('agenda', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'javascript:alert(1)'), 'https://detox-pass.vercel.app/agenda?square=error', 'resultado')
-  assertEquals(squareReturnUrl('https://evil.example', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'connected'), 'https://detox-pass.vercel.app/agenda?square=connected', 'superfície')
+  assertEquals(squareReturnUrl('agenda', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'javascript:alert(1)'), 'https://detox-pass.vercel.app/integrations?square=error', 'resultado')
+  assertEquals(squareReturnUrl('https://evil.example', '9a038721-84f0-4584-bf91-6e6a341ad9e0', 'connected'), 'https://detox-pass.vercel.app/integrations?square=connected', 'superfície')
 })
 
 Deno.test('token da Square renova em sete dias e perto do vencimento', () => {

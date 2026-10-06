@@ -150,6 +150,9 @@ export type PartnerApplication = {
   specialty_note: string
   coverage_note: string
   terms: boolean
+  content_sha256?: string
+  scrolled_to_end?: boolean
+  checkbox_confirmed?: boolean
 }
 
 export async function applyPartner(application: PartnerApplication) {
@@ -506,6 +509,95 @@ export async function replaceLinks(session: Session, table: string, column: stri
   await rest(session, table, {
     method: 'POST',
     body: JSON.stringify(ids.map((id) => ({ professional_id: professionalId, [column]: id }))),
+  })
+}
+
+export type EntryState = {
+  applies: boolean
+  step: 'profile' | 'calendar' | 'terms' | null
+  professional_id?: string
+  display_name?: string
+  bio?: string | null
+  portrait_path?: string | null
+  avatar_path?: string | null
+  service_ids?: string[]
+  city_ids?: string[]
+  calendars?: { key: string; position: number }[]
+}
+
+async function rpc(session: Session, name: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not save this step.')
+  return body
+}
+
+export async function loadEntryState(session: Session) {
+  const body = await rpc(session, 'entry_state', {})
+  return body as EntryState
+}
+
+export async function saveEntryProfile(session: Session, input: {
+  displayName: string
+  bio: string
+  portraitPath: string
+  serviceIds: string[]
+  cityIds: string[]
+}) {
+  await rpc(session, 'save_entry_profile', {
+    p_display_name: input.displayName,
+    p_bio: input.bio,
+    p_portrait_path: input.portraitPath,
+    p_service_ids: input.serviceIds,
+    p_city_ids: input.cityIds,
+  })
+}
+
+export async function completeEntryCalendar(session: Session) {
+  await rpc(session, 'complete_entry_calendar', {})
+}
+
+export async function reorderCalendars(session: Session, keys: string[]) {
+  await rpc(session, 'reorder_my_calendars', { p_keys: keys })
+}
+
+export async function loadPublishedTerms() {
+  const response = await fetch(`${url}/rest/v1/terms_versions?select=id,version_number,title,body,content_sha256,published_at&status=eq.published&order=version_number.desc&limit=1`, {
+    headers: { apikey: key },
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not load the terms.')
+  const row = Array.isArray(body) ? body[0] : null
+  if (!row || typeof row !== 'object') return null
+  return row as { id: string; version_number: number; title: string; body: string; content_sha256: string; published_at: string }
+}
+
+export async function loadTermsAdmin(session: Session) {
+  const [versions, acceptances] = await Promise.all([
+    rows<{ id: string; version_number: number | null; title: string; body: string; content_sha256: string | null; status: string; published_at: string | null; published_by: string | null }>(session, 'terms_versions?select=id,version_number,title,body,content_sha256,status,published_at,published_by&order=created_at.desc'),
+    rows<{ id: string; version_number: number; email: string; display_name: string; surface: string; accepted_at: string; ip: string; user_agent: string; locale: string; content_sha256: string }>(session, 'terms_acceptances?select=id,version_number,email,display_name,surface,accepted_at,ip,user_agent,locale,content_sha256&order=accepted_at.desc'),
+  ])
+  return { versions, acceptances }
+}
+
+export async function saveTermsDraft(session: Session, title: string, body: string) {
+  await rpc(session, 'save_terms_draft', { p_title: title, p_body: body })
+}
+
+export async function publishTerms(session: Session) {
+  await rpc(session, 'publish_terms', {})
+}
+
+export async function acceptTerms(session: Session, contentSha256: string, scrolled: boolean, checked: boolean) {
+  await callFunction(session, 'terms-accept', {
+    content_sha256: contentSha256,
+    scrolled_to_end: scrolled,
+    checkbox_confirmed: checked,
+    locale: 'en',
   })
 }
 

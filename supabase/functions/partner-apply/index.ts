@@ -16,6 +16,9 @@ type Body = {
   specialty_note?: string
   coverage_note?: string
   terms?: boolean
+  content_sha256?: string
+  scrolled_to_end?: boolean
+  checkbox_confirmed?: boolean
 }
 
 function text(value: unknown, min: number, max: number) {
@@ -124,6 +127,26 @@ Deno.serve(async (req) => {
   if (saved.error) {
     await admin.auth.admin.deleteUser(userId)
     return json({ error: 'Could not save the application.' }, 400)
+  }
+
+  const accepted = await admin.rpc('record_terms_acceptance', {
+    p_user_id: userId,
+    p_email: email,
+    p_content_sha256: typeof body.content_sha256 === 'string' ? body.content_sha256 : '',
+    p_ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')?.trim() || '',
+    p_user_agent: req.headers.get('user-agent') ?? '',
+    p_locale: 'en',
+    p_scrolled_to_end: body.scrolled_to_end === true,
+    p_checkbox_confirmed: body.checkbox_confirmed === true,
+    p_surface: 'partner_signup',
+  })
+  if (accepted.error) {
+    await admin.auth.admin.deleteUser(userId)
+    return json({ error: accepted.error.message }, 400)
+  }
+
+  if (bio) {
+    await admin.from('professionals').update({ bio }).eq('profile_id', userId)
   }
 
   return json({ ok: true, user_id: userId })
