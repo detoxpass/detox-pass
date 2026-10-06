@@ -685,6 +685,7 @@ export type BookingRow = {
   id: string
   professional_id: string
   starts_at: string
+  ends_at?: string
   saga_status: string
   external_booking_id: string | null
   amount_cents: number | null
@@ -695,7 +696,7 @@ export type BookingRow = {
 }
 
 export function loadBookings(session: Session) {
-  const select = 'id,professional_id,starts_at,saga_status,external_booking_id,amount_cents,provider,services(name),professionals(display_name),cities(name)'
+  const select = 'id,professional_id,starts_at,ends_at,saga_status,external_booking_id,amount_cents,provider,services(name),professionals(display_name),cities(name)'
   return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
 }
 

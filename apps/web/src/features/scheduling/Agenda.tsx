@@ -26,7 +26,7 @@ export function AgendaManager({ session, onOpen, onSettings }: {
     <div className="stack">
       <div className="agenda-toolbar">
         <p>Reservations that started here. Each color is the calendar that received it.</p>
-        <button type="button" className="text-link" onClick={onSettings}>Calendar settings</button>
+        <button type="button" onClick={onSettings}>Calendar settings</button>
       </div>
       <CalendarBoard bookings={rows} onOpen={onOpen} />
     </div>
