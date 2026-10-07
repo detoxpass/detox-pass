@@ -134,6 +134,11 @@ export function Integrations({ session, embedded, onReady }: {
   const [wixConnected, setWixConnected] = useState(false)
   const [wixPending, setWixPending] = useState(false)
   const drag = useRef('')
+  useEffect(() => {
+    if (!openId && !priorityOpen) return
+    document.body.classList.add('modal-open')
+    return () => document.body.classList.remove('modal-open')
+  }, [openId, priorityOpen])
   const wantChoice = useRef(new URLSearchParams(window.location.search).get('square') === 'choose')
   const wantWix = useRef(new URLSearchParams(window.location.search).get('wix') === 'choose')
 
@@ -516,10 +521,10 @@ export function Integrations({ session, embedded, onReady }: {
 
       {open ? createPortal(
         <div className="book-back" role="presentation" onClick={() => setOpenId('')}>
-          <div className="book-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-setup-title" onClick={(event) => event.stopPropagation()}>
-            <header>
+          <div className="book-sheet sheet-setup" role="dialog" aria-modal="true" aria-labelledby="calendar-setup-title" onClick={(event) => event.stopPropagation()}>
+            <header className="sheet-head">
               <h2 id="calendar-setup-title">{open.label}</h2>
-              <button type="button" aria-label="Close" onClick={() => setOpenId('')}>×</button>
+              <button type="button" className="sheet-x" aria-label="Close" onClick={() => setOpenId('')}><Icon name="close" /></button>
             </header>
             <div className="book-body stack">
               {open.id === 'internal' ? (

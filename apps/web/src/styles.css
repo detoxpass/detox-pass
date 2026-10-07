@@ -870,7 +870,12 @@ button.sd-hero.next-hero { display: block; padding: 0; border: 0; background: tr
 .month-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .month-row strong { font-size: 16px; }
 .month-row button { min-height: 40px; border: 0; background: var(--bg); border-radius: 12px; font-weight: 800; padding: 0 12px; }
+body.modal-open { overflow: hidden; }
 body.modal-open .shell-scroll { overflow: hidden; }
+.sheet-head { display: flex; align-items: center; gap: 12px; padding: 18px 16px 4px; flex: none; }
+.sheet-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -0.04em; }
+.sheet-x { width: 40px; height: 40px; min-width: 40px; border: 0; border-radius: 50%; background: var(--bg); display: grid; place-items: center; padding: 0; flex: none; }
+.sheet-setup .book-body { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 .check-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .check-row label { min-height: 44px; display: flex; align-items: center; gap: 8px; background: white; border-radius: 999px; padding: 0 12px; }
 .slot-list { display: flex; flex-wrap: wrap; gap: 8px; }
