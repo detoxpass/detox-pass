@@ -302,9 +302,11 @@ function SessionRow({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => 
   const length = lengthOf(row.starts_at, row.ends_at)
   return (
     <button type="button" className="sess-row" onClick={() => onOpen(row.id)}>
-      <span className="sess-date"><small>{stamp.month}</small><b>{stamp.day}</b></span>
+      <span className="sess-pair">
+        <span className="sess-date"><small>{stamp.month}</small><b>{stamp.day}</b></span>
+        <img src={photoOf(row)} alt="" />
+      </span>
       <span className="sess-when">{stamp.weekday} · {stamp.time}</span>
-      <img src={photoOf(row)} alt="" />
       <span className="sess-who">
         <strong>{row.professionals?.display_name || 'Therapist'}</strong>
         <span>{[row.services?.name || 'Service', row.cities?.name || 'City', length].filter(Boolean).join(' · ')}</span>
