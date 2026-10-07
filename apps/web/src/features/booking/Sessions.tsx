@@ -349,6 +349,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
+  const [checkout, setCheckout] = useState('')
   const [busy, setBusy] = useState(false)
   const [slotsBusy, setSlotsBusy] = useState(false)
   const [nextTime, setNextTime] = useState('')
@@ -383,6 +384,16 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   }
 
   useEffect(() => { void refresh() }, [session, id, ops])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const value = params.get('checkout')
+    if (value !== 'success' && value !== 'cancel') return
+    setCheckout(value)
+    params.delete('checkout')
+    const search = params.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${search ? `?${search}` : ''}`)
+  }, [id])
 
   const booking = rows.find((row) => row.id === id)
   const door = calendarDoor(booking?.provider)
@@ -423,7 +434,17 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const moveLength = lengthOf(booking.starts_at, booking.ends_at)
   const client = !ops && canChange
   const canMove = client && open && Boolean(door)
+  const payable = client && (booking.saga_status === 'provider_confirmed' || booking.saga_status === 'charge_created')
+  const catalogPrice = booking.services?.price_cents && booking.services.currency
+    ? money(booking.services.price_cents, booking.services.currency)
+    : ''
   const saved = loved.includes(booking.professional_id)
+  const paid = booking.saga_status === 'paid' || booking.saga_status === 'payout_released'
+  const returnNote = checkout === 'cancel'
+    ? 'Checkout closed before payment. This reservation is not paid.'
+    : checkout === 'success' && !paid
+      ? 'Card accepted. Paid shows here as soon as Stripe confirms the payment.'
+      : ''
   const name = booking.professionals?.display_name || 'Therapist'
   const serviceName = booking.services?.name || 'Service'
   const cityName = booking.cities?.name || 'City'
@@ -442,6 +463,29 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
     setTimes([])
     setNextTime('')
     setMoveStep('date')
+  }
+
+  async function pay() {
+    setBusy(true)
+    setError('')
+    try {
+      const origin = window.location.origin
+      const result = await callFunction(session, 'stripe-charge', {
+        booking_id: id,
+        success_url: `${origin}/sessions/${id}?checkout=success`,
+        cancel_url: `${origin}/sessions/${id}?checkout=cancel`,
+      })
+      const body = result.body as { checkout_url?: string } | null
+      if (!body?.checkout_url) {
+        setError('Checkout is not available.')
+        return
+      }
+      window.location.assign(body.checkout_url)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not start checkout.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function cancel() {
@@ -571,6 +615,7 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
           </div>
         ) : null}
       </article>
+      {returnNote ? <p className="flash" role="status">{returnNote}</p> : null}
       {canChange && open && !door ? <p className="muted">This calendar is not connected yet. Nothing was changed.</p> : null}
       <dl className="sd-facts">
         <div><Mark name="calendar" /><span><em>Date</em><strong>{sessionDate(booking.starts_at)}</strong></span></div>
@@ -578,19 +623,29 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
         {moveLength ? <div><Mark name="length" /><span><em>Length</em><strong>{moveLength}</strong></span></div> : null}
         <div><Mark name="user" /><span><em>Service</em><strong>{serviceName}</strong></span></div>
         <div><Mark name="pin" /><span><em>City</em><strong>{cityName}</strong></span></div>
-        <div><Mark name="card" /><span><em>Payment</em><strong>{payShort(booking)}</strong></span>{booking.amount_cents == null ? <i className="sd-tip" title="Payment is not taken on this reservation.">i</i> : null}</div>
+        <div><Mark name="card" /><span><em>Payment</em><strong>{booking.saga_status === 'paid' ? 'Paid' : payable && catalogPrice ? catalogPrice : payShort(booking)}</strong></span>{booking.saga_status === 'paid' || payable ? null : <i className="sd-tip" title="Payment is not taken on this reservation.">i</i>}</div>
         {ops && booking.client?.full_name ? <div><Mark name="user" /><span><em>Client</em><strong>{booking.client.full_name}</strong></span></div> : null}
         {ops ? <div><Mark name="calendar" /><span><em>Calendar</em><strong>{booking.provider}</strong></span></div> : null}
         {ops && confirmedAt ? <div><Mark name="clock" /><span><em>Visit confirmed</em><strong>{formatWhen(confirmedAt)}</strong></span></div> : null}
-        {ops && booking.external_charge_ref ? <div><Mark name="card" /><span><em>Charge reference</em><strong>{booking.external_charge_ref}</strong></span></div> : null}
       </dl>
+      {booking.external_charge_ref ? (
+        <p className="sd-ref">
+          <em>Charge reference</em>
+          <code>{booking.external_charge_ref}</code>
+        </p>
+      ) : null}
+      {payable ? (
+        <div className="visit-actions">
+          <Button disabled={busy} busy={busy} onClick={() => void pay()}>{catalogPrice ? `Pay ${catalogPrice}` : 'Pay with card'}</Button>
+        </div>
+      ) : null}
       <div className="sd-split">
         <section className="sd-card sd-notes">
           <h2><Mark name="file" /> Session details</h2>
           <ul>
-            <li><Mark name="info" /><span>Payment is not taken on this reservation.</span></li>
+            <li><Mark name="info" /><span>{booking.saga_status === 'paid' ? 'Payment is recorded on this reservation.' : payable ? 'Card checkout uses the service price. This page does not choose the amount.' : 'Payment is not taken on this reservation.'}</span></li>
             <li><Mark name="calendar" /><span>The current time stays until the calendar accepts a change.</span></li>
-            <li><Mark name="close" /><span>Cancelling does not refund anything, because payment is not connected.</span></li>
+            <li><Mark name="close" /><span>Cancelling does not refund a card payment from this page.</span></li>
           </ul>
         </section>
         <section className="sd-card">

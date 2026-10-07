@@ -108,7 +108,7 @@ export function PendingBlock({ text }: { text: string }) {
 }
 
 export function Notice({ text }: { text: string }) {
-  return <p className="notice" role="status">{text}</p>
+  return <p className="flash" role="status">{text}</p>
 }
 
 const sagaLabels: Record<string, { label: string; tone: string }> = {

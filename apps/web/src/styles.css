@@ -552,10 +552,19 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 }
 .state { background: white; border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 8px; }
 .state h2 { font-size: 22px; letter-spacing: -0.03em; }
-.state p, .notice { color: #3f3f3f; }
+.state p { color: #3f3f3f; }
 .state.bad { border-color: #f0c2c8; }
 .state.pending { background: var(--pink-soft); }
-.notice { margin-top: 8px; font-weight: 700; }
+.flash {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+  color: #3f3f3f;
+  font-weight: 650;
+  line-height: 1.45;
+}
 .stack { display: flex; flex-direction: column; gap: 14px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 .catalog-card { background: white; border: 0; border-radius: 18px; padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 44px; }
@@ -655,7 +664,27 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 .sd-facts span { min-width: 0; }
 .sd-facts em, .sd-facts strong { display: block; }
 .sd-facts em { color: var(--muted); font-style: normal; font-size: 13px; font-weight: 700; }
-.sd-facts strong { margin-top: 3px; font-size: 16px; letter-spacing: -0.02em; }
+.sd-facts strong { margin-top: 3px; font-size: 16px; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.sd-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 12px 16px;
+}
+.sd-ref em { color: var(--muted); font-style: normal; font-size: 13px; font-weight: 700; }
+.sd-ref code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  color: #1b1b1b;
+}
 .sd-mark { width: 28px; height: 28px; border-radius: 50%; background: #fff1f1; color: #e45b70; display: grid; place-items: center; flex: none; }
 .sd-facts .sd-mark { width: 42px; height: 42px; }
 .sd-tip { width: 18px; height: 18px; margin-left: auto; border-radius: 50%; border: 1.5px solid #ddd; color: #8d8d8d; font-style: normal; font-size: 11px; font-weight: 800; display: grid; place-items: center; flex: none; }
