@@ -308,10 +308,10 @@ function SessionRow({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => 
       </span>
       <span className="sess-main">
         <strong className="sess-name">{row.professionals?.display_name || 'Therapist'}</strong>
+        <SagaStatus status={row.saga_status} />
         <span className="sess-line">{[row.services?.name || 'Service', row.cities?.name || 'City', length].filter(Boolean).join(' · ')}</span>
         <span className="sess-when">{stamp.weekday} · {stamp.time}</span>
       </span>
-      <SagaStatus status={row.saga_status} />
       <Icon name="back" />
     </button>
   )
