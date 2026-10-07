@@ -299,18 +299,17 @@ function Countdown({ at }: { at: string }) {
 
 function SessionRow({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => void }) {
   const stamp = sessionStamp(row.starts_at)
-  const length = lengthOf(row.starts_at, row.ends_at)
   return (
     <button type="button" className="sess-row" onClick={() => onOpen(row.id)}>
       <span className="sess-pair">
         <span className="sess-date"><small>{stamp.month}</small><b>{stamp.day}</b></span>
         <img src={photoOf(row)} alt="" />
+        <SagaStatus status={row.saga_status} />
       </span>
       <span className="sess-main">
         <strong className="sess-name">{row.professionals?.display_name || 'Therapist'}</strong>
-        <span className="sess-line">{[row.services?.name || 'Service', row.cities?.name || 'City', length].filter(Boolean).join(' · ')}</span>
+        <span className="sess-line">{[row.services?.name || 'Service', row.cities?.name || 'City'].filter(Boolean).join(' · ')}</span>
         <span className="sess-when">{stamp.weekday} · {stamp.time}</span>
-        <SagaStatus status={row.saga_status} />
       </span>
       <Icon name="back" />
     </button>
