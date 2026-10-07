@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detox Pass — relato do backend para o time</title>
+  <style>
+    :root {
+      --ink: #1c1915;
+      --muted: #5c564e;
+      --line: #e4ddd2;
+      --paper: #f7f4ee;
+      --card: #fffdf9;
+      --green: #1f6b45;
+      --green-bg: #e7f3ec;
+      --amber: #8a5a12;
+      --amber-bg: #f8efd8;
+      --red: #8d2f2f;
+      --red-bg: #f8e8e6;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+    header, main, footer { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+    header { padding-top: 48px; }
+    .kicker {
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 12px;
+    }
+    h1 { font-size: 40px; line-height: 1.15; font-weight: 600; margin: 0 0 12px; }
+    h2 { font-size: 26px; line-height: 1.25; font-weight: 600; margin: 48px 0 12px; }
+    h3 { font-size: 18px; margin: 28px 0 8px; }
+    p { margin: 0 0 14px; }
+    a { color: var(--green); }
+    .lede { font-size: 20px; max-width: 42rem; }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin: 28px 0 8px;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    nav a { text-decoration: none; border-bottom: 1px solid var(--line); }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 28px 0 8px;
+    }
+    .fact {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+    .fact b {
+      display: block;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .fact span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 14px;
+      margin: 12px 0 20px;
+    }
+    th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .tag {
+      display: inline-block;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .ok { background: var(--green-bg); color: var(--green); }
+    .wait { background: var(--amber-bg); color: var(--amber); }
+    .stop { background: var(--red-bg); color: var(--red); }
+    ol, ul { margin: 0 0 16px; padding-left: 1.2em; }
+    li { margin: 0 0 8px; }
+    code, .mono {
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.86em;
+    }
+    .flow {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 16px 18px;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    footer {
+      margin-top: 56px;
+      padding-bottom: 48px;
+      color: var(--muted);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 13px;
+    }
+    @media (max-width: 720px) {
+      h1 { font-size: 32px; }
+      .facts { grid-template-columns: 1fr 1fr; }
+    }
+    @media print {
+      body { background: white; }
+      nav { display: none; }
+      a { color: inherit; text-decoration: none; }
+      h2 { break-after: avoid; }
+      table, .fact, .flow { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">Detox Pass · relato interno · 5 de outubro de 2026</p>
+    <h1>O backend que já está de pé</h1>
+    <p class="lede">Este texto é para o time. Ele descreve o que foi especificado, o que já roda no Supabase de demonstração e o que ainda espera credencial ou decisão antes de ir para a tela.</p>
+    <nav>
+      <a href="#produto">Produto</a>
+      <a href="#arquitetura">Arquitetura</a>
+      <a href="#entregue">O que entrou</a>
+      <a href="#auditoria">Auditoria</a>
+      <a href="#prova">O que foi provado</a>
+      <a href="#contrato">Contrato do app</a>
+      <a href="#falta">O que falta</a>
+      <a href="#proximo">Próximo passo</a>
+    </nav>
+    <div class="facts">
+      <div class="fact"><b>15</b><span>arquivos de spec</span></div>
+      <div class="fact"><b>11</b><span>migrations aplicadas</span></div>
+      <div class="fact"><b>10</b><span>funções publicadas</span></div>
+      <div class="fact"><b>20%</b><span>comissão inicial, na configuração</span></div>
+    </div>
+  </header>
+
+  <main>
+    <h2 id="produto">O que o produto é</h2>
+    <p>O Detox Pass liga cliente e profissional. A cliente escolhe serviço, cidade e horário real da agenda de origem, paga na reserva, e confirma o atendimento depois. Só então a operação, ou a regra do marketplace, autoriza o repasse. A profissional não libera o próprio dinheiro.</p>
+    <p>A comissão de referência nasce em 20%, numa linha de configuração, e pode mudar sem espalhar o número pelo código. Reward só conta sessão que a cliente confirmou. O chat ajuda a achar serviço, cidade e profissional com dados da plataforma. Ele não inventa horário, não cobra e não dá orientação clínica.</p>
+    <p>Há três perfis: cliente, profissional e operação. O papel mora em <code>app_metadata</code>. A spec está em <code>spec/</code>, da definição do produto até o desenho do Supabase. Decisões fechadas estão em <code>docs/DECISIONS.md</code>.</p>
+
+    <h2 id="arquitetura">Como o Supabase está organizado</h2>
+    <p>O app futuro é React, TypeScript e Capacitor, sem um servidor Node próprio. A regra que não pode falhar pela metade fica no Postgres. HTTP e segredo ficam na borda.</p>
+    <table>
+      <thead>
+        <tr><th>Porta</th><th>Serve para</th><th>Não serve para</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Data API com RLS</td>
+          <td>Ler o próprio perfil, o catálogo ativo, a reserva, a fila e o histórico.</td>
+          <td>Criar reserva, cobrar, liberar repasse ou pontuar reward.</td>
+        </tr>
+        <tr>
+          <td>Função SQL em <code>private</code></td>
+          <td>Invariantes: pago e pendente juntos, repasse único, reward depois da confirmação.</td>
+          <td>Chamar Acuity, Stripe ou modelo de IA. Trigger não faz HTTP.</td>
+        </tr>
+        <tr>
+          <td>Edge Function</td>
+          <td>Uma função por sistema externo. Ela fala com o provedor e devolve o resultado para o SQL.</td>
+          <td>Sequência de updates soltos no banco.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>O schema <code>private</code> não entra na Data API. Token de agenda fica no Vault. Chave da Stripe e segredo de webhook ficam nos secrets da função, nunca no Git e nunca no celular.</p>
+    <p>Agenda e Stripe não compartilham uma transação só. O estado da reserva é uma saga:</p>
+    <div class="flow">intenção local
+→ horário confirmado no provedor
+→ cobrança criada
+→ webhook marca pago e payout pendente
+→ cliente confirma
+→ operação autoriza o repasse</div>
+    <p>O dinheiro vira pago quando o webhook chega e a função SQL aplica o evento. A tela dizendo pago não adianta esse passo. Comissão, valor pago e repasse pendente saem de três lançamentos no mesmo comando. O ledger não aceita apagar nem reescrever o valor.</p>
+
+    <h2 id="entregue">O que já está no repositório e no projeto</h2>
+    <p>As migrations são portáteis. O mesmo diretório sobe em outra conta com <code>supabase link</code> e <code>supabase db push</code>. Elas já foram aplicadas no projeto de demonstração Detox-dev-teste, Postgres 17, região ca-central-1.</p>
+    <table>
+      <thead>
+        <tr><th>Migration</th><th>O que cria</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>foundation_schemas</code></td><td>Schemas, papel lido do JWT e a distinção entre serviço e operação.</td></tr>
+        <tr><td><code>identity_profiles</code></td><td>Perfil espelho. Usuário novo entra como cliente. Troca de papel só pela função autorizada.</td></tr>
+        <tr><td><code>catalog</code></td><td>Cidades, especialidades, serviços, profissionais e o vínculo com a agenda de origem. Profissional inativa não aparece para a cliente.</td></tr>
+        <tr><td><code>bookings</code></td><td>Reserva, histórico e confirmação de atendimento. A cliente autenticada não insere reserva direto.</td></tr>
+        <tr><td><code>ledger</code></td><td>Configuração do marketplace, caixa de webhooks e lançamentos. Comissão inicial de 2000 pontos-base, isto é, 20%.</td></tr>
+        <tr><td><code>rewards</code></td><td>Regra <code>confirmed_session</code>, já ativa. O bônus em si continua sem fórmula.</td></tr>
+        <tr><td><code>commands</code></td><td>Funções da saga: abrir intenção, confirmar provedor, cobrar, aplicar pagamento, confirmar atendimento, autorizar repasse, cancelar, compensar e relatar.</td></tr>
+        <tr><td><code>rls_and_api</code></td><td>Wrappers públicos. Escrita financeira só com <code>service_role</code>.</td></tr>
+        <tr><td><code>calendar_vault</code></td><td>Token da agenda no Vault. A reconciliação ignora evento que não seja da Stripe.</td></tr>
+        <tr><td><code>audit_fixes</code></td><td>Preço do serviço no catálogo, policies de escrita separadas da leitura, e fila de webhook que não trava num evento permanente.</td></tr>
+        <tr><td><code>roadmap_gates</code></td><td>Histórico do reagendamento com horário antigo, horário novo e origem. Cron de reconciliação garantido.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Funções publicadas</h3>
+    <table>
+      <thead>
+        <tr><th>Função</th><th>Quem chama</th><th>Estado hoje</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>commands</code></td><td>App, com sessão</td><td><span class="tag ok">pronta</span> Confirma, autoriza repasse, troca papel, relatório e retry.</td></tr>
+        <tr><td><code>chat</code></td><td>App, com sessão</td><td><span class="tag wait">catálogo</span> Devolve profissionais, serviços e cidades. Sem modelo e sem horário.</td></tr>
+        <tr><td><code>scheduling-acuity</code></td><td>App, com sessão</td><td><span class="tag wait">sem credencial</span> Disponibilidade, reserva, reagendar, cancelar e gravar token. Revalida o horário antes de escrever.</td></tr>
+        <tr><td><code>stripe-charge</code></td><td>App, com sessão</td><td><span class="tag wait">503 sem chave</span> Abre Checkout Session com o preço gravado pela operação.</td></tr>
+        <tr><td><code>stripe-webhook</code></td><td>Stripe</td><td><span class="tag wait">503 sem segredo</span> Confere assinatura, exige pagamento pago e valor igual ao da reserva.</td></tr>
+        <tr><td><code>scheduling-square</code></td><td>App, no futuro</td><td><span class="tag stop">501</span> Escrita depende de plano. Sem teste autenticado.</td></tr>
+        <tr><td><code>scheduling-wix</code></td><td>App, no futuro</td><td><span class="tag stop">501</span> Criação e confirmação podem ser etapas separadas.</td></tr>
+        <tr><td><code>scheduling-zenoti</code></td><td>App, no futuro</td><td><span class="tag stop">501</span> Cancelamento ainda precisa validar a invoice.</td></tr>
+        <tr><td><code>scheduling-mindbody</code></td><td>App, no futuro</td><td><span class="tag stop">501</span> Produção exige onboarding do fornecedor.</td></tr>
+        <tr><td><code>gusto</code></td><td>Ninguém ainda</td><td><span class="tag stop">desligado</span> Só entra se a cliente do contrato optar, e nunca no checkout.</td></tr>
+      </tbody>
+    </table>
+    <p>Nenhuma dessas agendas foi marcada como homologada. Resposta 501 é o estado correto até existir teste com credencial.</p>
+
+    <h2 id="auditoria">O que a auditoria corrigiu</h2>
+    <p>Uma leitura do código achou furos que já foram corrigidos e republicados.</p>
+    <ul>
+      <li>Qualquer sessão que soubesse o id da reserva conseguia cancelar ou remarcar a agenda de outra pessoa. Agora só a cliente da reserva, ou a operação, faz isso.</li>
+      <li>O aplicativo escolhia o valor do checkout. O preço passou a ser <code>price_cents</code> e <code>currency</code> do serviço. Valor diferente é recusado. Serviço sem preço não abre cobrança.</li>
+      <li>Pedido sem sessão caía em erro 500. Agora responde 401.</li>
+      <li>Um evento Stripe com erro permanente podia travar a fila inteira. O evento fica marcado e os outros seguem. O cron roda a cada 5 minutos.</li>
+      <li>O webhook passou a exigir JSON válido, <code>payment_status</code> pago e valor igual ao da reserva. Na troca de segredo, a assinatura antiga e a nova são aceitas.</li>
+      <li>A consulta de horário da Acuity deixou de se apresentar como agenda já homologada.</li>
+      <li>Reagendamento passou a guardar o horário anterior, o novo e a origem <code>platform</code>. A reserva não é duplicada.</li>
+      <li>Antes de criar ou remarcar, a função consulta o horário de novo. Se ele sumiu, a reserva não chega a cobrança.</li>
+    </ul>
+
+    <h2 id="prova">O que foi provado em 5 de outubro</h2>
+    <p>No Detox-dev-teste, uma transação percorreu a saga e se desfez no final. Não ficou usuário, cidade nem serviço de prova.</p>
+    <ul>
+      <li>A cliente não insere reserva direto na tabela.</li>
+      <li>Valor fora do catálogo é recusado.</li>
+      <li>Em uma reserva de 100,00 USD, a comissão lançada é 20,00 USD, lida da configuração.</li>
+      <li>O mesmo evento Stripe não cobra duas vezes.</li>
+      <li>A profissional não autoriza o próprio repasse.</li>
+      <li>A confirmação gera um reward e a reserva continua paga. A liberação é outro passo.</li>
+      <li>A operação libera o repasse uma vez. A segunda autorização não duplica.</li>
+      <li>A cliente não lê o relatório financeiro.</li>
+      <li>Reserva cancelada não confirma, não pontua e não libera.</li>
+      <li>Horário que não chegou a <code>provider_confirmed</code> não abre cobrança.</li>
+      <li>RLS está ligada e forçada em toda tabela pública. Não há policy de escrita cobrindo também a leitura. As funções têm <code>search_path</code> fixo.</li>
+    </ul>
+    <p>Cinco testes locais da revalidação de horário passaram: horário presente, horário ausente, mesmo instante com fuso diferente, lista vazia e as duas datas consultadas.</p>
+    <p>A suíte pgTAP, com 18 asserções, está em <code>supabase/tests/database/invariants.sql</code> e no workflow <code>.github/workflows/backend.yml</code>. Ela não rodou nesta máquina: o Docker encheu o disco ao baixar as imagens e o daemon caiu. A prova equivalente rodou no projeto remoto.</p>
+    <p>Chamadas sem sessão nas funções do app respondem 401. Square, Wix, Zenoti, Mindbody e Gusto respondem 501. O webhook responde 503 porque o segredo ainda não foi gravado.</p>
+
+    <h2 id="contrato">O que o frontend já pode chamar</h2>
+    <p>Ainda não há aplicação neste repositório. O contrato abaixo é o que a tela deve usar. Ela não fala com Acuity nem com a Stripe direto.</p>
+    <table>
+      <thead>
+        <tr><th>Leitura, com o JWT da pessoa</th><th>Quem vê</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Perfil e nome</td><td>A própria pessoa. A operação vê os perfis.</td></tr>
+        <tr><td>Cidades, especialidades, serviços com preço, profissionais ativas</td><td>Qualquer sessão. Profissional inativa só aparece para ela e para a operação.</td></tr>
+        <tr><td>Reservas, eventos e confirmações</td><td>A cliente da reserva, a profissional daquela reserva e a operação.</td></tr>
+        <tr><td>Fila de confirmação</td><td>Leitura normal: reserva paga ainda sem linha em <code>attendance_confirmations</code>.</td></tr>
+        <tr><td>Relatório de pago, pendente e liberado</td><td>Operação, pela função <code>finance_report</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>Comandos em <code>commands</code>: <code>confirm_attendance</code>, <code>authorize_payout</code>, <code>set_app_role</code>, <code>finance_report</code>, <code>retry_payments</code>. Cobrança em <code>stripe-charge</code>, com <code>booking_id</code>, <code>success_url</code> e <code>cancel_url</code>. O valor não vai no corpo. Agenda em <code>scheduling-acuity</code>. Busca em <code>chat</code>.</p>
+    <p>Enquanto a Acuity e a Stripe não tiverem credencial de teste, a tela precisa mostrar pendente ou 503. Tratar isso como sucesso seria marcar a integração como homologada sem teste.</p>
+
+    <h2 id="falta">O que este relato não fecha</h2>
+    <table>
+      <thead>
+        <tr><th>Assunto</th><th>Situação</th><th>Por que parou</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Primeira pessoa de operação</td><td><span class="tag wait">manual</span></td><td>O snippet <code>supabase/snippets/promote-operator.sql</code> espera o e-mail real. Ele não entra na migration.</td></tr>
+        <tr><td>Projeto local e produção</td><td><span class="tag wait">um remoto só</span></td><td>A demonstração é o Detox-dev-teste. O local não subiu por falha de disco no Docker. A conta que hospeda produção ainda é decisão de Samuel.</td></tr>
+        <tr><td>POC Acuity</td><td><span class="tag wait">código pronto</span></td><td>Falta userId e apiKey de teste. Sem isso o status continua pendente.</td></tr>
+        <tr><td>POC Stripe</td><td><span class="tag wait">código pronto</span></td><td>Faltam <code>STRIPE_SECRET_KEY</code> e <code>STRIPE_WEBHOOK_SECRET</code> de teste.</td></tr>
+        <tr><td>Stripe Connect</td><td><span class="tag stop">em aberto</span></td><td>Destination charge, transfer ou outro objeto só entra depois da POC e de uma decisão registrada.</td></tr>
+        <tr><td>Provedor de IA</td><td><span class="tag stop">em aberto</span></td><td>O chat permanece na busca do catálogo até Samuel ou Elias escolherem modelo.</td></tr>
+        <tr><td>Square, Wix, Zenoti, Mindbody</td><td><span class="tag stop">501</span></td><td>A ordem da spec é uma por vez, cada uma com teste autenticado. A Acuity vem primeiro.</td></tr>
+        <tr><td>Gusto</td><td><span class="tag stop">opcional</span></td><td>Só se a cliente do contrato optar. Não divide a cobrança Stripe.</td></tr>
+        <tr><td>Estorno, no-show, prazo da fila</td><td><span class="tag stop">em aberto</span></td><td>O mecanismo de compensação existe. Quanto volta, quem cancela e em que prazo a spec não decide.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="proximo">Onde o frontend começa</h2>
+    <p>Catálogo, descoberta, reserva, confirmação e relatório já têm contrato. A tela de agenda e a de pagamento nascem tratando Acuity e Stripe como pendentes, até as duas POCs terem resposta real gravada.</p>
+    <p>Antes de alguém da operação usar o ambiente, falta promover o primeiro e-mail em <code>promote-operator.sql</code>. Essa pessoa grava preço do serviço, token de agenda e lê o relatório. Ela não se rebaixa sozinha.</p>
+    <p>As fases 07, 08 e 09, o Connect, a IA e a política de estorno continuam depois dessa primeira tela. A spec coloca a publicação na fase 09, não como pré-requisito do catálogo.</p>
+  </main>
+
+  <footer>
+    Fontes: pasta <code>spec/</code>, <code>docs/DECISIONS.md</code>, <code>supabase/migrations</code> e as funções publicadas em 5 de outubro de 2026. Este arquivo não contém chave, token nem segredo.
+  </footer>
+</body>
+</html>

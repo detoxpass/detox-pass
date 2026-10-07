@@ -31,7 +31,7 @@ https://otddminugslmacdirual.supabase.co/functions/v1/scheduling-square-webhook
 ```
 
 Eventos `booking.created` e `booking.updated`. Versão `2025-01-23`.
-O detalhe do aviso está em [`SQUARE-WEBHOOK.md`](./SQUARE-WEBHOOK.md).
+O detalhe do aviso está em [`SQUARE-WEBHOOK.md`](../guias/SQUARE-WEBHOOK.md).
 
 `booking.created` é ignorado. A ida já criou a reserva daqui. Um aviso que só
 muda a version interna da Square não reagenda. Cancelar de novo não grava

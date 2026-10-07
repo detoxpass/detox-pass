@@ -7,7 +7,7 @@ aceite continuam sendo a prova: este texto não fecha política em aberto
 e não marca nada como homologado.
 
 A hierarquia continua a do repositório: a decisão mais nova em
-[`DECISIONS.md`](./DECISIONS.md), depois a proposta, o playbook e a
+[`DECISIONS.md`](../DECISIONS.md), depois a proposta, o playbook e a
 identidade. Os módulos oficiais continuam sendo Painel, Reservas,
 Confirmações, Pagamentos, Repasses, Profissionais, Agenda da profissional,
 Integrações, Clientes, Relatórios e Administração, Rewards e Chat com

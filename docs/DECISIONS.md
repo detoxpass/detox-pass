@@ -389,7 +389,7 @@ Responsável: Elias.
 > Itens ainda **não definidos**. Não implementar/escolher sem aprovação de
 > Samuel/Elias. Ao definir, mover para o histórico de decisões acima.
 
-- [x] **Provedor de IA** desta fase: OpenAI, para transcrição e para a conversa com tool calling. O nome do modelo de conversa é configuração da função, não uma escolha de produto congelada. O comportamento está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
+- [x] **Provedor de IA** desta fase: OpenAI, para transcrição e para a conversa com tool calling. O nome do modelo de conversa é configuração da função, não uma escolha de produto congelada. O comportamento está em [`ROADMAP-AGENTE.md`](./roadmap/ROADMAP-AGENTE.md).
 - [ ] **Biblioteca visual / design system definitivo** e nova identidade visual aprovada.
 - [ ] **Arquitetura definitiva do Stripe / payout** (só fecha após a POC da Fase 05).
 - [ ] **Estrutura final do Gusto** (Fase 08, opcional) e tratamento fiscal (W-9/1099) com a cliente/contador.
@@ -521,7 +521,7 @@ agenda devolveu naquela conversa. O modelo não escolhe o instante. A
 transcrição é OpenAI. O modelo de conversa é OpenAI com tool calling, e o
 nome do modelo fica em variável da função, não na tela. A busca, o teto de
 ferramentas e os blocos visuais estão em
-[`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
+[`ROADMAP-AGENTE.md`](./roadmap/ROADMAP-AGENTE.md).
 
 Motivo: a cliente precisa achar e reservar na conversa sem furar a RLS, o
 limite da Edge Function nem a regra de que o horário vem da grade.

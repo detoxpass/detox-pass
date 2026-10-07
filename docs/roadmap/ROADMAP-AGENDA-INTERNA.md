@@ -1,6 +1,6 @@
 # Agenda interna e escolha da profissional
 
-Data: 2026-10-05. Decisão em [`DECISIONS.md`](./DECISIONS.md), seção
+Data: 2026-10-05. Decisão em [`DECISIONS.md`](../DECISIONS.md), seção
 "A profissional escolhe agenda interna ou externa".
 
 Esta fase não cobra, não libera repasse e não marca nenhuma agenda externa
