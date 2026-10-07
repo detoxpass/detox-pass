@@ -135,8 +135,6 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
   const next = upcoming[0]
   const later = upcoming.slice(1)
   const laterShown = showUpcoming ? later : later.slice(0, 5)
-  const cancelledCount = shown.filter((row) => row.saga_status === 'cancelled').length
-  const pastCount = Math.max(0, history.length - cancelledCount)
   const pastShown = showPast ? history : history.slice(0, 4)
   const pageSize = 6
   const pageCount = Math.max(1, Math.ceil(history.length / pageSize))
@@ -160,11 +158,6 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
       ) : null}
       {!ops && !bare && !loading && !error && shown.length > 0 ? (
         <>
-          <div className="session-kpis" aria-label="Session totals">
-            <article><Mark name="calendar" /><span><em>Upcoming</em><strong>{upcoming.length}</strong><small>{upcoming.length === 1 ? 'session' : 'sessions'}</small></span></article>
-            <article><Mark name="clock" /><span><em>Past</em><strong>{pastCount}</strong><small>{pastCount === 1 ? 'session' : 'sessions'}</small></span></article>
-            <article><Mark name="close" /><span><em>Cancelled</em><strong>{cancelledCount}</strong><small>{cancelledCount === 1 ? 'session' : 'sessions'}</small></span></article>
-          </div>
           {next ? <NextSession row={next} onOpen={onOpen} /> : <EmptyBlock title="No upcoming session" text="A future reservation appears here after the calendar confirms it." />}
           <section className="session-block">
             <div className="sess-head"><h2>Upcoming sessions</h2>{later.length > 5 ? <button type="button" onClick={() => setShowUpcoming((value) => !value)}>{showUpcoming ? 'Show less' : 'See all'} <Icon name="back" /></button> : null}</div>
@@ -254,23 +247,51 @@ function sessionStamp(value: string) {
 }
 
 function NextSession({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => void }) {
-  const stamp = sessionStamp(row.starts_at)
-  const length = lengthOf(row.starts_at, row.ends_at)
+  const cityName = row.cities?.name || 'City'
   return (
-    <button type="button" className="next-card" onClick={() => onOpen(row.id)}>
-      <img src={photoOf(row)} alt="" />
-      <span className="next-copy">
-        <em>Next session</em>
-        <strong>{row.professionals?.display_name || 'Therapist'}</strong>
-        <span>{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
-        <span className="next-meta">
-          <span><Icon name="calendar" /> {stamp.date}</span>
-          <span><Mark name="clock" /> {stamp.time}</span>
-          {length ? <span><Mark name="length" /> {length}</span> : null}
-        </span>
+    <button type="button" className="sd-hero next-hero" onClick={() => onOpen(row.id)}>
+      <span className="sd-shot">
+        <img className="sd-photo" src={photoOf(row)} alt="" />
+        <span className="sd-chip"><Icon name="pin" /> {cityName}</span>
+      </span>
+      <span className="sd-id">
+        <p className="sd-city"><Icon name="pin" /> {cityName}</p>
+        <h1>{row.professionals?.display_name || 'Therapist'}</h1>
+        <p>{row.services?.name || 'Service'}</p>
         <SagaStatus status={row.saga_status} />
       </span>
+      <Countdown at={row.starts_at} />
     </button>
+  )
+}
+
+function Countdown({ at }: { at: string }) {
+  const target = new Date(at).getTime()
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const left = Number.isFinite(target) ? Math.max(0, target - now) : 0
+  const total = Math.floor(left / 1000)
+  const days = Math.floor(total / 86400)
+  const hours = Math.floor((total % 86400) / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
+  const units = days > 0
+    ? [{ n: days, label: 'Days' }, { n: hours, label: 'Hrs' }, { n: minutes, label: 'Min' }]
+    : [{ n: hours, label: 'Hrs' }, { n: minutes, label: 'Min' }, { n: seconds, label: 'Sec' }]
+  return (
+    <span className="sd-count">
+      <em>{left === 0 ? 'Starting now' : 'Starts in'}</em>
+      {left === 0 ? null : (
+        <span>
+          {units.map((unit) => (
+            <span key={unit.label}><b>{String(unit.n).padStart(2, '0')}</b><small>{unit.label}</small></span>
+          ))}
+        </span>
+      )}
+    </span>
   )
 }
 

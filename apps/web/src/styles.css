@@ -618,6 +618,16 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 .sd-timeline strong, .sd-timeline time, .sd-timeline span { display: block; }
 .sd-timeline time, .sd-timeline span { color: var(--muted); font-size: 13px; font-weight: 600; }
 .sd-dock { display: none; }
+button.sd-hero { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.sd-count { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.sd-count > em { font-style: normal; color: #e45b70; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.sd-count > span { display: flex; gap: 8px; }
+.sd-count > span > span { min-width: 64px; height: 72px; border-radius: 16px; background: #fff1f1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.sd-count b { font-size: 26px; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.sd-count small { color: #e45b70; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+@media (max-width: 1180px) {
+  .next-hero .sd-count { grid-column: 1 / -1; align-items: flex-start; }
+}
 @media (min-width: 768px) {
   .sd-shot { position: static; }
   .sd-heart { top: 18px; right: 18px; }
@@ -627,6 +637,7 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
   .sd-hero { grid-template-columns: 148px minmax(0, 1fr); align-items: start; }
   .sd-photo { width: 148px; height: 168px; }
   .sd-id { padding-right: 56px; }
+  .next-hero .sd-id { padding-right: 0; }
   .sd-id h1 { font-size: 32px; }
   .sd-side { grid-column: 1 / -1; width: auto; flex-direction: row; margin-top: 4px; }
   .sd-reschedule, .sd-cancel { width: auto; flex: 1; }
@@ -634,7 +645,12 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 @media (max-width: 767px) {
   .page.visit-page,
   .page.sessions-home { position: relative; width: 100%; padding: 16px 16px 28px; }
-  .page.visit-page { padding-top: 0; }
+  .page.visit-page,
+  .page.sessions-home:has(.next-hero) { padding-top: 0; }
+  .next-hero .sd-count { align-items: stretch; margin-top: 0; background: white; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 22px 22px; padding: 0 16px 16px; }
+  .next-hero .sd-id { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .next-hero .sd-count > span { justify-content: space-between; }
+  .next-hero .sd-count > span > span { flex: 1; }
   .page.visit-page.has-dock { padding-bottom: 88px; }
   .sd-back { position: absolute; z-index: 3; top: 16px; left: 16px; min-height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #e45b70; }
   .sd-hero { display: block; background: transparent; border: 0; padding: 0; }
