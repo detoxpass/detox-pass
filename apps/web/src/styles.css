@@ -535,7 +535,7 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 .visit-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .visit-card { width: 100%; display: grid; grid-template-columns: 52px 108px minmax(0, 1fr) auto; gap: 12px; align-items: center; background: white; border: 1px solid var(--line); border-radius: 18px; padding: 14px; text-align: left; }
 .visit-photo { width: 52px; height: 52px; max-width: none; border-radius: 16px; object-fit: cover; }
-.page.sessions-home { width: min(1040px, calc(100% - 48px)); display: flex; flex-direction: column; gap: 16px; }
+.page.sessions-home { width: min(1040px, calc(100% - 48px)); display: flex; flex-direction: column; gap: 16px; container-type: inline-size; }
 .sessions-home .session-block { margin-top: 4px; }
 .session-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .session-kpis article { min-height: 92px; background: white; border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
@@ -572,6 +572,11 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
 .sess-row > svg { grid-column: 6; grid-row: 1 / span 2; transform: scaleX(-1); color: #c8c8c8; }
 @media (min-width: 768px) and (max-width: 1180px) {
   .sess-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+}
+@media (min-width: 768px) {
+  @container (max-width: 680px) {
+    .sess-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
 }
 @media (max-width: 767px) {
   .sess-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
