@@ -306,12 +306,14 @@ function SessionRow({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => 
         <span className="sess-date"><small>{stamp.month}</small><b>{stamp.day}</b></span>
         <img src={photoOf(row)} alt="" />
       </span>
-      <span className="sess-when">{stamp.weekday} · {stamp.time}</span>
-      <span className="sess-who">
-        <strong>{row.professionals?.display_name || 'Therapist'}</strong>
-        <span>{[row.services?.name || 'Service', row.cities?.name || 'City', length].filter(Boolean).join(' · ')}</span>
+      <span className="sess-main">
+        <span className="sess-top">
+          <strong className="sess-name">{row.professionals?.display_name || 'Therapist'}</strong>
+          <SagaStatus status={row.saga_status} />
+        </span>
+        <span className="sess-line">{[row.services?.name || 'Service', row.cities?.name || 'City', length].filter(Boolean).join(' · ')}</span>
+        <span className="sess-when">{stamp.weekday} · {stamp.time}</span>
       </span>
-      <SagaStatus status={row.saga_status} />
       <Icon name="back" />
     </button>
   )
