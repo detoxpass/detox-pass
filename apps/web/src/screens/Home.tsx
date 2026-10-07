@@ -267,7 +267,7 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
         </div>
         <div className="hero-copy">
           <span className="hero-search"><Icon name="search" /></span>
-          <h1>Find your perfect therapist</h1>
+          <h1>Find your perfect<br />therapist</h1>
           <p>Experience professional massage therapy tailored to your needs, delivered by certified experts in your area.</p>
           <form className="hero-bar" onSubmit={(event) => event.preventDefault()}>
             <Icon name="search" />
