@@ -45,13 +45,17 @@ Objetos finais do Stripe Connect (repasse para a conta da profissional) e o prov
 | `stripe-webhook` | não | assinatura Stripe, grava pago ou compensação |
 | `scheduling-square` | sim | disponibilidade, reserva, reagendar, cancelar, gravar token |
 | `scheduling-square-webhook` | não | aviso assinado da Square; sem a chave, recusa |
-| `scheduling-wix`, `zenoti`, `mindbody` | sim | respondem pendente, sem simular sucesso |
+| `scheduling-wix` | sim | disponibilidade, criar e confirmar, reagendar, cancelar. Continua `pending` até o ciclo numa ficha ativa |
+| `scheduling-wix-webhook` | não | JWT conferido com a chave pública. Sem assinatura, recusa |
+| `scheduling-wix-oauth` | não | retorno da instalação da Wix |
+| `scheduling-zenoti`, `scheduling-mindbody` | sim | respondem pendente, sem simular sucesso |
 | `gusto` | sim | desligado até a cliente optar |
 
 Segredos desta conta, gravados com `supabase secrets set`, nunca no Git:
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+- `WIX_APP_ID`, `WIX_APP_SECRET`, `WIX_WEBHOOK_PUBLIC_KEY`, `WIX_OAUTH_STATE_SECRET`
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` a plataforma injeta na função.
 

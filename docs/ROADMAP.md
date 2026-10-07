@@ -17,6 +17,7 @@ A caixa de avisos e a página de favoritos estão em
 [`ROADMAP-NOTIFICACOES.md`](./ROADMAP-NOTIFICACOES.md).
 O agente de IA está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
 O painel da operação está em [`ROADMAP-ADMIN.md`](./ROADMAP-ADMIN.md).
+A Wix da ficha Detox Pass está em [`ROADMAP-WIX.md`](./ROADMAP-WIX.md).
 
 ## Como ler cada entrega
 
@@ -236,13 +237,13 @@ Ordem fixa, depois da Acuity com evidência: Square, Wix, Zenoti, Mindbody. Cada
 | Provedor | Frente | Aceite para deixar de ser pendente |
 | -------- | ------ | ---------------------------------- |
 | Square | Escrita depende de plano e permissão. | Teste autenticado de disponibilidade, criar, reagendar e cancelar, ou registro do que o plano não permite. |
-| Wix | Criar e confirmar podem ser etapas separadas. | Teste autenticado que mostra as duas etapas, se a API as separar. |
+| Wix | Criar e confirmar podem ser etapas separadas. O plano da ficha Detox Pass está em [`ROADMAP-WIX.md`](./ROADMAP-WIX.md). | Teste autenticado que mostra as duas etapas, se a API as separar. |
 | Zenoti | Cancelamento depende da invoice. | Teste autenticado que inclui o cancelamento real, ou o marca como não suportado. |
 | Mindbody | Produção depende de onboarding do fornecedor. | Teste autenticado e, para produção, o onboarding. Sem isso, permanece pendente. |
 
 Frontend e backend de cada uma reusam a mesma porta da reserva. A tela não ganha um cliente HTTP do provedor. Nenhuma das cinco é anunciada como homologada porque o adapter compila.
 
-A prova de 2026-10-06, na ficha Detox Pass, está em [`ROADMAP-AGENDAS.md`](./ROADMAP-AGENDAS.md). As três conexões continuam `pending`.
+A prova de 2026-10-06, na ficha Detox Pass, está em [`ROADMAP-AGENDAS.md`](./ROADMAP-AGENDAS.md). A Square dessa prova ficou `tested`. A Wix da mesma ficha está em [`ROADMAP-WIX.md`](./ROADMAP-WIX.md) e segue `pending`.
 
 ---
 

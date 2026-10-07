@@ -29,7 +29,7 @@ const CALENDARS = [
   { id: 'internal', label: 'Detox Pass', logo: '/brand/logo-black.png', note: 'Hours you keep here' },
   { id: 'square', label: 'Square', logo: '/brand/calendars/square.svg', note: 'Sign in with Square' },
   { id: 'acuity', label: 'Acuity', logo: '/brand/calendars/acuity.svg', note: 'Not on this screen yet' },
-  { id: 'wix', label: 'Wix', logo: '/brand/calendars/wix.svg', note: 'Not on this screen yet' },
+  { id: 'wix', label: 'Wix', logo: '/brand/calendars/wix.svg', note: 'Sign in with Wix' },
   { id: 'zenoti', label: 'Zenoti', logo: '/brand/calendars/zenoti.svg', note: 'Not on this screen yet' },
   { id: 'mindbody', label: 'Mindbody', logo: '/brand/calendars/mindbody.svg', note: 'Not on this screen yet' },
 ]
@@ -128,8 +128,14 @@ export function Integrations({ session, embedded, onReady }: {
   const [locationId, setLocationId] = useState('')
   const [memberId, setMemberId] = useState('')
   const [variationId, setVariationId] = useState('')
+  const [wixServices, setWixServices] = useState<{ id: string; name: string }[]>([])
+  const [wixServiceId, setWixServiceId] = useState('')
+  const [wixSaved, setWixSaved] = useState(false)
+  const [wixConnected, setWixConnected] = useState(false)
+  const [wixPending, setWixPending] = useState(false)
   const drag = useRef('')
   const wantChoice = useRef(new URLSearchParams(window.location.search).get('square') === 'choose')
+  const wantWix = useRef(new URLSearchParams(window.location.search).get('wix') === 'choose')
 
   function reload() {
     setLoading(true)
@@ -167,6 +173,22 @@ export function Integrations({ session, embedded, onReady }: {
         } catch (caught) {
           setError(caught instanceof Error ? caught.message : 'Could not read the Square connection.')
         }
+        try {
+          const wixStatus = await callFunction(session, 'scheduling-wix', { action: 'status', professional_id: row.id })
+          const wixAccount = wixStatus.body && typeof wixStatus.body === 'object' ? wixStatus.body as Record<string, unknown> : {}
+          setWixSaved(wixAccount.saved === true)
+          setWixConnected(wixAccount.connected === true)
+          setWixPending(wixAccount.pendingChoice === true)
+          if (wantWix.current || wixAccount.pendingChoice === true) {
+            wantWix.current = false
+            setOpenId('wix')
+            const options = await callFunction(session, 'scheduling-wix', { action: 'options', professional_id: row.id })
+            const listed = options.body && typeof options.body === 'object' ? options.body as Record<string, unknown> : {}
+            if (listed.status === 'choose') applyWix(listed)
+          }
+        } catch (caught) {
+          setError(caught instanceof Error ? caught.message : 'Could not read the Wix connection.')
+        }
       })
       .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Could not load calendars.'))
       .finally(() => setLoading(false))
@@ -177,7 +199,8 @@ export function Integrations({ session, embedded, onReady }: {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const result = params.get('square')
-    if (!result) return
+    const wixResult = params.get('wix')
+    if (!result && !wixResult) return
     const messages: Record<string, string> = {
       connected: 'Square is connected. It stays pending until a live booking is completed.',
       choose: 'Square has more than one option. Pick the location, person, and service, then save.',
@@ -185,12 +208,32 @@ export function Integrations({ session, embedded, onReady }: {
       denied: 'Square sign-in was cancelled.',
       error: 'Square sign-in did not finish. Try again.',
     }
-    if (messages[result]) setNotice(messages[result])
+    const wixMessages: Record<string, string> = {
+      connected: 'Wix is connected. It stays pending until a live booking is completed.',
+      choose: 'Wix has more than one service. Pick one, then save.',
+      denied: 'Wix sign-in was cancelled.',
+      error: 'Wix sign-in did not finish. Try again.',
+    }
+    if (result && messages[result]) setNotice(messages[result])
+    if (wixResult && wixMessages[wixResult]) setNotice(wixMessages[wixResult])
     if (result === 'connected' || result === 'choose' || result === 'incomplete') setOpenId('square')
+    if (wixResult === 'connected' || wixResult === 'choose') setOpenId('wix')
     params.delete('square')
+    params.delete('wix')
     const next = params.toString()
     window.history.replaceState(null, '', `${window.location.pathname}${next ? `?${next}` : ''}`)
   }, [])
+
+  function applyWix(body: Record<string, unknown>) {
+    const next = Array.isArray(body.services) ? body.services.flatMap((row) => {
+      if (!row || typeof row !== 'object' || !('id' in row) || !('name' in row)) return []
+      const id = typeof row.id === 'string' ? row.id : ''
+      const name = typeof row.name === 'string' ? row.name : ''
+      return id && name ? [{ id, name }] : []
+    }) : []
+    setWixServices(next)
+    setWixServiceId(next[0]?.id ?? '')
+  }
 
   function applyChoices(body: Record<string, unknown>) {
     const nextLocations = Array.isArray(body.locations) ? body.locations as SquareOption[] : []
@@ -242,6 +285,53 @@ export function Integrations({ session, embedded, onReady }: {
       reload()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not connect Square.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function connectWix(event: FormEvent) {
+    event.preventDefault()
+    if (!schedule) return
+    setBusy(true)
+    setError('')
+    try {
+      if (wixPending && wixServices.length === 0) {
+        const options = await callFunction(session, 'scheduling-wix', { action: 'options', professional_id: schedule.id })
+        const listed = options.body && typeof options.body === 'object' ? options.body as Record<string, unknown> : {}
+        if (listed.status === 'choose') {
+          applyWix(listed)
+          setNotice('Wix has more than one service. Pick one, then save.')
+          return
+        }
+      }
+      const choosing = wixServices.length > 1
+      const result = choosing
+        ? await callFunction(session, 'scheduling-wix', {
+          action: 'finish',
+          professional_id: schedule.id,
+          wix_service_id: wixServiceId || undefined,
+        })
+        : await callFunction(session, 'scheduling-wix', {
+          action: 'oauth_start',
+          professional_id: schedule.id,
+        })
+      const body = result.body && typeof result.body === 'object' ? result.body as Record<string, unknown> : {}
+      if (!choosing && typeof body.url === 'string') {
+        window.location.assign(body.url)
+        return
+      }
+      if (body.status === 'choose') {
+        applyWix(body)
+        setNotice('Wix has more than one service. Pick one, then save.')
+        return
+      }
+      if (!body.ok) throw new Error(typeof body.error === 'string' ? body.error : 'Wix did not connect.')
+      setWixServices([])
+      setNotice('Wix is connected. It stays pending until a live booking is completed.')
+      reload()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not connect Wix.')
     } finally {
       setBusy(false)
     }
@@ -383,7 +473,8 @@ export function Integrations({ session, embedded, onReady }: {
         </header>
         <div className="integ-grid">
           {partners.map((calendar) => {
-            const connected = calendar.id === 'square' && squareOn
+            const connected = calendar.id === 'square' ? squareOn : calendar.id === 'wix' ? wixConnected : false
+            const manage = connected || (calendar.id === 'wix' && wixSaved)
             const count = visitsInMonth(visits, thisMonth, calendar.id)
             return (
               <article className="integ-card" key={calendar.id}>
@@ -397,18 +488,22 @@ export function Integrations({ session, embedded, onReady }: {
                   ? `${count} ${count === 1 ? 'reservation' : 'reservations'} this month`
                   : calendar.id === 'square'
                     ? 'Sign in with Square to receive reservations.'
-                    : `This screen does not connect ${calendar.label} yet.`}</p>
+                    : calendar.id === 'wix'
+                      ? (wixSaved
+                        ? 'Wix is saved. It stays pending until a live booking is completed.'
+                        : 'Sign in with Wix to receive reservations.')
+                      : `This screen does not connect ${calendar.label} yet.`}</p>
                 </div>
                 <button type="button" className="integ-more" aria-label={`${calendar.label} actions`} aria-expanded={menuId === calendar.id} onClick={() => setMenuId(menuId === calendar.id ? '' : calendar.id)}>
                   <Icon name="more" />
                 </button>
                 {menuId === calendar.id ? (
                   <div className="integ-menu">
-                    <button type="button" onClick={() => { setMenuId(''); setOpenId(calendar.id) }}>{connected ? 'Manage' : 'Connect'}</button>
+                    <button type="button" onClick={() => { setMenuId(''); setOpenId(calendar.id) }}>{manage ? 'Manage' : 'Connect'}</button>
                     <button type="button" disabled={order.length === 0} onClick={() => { setMenuId(''); setPriorityOpen(true) }}>Set priority</button>
                   </div>
                 ) : null}
-                <button type="button" className="integ-outline integ-action" onClick={() => setOpenId(calendar.id)}>{connected ? 'Manage →' : 'Connect →'}</button>
+                <button type="button" className="integ-outline integ-action" onClick={() => setOpenId(calendar.id)}>{manage ? 'Manage →' : 'Connect →'}</button>
               </article>
             )
           })}
@@ -503,7 +598,30 @@ export function Integrations({ session, embedded, onReady }: {
                   ) : null}
                 </form>
               ) : null}
-              {open.id !== 'internal' && open.id !== 'square' ? (
+              {open.id === 'wix' ? (
+                <form className="stack" onSubmit={connectWix}>
+                  <p className="muted">Wix asks you to allow Detox Pass on your site. You do not paste a token.</p>
+                  {wixServices.length > 1 ? (
+                    <label className="field"><span>Service</span>
+                      <select value={wixServiceId} onChange={(event) => setWixServiceId(event.target.value)}>
+                        {wixServices.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+                      </select>
+                    </label>
+                  ) : null}
+                  <Button type="submit" disabled={busy}>{wixServices.length > 1 ? 'Save Wix service' : 'Connect with Wix'}</Button>
+                  {wixSaved || wixPending ? (
+                    <Button kind="ghost" disabled={busy} onClick={() => {
+                      setBusy(true)
+                      if (!schedule) return
+                      callFunction(session, 'scheduling-wix', { action: 'disconnect', professional_id: schedule.id })
+                        .then(() => { setNotice('Wix is disconnected here.'); setWixSaved(false); setWixPending(false); setWixServices([]); reload() })
+                        .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Could not disconnect Wix.'))
+                        .finally(() => setBusy(false))
+                    }}>Disconnect Wix</Button>
+                  ) : null}
+                </form>
+              ) : null}
+              {open.id !== 'internal' && open.id !== 'square' && open.id !== 'wix' ? (
                 <p>This screen does not connect {open.label} yet.</p>
               ) : null}
             </div>

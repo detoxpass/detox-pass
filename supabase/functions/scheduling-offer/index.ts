@@ -13,6 +13,7 @@ type Body = {
 const DOORS: Record<string, string> = {
   internal: 'scheduling-internal',
   square: 'scheduling-square',
+  wix: 'scheduling-wix',
 }
 
 Deno.serve(async (req) => {

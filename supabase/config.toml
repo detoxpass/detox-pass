@@ -454,6 +454,12 @@ verify_jwt = false
 [functions.scheduling-wix]
 verify_jwt = true
 
+[functions.scheduling-wix-webhook]
+verify_jwt = false
+
+[functions.scheduling-wix-oauth]
+verify_jwt = false
+
 [functions.scheduling-zenoti]
 verify_jwt = true
 

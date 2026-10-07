@@ -51,12 +51,13 @@ a `tested`.
 A documentação separa criar, confirmar, reagendar e cancelar, e tem aviso para
 cada passo. Criar não é confirmar.
 
-App ID e App secret emitem um Bearer de 4 horas. Esse token não lê a agenda
-do site. O Instance ID recebido era o HTML de example.com e não foi gravado.
-`external_resource_id` está nulo. A função `scheduling-wix` continua pendente.
+A conexão da ficha Detox Pass já existia, `pending`, com App ID e App secret
+no cofre. Em 2026-10-07 a instance do site Teste Detox Pass e a chave pública
+entraram nesse mesmo cofre. `external_resource_id` continua nulo. A Square
+segue `tested` e `is_source`. A função `scheduling-wix` cria e confirma. O status da conexão continua `pending`.
 
-O corte começa quando existir a instance da instalação. Com ela: token do
-site, lista de serviços, e o teste das duas etapas se a API as separar.
+O plano, a leitura e os parâmetros de aceite estão em
+[`ROADMAP-WIX.md`](./ROADMAP-WIX.md).
 
 ## 4. Zenoti
 

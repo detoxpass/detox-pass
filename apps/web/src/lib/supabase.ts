@@ -352,7 +352,7 @@ export type ProfessionalRow = {
 
 export function calendarDoor(provider: string | null | undefined): string | null {
   if (provider === 'internal') return 'scheduling-internal'
-  if (provider === 'acuity' || provider === 'square') return `scheduling-${provider}`
+  if (provider === 'acuity' || provider === 'square' || provider === 'wix') return `scheduling-${provider}`
   return null
 }
 
