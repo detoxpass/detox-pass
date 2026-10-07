@@ -575,10 +575,10 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
   .sess-date { grid-column: auto; grid-row: auto; width: 52px; height: 56px; border-radius: 14px 0 0 14px; }
   .sess-row img { grid-column: auto; grid-row: auto; width: 52px; height: 56px; border-radius: 0 14px 14px 0; object-position: center 18%; }
   .sess-main { display: flex; flex-direction: column; grid-column: 2; grid-row: 1; min-width: 0; align-self: stretch; }
-  .sess-top { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
-  .sess-name { grid-column: auto; grid-row: auto; flex: 1; padding: 10px 8px 0 0; }
-  .sess-row .status-pill { grid-column: auto; grid-row: auto; align-self: flex-start; flex: none; margin: 0; border-radius: 14px 17px 0 0; padding: 8px 12px 8px 14px; }
-  .sess-line { grid-column: auto; grid-row: auto; padding: 4px 12px 0 0; }
+  .sess-top { display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
+  .sess-name { grid-column: auto; grid-row: auto; flex: none; width: 100%; padding: 8px 12px 0 0; overflow-wrap: normal; word-break: normal; }
+  .sess-row .status-pill { grid-column: auto; grid-row: auto; order: -1; align-self: flex-end; flex: none; margin: 0; border-radius: 14px 17px 0 0; padding: 8px 12px 8px 14px; }
+  .sess-line { grid-column: auto; grid-row: auto; padding: 4px 12px 0 0; overflow-wrap: normal; word-break: normal; }
   .sess-when { grid-column: auto; grid-row: auto; align-self: flex-end; margin: auto 0 0; padding: 8px 12px 8px 14px; border-radius: 14px 0 17px 0; background: #f4f4f5; white-space: nowrap; }
   .sess-row > svg { display: none; }
 }
