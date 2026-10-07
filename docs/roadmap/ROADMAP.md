@@ -18,6 +18,7 @@ A caixa de avisos e a página de favoritos estão em
 O agente de IA está em [`ROADMAP-AGENTE.md`](./ROADMAP-AGENTE.md).
 O painel da operação está em [`ROADMAP-ADMIN.md`](./ROADMAP-ADMIN.md).
 A Wix da ficha Detox Pass está em [`ROADMAP-WIX.md`](./ROADMAP-WIX.md).
+O corte de Stripe, com o Gusto condicional, está em [`ROADMAP-STRIPE.md`](./ROADMAP-STRIPE.md).
 
 ## Como ler cada entrega
 
@@ -204,7 +205,7 @@ Política de prazo, multa e estorno continua em aberto. Até a decisão, cancela
 
 ## 5 — POC Stripe
 
-`stripe-charge` e `stripe-webhook` existem. Sem `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET`, os dois respondem indisponível. A arquitetura dos objetos Connect continua em aberto até esta POC produzir evidência.
+O aceite e o relatório desta prova estão em [`ROADMAP-STRIPE.md`](./ROADMAP-STRIPE.md). `stripe-charge` e `stripe-webhook` existem. Sem `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET`, os dois respondem indisponível. A arquitetura dos objetos Connect continua em aberto até esta POC produzir evidência.
 
 | | |
 | --- | --- |
@@ -269,7 +270,7 @@ Aceite: cada perfil abre só a própria lista. Trocar de conta troca a lista e n
 
 ## 10 — Gusto
 
-Fase condicional. A função já responde desligada.
+Fase condicional. O portão está no corte 4 de [`ROADMAP-STRIPE.md`](./ROADMAP-STRIPE.md). A função já responde desligada.
 
 | | |
 | --- | --- |

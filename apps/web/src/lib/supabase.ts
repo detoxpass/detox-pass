@@ -806,7 +806,7 @@ export type BookingRow = {
   external_charge_ref?: string | null
   amount_cents: number | null
   currency?: string | null
-  services: { name: string } | null
+  services: { name: string; price_cents?: number | null; currency?: string | null } | null
   professionals: { display_name: string; portrait_path?: string | null } | null
   cities: { name: string } | null
   client?: { full_name: string | null } | null
@@ -814,7 +814,7 @@ export type BookingRow = {
 }
 
 export function loadBookings(session: Session) {
-  const select = 'id,professional_id,starts_at,ends_at,saga_status,external_booking_id,amount_cents,currency,provider,services(name),professionals(display_name,portrait_path),cities(name)'
+  const select = 'id,professional_id,starts_at,ends_at,saga_status,external_booking_id,external_charge_ref,amount_cents,currency,provider,services(name,price_cents,currency),professionals(display_name,portrait_path),cities(name)'
   return rows<BookingRow>(session, `bookings?select=${encodeURIComponent(select)}&order=starts_at.desc`)
 }
 

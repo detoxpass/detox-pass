@@ -28,13 +28,22 @@ Deno.serve(async (req) => {
     return json({ error: 'booking_id, success_url e cancel_url são obrigatórios' }, 400)
   }
 
+  if (!stripeKey.startsWith('sk_test_')) {
+    return json({ error: 'esta POC só aceita chave de teste da Stripe' }, 503)
+  }
+
+  if (!returnUrl(body.success_url, body.booking_id) || !returnUrl(body.cancel_url, body.booking_id)) {
+    return json({ error: 'success_url e cancel_url precisam voltar para a sessão neste app' }, 400)
+  }
+
   const { data: booking, error: bookingError } = await auth.client
     .from('bookings')
-    .select('id, saga_status, client_id, service_id')
+    .select('id, saga_status, client_id, professional_id, service_id')
     .eq('id', body.booking_id)
     .maybeSingle()
   if (bookingError) return json({ error: bookingError.message }, 400)
-  if (!booking || booking.client_id !== auth.user.id || booking.saga_status !== 'provider_confirmed') {
+  const ready = booking?.saga_status === 'provider_confirmed' || booking?.saga_status === 'charge_created'
+  if (!booking || booking.client_id !== auth.user.id || !ready) {
     return json({ error: 'reserva não está pronta para cobrança desta cliente' }, 403)
   }
 
@@ -50,10 +59,13 @@ Deno.serve(async (req) => {
 
   const form = new URLSearchParams()
   form.set('mode', 'payment')
+  form.set('payment_method_types[0]', 'card')
   form.set('success_url', body.success_url)
   form.set('cancel_url', body.cancel_url)
   form.set('client_reference_id', body.booking_id)
-  form.set('metadata[booking_id]', body.booking_id)
+  form.set('metadata[booking_id]', booking.id)
+  form.set('metadata[client_id]', booking.client_id)
+  form.set('metadata[professional_id]', booking.professional_id)
   form.set('line_items[0][quantity]', '1')
   form.set('line_items[0][price_data][currency]', service.currency.toLowerCase())
   form.set('line_items[0][price_data][unit_amount]', String(service.price_cents))
@@ -86,3 +98,18 @@ Deno.serve(async (req) => {
 
   return json({ booking_id: body.booking_id, checkout_url: session.url, stripe_session_id: session.id })
 })
+
+const returnOrigins = new Set([
+  'https://detox-pass.vercel.app',
+  'http://127.0.0.1:5173',
+  'http://localhost:5173',
+])
+
+function returnUrl(value: string, bookingId: string): boolean {
+  try {
+    const url = new URL(value)
+    return returnOrigins.has(url.origin) && url.pathname === `/sessions/${bookingId}`
+  } catch {
+    return false
+  }
+}
