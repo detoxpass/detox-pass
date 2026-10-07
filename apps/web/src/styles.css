@@ -581,6 +581,14 @@ button.is-busy { align-items: center; justify-content: center; gap: 8px; opacity
   .sess-row .status-pill { grid-column: auto; grid-row: auto; align-self: flex-start; writing-mode: horizontal-tb; text-orientation: mixed; letter-spacing: 0; display: inline-flex; width: auto; margin: 0; border-radius: 999px; padding: 4px 10px; }
   .sess-row > svg { display: none; }
 }
+@media (max-width: 767px) {
+  .sess-row { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; overflow: visible; }
+  .sess-pair { display: flex; height: auto; align-self: flex-start; }
+  .sess-date { width: 56px; height: 64px; min-height: 0; border-radius: 14px 0 0 14px; }
+  .sess-row img { width: 56px; height: 64px; min-height: 0; border-radius: 0 14px 14px 0; }
+  .sess-main { width: 100%; padding: 0; gap: 4px; }
+  .sess-row .status-pill { margin-top: 4px; }
+}
 .session-block { margin-top: 22px; }
 .session-block h2 { font-size: 20px; letter-spacing: -0.03em; margin-bottom: 12px; }
 .session-pages { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
