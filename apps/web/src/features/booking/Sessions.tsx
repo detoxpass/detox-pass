@@ -74,6 +74,9 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(() => new URLSearchParams(window.location.search))
   const [page, setPage] = useState(0)
+  const [loved, setLoved] = useState<string[]>(readLoved)
+  const [showUpcoming, setShowUpcoming] = useState(false)
+  const [showPast, setShowPast] = useState(false)
 
   function setFilter(key: string, value: string) {
     const next = new URLSearchParams(window.location.search)
@@ -132,11 +135,14 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
     .sort((a, b) => b.starts_at.localeCompare(a.starts_at))
   const next = upcoming[0]
   const later = upcoming.slice(1)
+  const laterShown = showUpcoming ? later : later.slice(0, 5)
+  const cancelledCount = shown.filter((row) => row.saga_status === 'cancelled').length
+  const pastCount = Math.max(0, history.length - cancelledCount)
+  const pastShown = showPast ? history : history.slice(0, 4)
   const pageSize = 6
   const pageCount = Math.max(1, Math.ceil(history.length / pageSize))
   const safePage = Math.min(page, pageCount - 1)
   const historyPage = history.slice(safePage * pageSize, safePage * pageSize + pageSize)
-  const cancelledCount = shown.filter((row) => row.saga_status === 'cancelled').length
 
   const body = (
     <>
@@ -154,38 +160,31 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
       {!ops && !bare && !loading && !error && shown.length > 0 ? (
         <>
           <div className="session-kpis" aria-label="Session totals">
-            <article><span>Upcoming</span><strong>{upcoming.length}</strong></article>
-            <article><span>Past</span><strong>{history.length - cancelledCount}</strong></article>
-            <article><span>Cancelled</span><strong>{cancelledCount}</strong></article>
+            <article><Mark name="calendar" /><span><em>Upcoming</em><strong>{upcoming.length}</strong><small>{upcoming.length === 1 ? 'session' : 'sessions'}</small></span></article>
+            <article><Mark name="clock" /><span><em>Past</em><strong>{pastCount}</strong><small>{pastCount === 1 ? 'session' : 'sessions'}</small></span></article>
+            <article><Mark name="close" /><span><em>Cancelled</em><strong>{cancelledCount}</strong><small>{cancelledCount === 1 ? 'session' : 'sessions'}</small></span></article>
           </div>
-          {next ? (
-            <button type="button" className="session-next" onClick={() => onOpen(next.id)}>
-              <img src={photoOf(next)} alt="" />
-              <span>
-                <em>Next session</em>
-                <strong>{next.professionals?.display_name || 'Therapist'}</strong>
-                <span>{next.services?.name || 'Service'} · {next.cities?.name || 'City'}</span>
-                <span>{appointmentParts(next.starts_at).long} · {appointmentParts(next.starts_at).time}</span>
-                <SagaStatus status={next.saga_status} />
-              </span>
-            </button>
-          ) : <EmptyBlock title="No upcoming session" text="A future reservation appears here after the calendar confirms it." />}
-          {later.length > 0 ? (
-            <section className="session-block">
-              <h2>Coming up</h2>
-              <ul className="visit-list">
-                {later.map((row) => <li key={row.id}><VisitButton row={row} ops={false} onOpen={onOpen} /></li>)}
-              </ul>
-            </section>
-          ) : null}
+          {next ? <NextSession row={next} saved={loved.includes(next.professional_id)} onOpen={onOpen} onLove={() => {
+            const nextLoved = loved.includes(next.professional_id) ? loved.filter((item) => item !== next.professional_id) : [...loved, next.professional_id]
+            writeLoved(nextLoved)
+            setLoved(nextLoved)
+          }} /> : <EmptyBlock title="No upcoming session" text="A future reservation appears here after the calendar confirms it." />}
           <section className="session-block">
-            <h2>History</h2>
+            <div className="sess-head"><h2>Upcoming sessions</h2>{later.length > 5 ? <button type="button" onClick={() => setShowUpcoming((value) => !value)}>{showUpcoming ? 'Show less' : 'See all'} <Icon name="back" /></button> : null}</div>
+            {laterShown.length === 0 ? <p className="muted">Other future reservations show up here.</p> : (
+              <ul className="sess-list">
+                {laterShown.map((row) => <li key={row.id}><SessionRow row={row} onOpen={onOpen} /></li>)}
+              </ul>
+            )}
+          </section>
+          <section className="session-block">
+            <div className="sess-head"><h2>Past sessions</h2>{history.length > 4 ? <button type="button" onClick={() => setShowPast((value) => !value)}>{showPast ? 'Show less' : 'See all'} <Icon name="back" /></button> : null}</div>
             {history.length === 0 ? <p className="muted">Past and cancelled reservations show up here.</p> : (
               <>
-                <ul className="visit-list">
-                  {historyPage.map((row) => <li key={row.id}><VisitButton row={row} ops={false} onOpen={onOpen} /></li>)}
+                <ul className="sess-list">
+                  {(showPast ? historyPage : pastShown).map((row) => <li key={row.id}><SessionRow row={row} onOpen={onOpen} /></li>)}
                 </ul>
-                {pageCount > 1 ? (
+                {showPast && pageCount > 1 ? (
                   <div className="session-pages">
                     <Button kind="ghost" disabled={safePage === 0} onClick={() => setPage(Math.max(0, safePage - 1))}>Previous</Button>
                     <span>{safePage + 1} / {pageCount}</span>
@@ -242,7 +241,63 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
     </>
   )
   if (bare) return <section className="visit-embed">{body}</section>
-  return <div className="page narrow">{body}</div>
+  return <div className={ops ? 'page narrow' : 'page sessions-home'}>{body}</div>
+}
+
+function sessionStamp(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return { month: '', day: '', weekday: '', time: '', date: value }
+  return {
+    month: new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date).toUpperCase(),
+    day: String(date.getDate()),
+    weekday: new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
+    time: new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(date),
+    date: new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(date),
+  }
+}
+
+function NextSession({ row, saved, onOpen, onLove }: { row: BookingRow; saved: boolean; onOpen: (id: string) => void; onLove: () => void }) {
+  const stamp = sessionStamp(row.starts_at)
+  const length = lengthOf(row.starts_at, row.ends_at)
+  const name = row.professionals?.display_name || 'Therapist'
+  return (
+    <article className="next-card">
+      <img src={photoOf(row)} alt="" />
+      <button type="button" className="next-copy" onClick={() => onOpen(row.id)}>
+        <em>Next session</em>
+        <strong>{name}</strong>
+        <span>{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
+        <span className="next-meta">
+          <span><Icon name="calendar" /> {stamp.date}</span>
+          <span><Mark name="clock" /> {stamp.time}</span>
+          {length ? <span><Mark name="length" /> {length}</span> : null}
+        </span>
+        <SagaStatus status={row.saga_status} />
+      </button>
+      <div className="next-side">
+        <button type="button" className={`next-heart${saved ? ' on' : ''}`} aria-pressed={saved} aria-label={saved ? `Remove ${name} from favorites` : `Save ${name}`} onClick={onLove}><Icon name="heart" /></button>
+        {row.saga_status === 'provider_confirmed' ? <button type="button" className="next-go" onClick={() => onOpen(row.id)}><Icon name="calendar" /> Reschedule</button> : null}
+      </div>
+    </article>
+  )
+}
+
+function SessionRow({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => void }) {
+  const stamp = sessionStamp(row.starts_at)
+  const length = lengthOf(row.starts_at, row.ends_at)
+  return (
+    <button type="button" className="sess-row" onClick={() => onOpen(row.id)}>
+      <span className="sess-date"><small>{stamp.month}</small><b>{stamp.day}</b></span>
+      <span className="sess-when">{stamp.weekday} · {stamp.time}</span>
+      <img src={photoOf(row)} alt="" />
+      <span className="sess-who">
+        <strong>{row.professionals?.display_name || 'Therapist'}</strong>
+        <span>{[row.services?.name || 'Service', row.cities?.name || 'City', length].filter(Boolean).join(' · ')}</span>
+      </span>
+      <SagaStatus status={row.saga_status} />
+      <Icon name="back" />
+    </button>
+  )
 }
 
 function VisitButton({ row, ops, onOpen }: { row: BookingRow; ops: boolean; onOpen: (id: string) => void }) {
