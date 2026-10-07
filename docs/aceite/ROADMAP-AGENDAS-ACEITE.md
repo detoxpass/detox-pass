@@ -13,7 +13,7 @@ externa. A reserva dela de 12 de outubro não foi mexida.
 | Conexões da Detox Pass | Square `tested` e `is_source`. Acuity e Wix `pending`, fora da reserva. |
 | `scheduling-square`, `scheduling-acuity` e `scheduling-square-webhook` | Publicadas. A Acuity nomeia o provedor na abertura. |
 | Formulário da profissional | Agenda lista Detox Pass, Square, Acuity, Wix, Zenoti e Mindbody. Só Detox Pass e Square conectam. Square pede ambiente e access token. |
-| Signature key da Square | Ainda não está no projeto. |
+| Signature key da Square | Gravada no projeto. Não está no Git. |
 | Ficha Detox Pass | Voltou a inativa, sem serviço e sem cidade, com agenda externa. |
 | Tela no site publicado | Provada em `https://detox-pass.vercel.app/agenda`, na conta da profissional. |
 
@@ -42,7 +42,7 @@ Rodaram com Deno, 9 passaram. O nono cobre a busca que não começa no passado.
 | 16 | Mesmo instante com e sem milissegundos | Ignora. | Passou. |
 | 17 | `ACCEPTED` sem horário, e evento `payment.updated` | Ignora. | Passou. |
 | 18 | GET no webhook publicado | 405. | Passou, na URL publicada. |
-| 19 | POST sem assinatura, e POST com assinatura falsa, sem a Signature key no projeto | 401 `assinatura ausente`. | Passou. O ramo de assinatura inválida com chave gravada não rodou em produção, porque a chave ainda não existe. |
+| 19 | POST sem assinatura, e POST com assinatura falsa, com a Signature key gravada | Sem assinatura: 401 `assinatura ausente`. Assinatura falsa: 401 `assinatura inválida`. Assinatura válida de um aviso sem reserva: 200, ignorado. | Passou na URL publicada. |
 | 20 | Unidade sandbox `LJRSHX3HCV3VV` | 200, nome Default Test Account, fuso `America/Anchorage`. | Passou, leitura direta na API. |
 | 21 | Busca de 7 de outubro de 2026, variação Regular, membro Sandbox Seller | 32 horários. Os três primeiros 17:00, 17:30 e 18:00 UTC. | Passou na prova anterior, direto na API. 17:00 UTC é 9:00 em Anchorage. |
 | 22 | Criar 17:00 UTC, reagendar 18:00 UTC, cancelar | 201 `ACCEPTED`, 200 no novo horário, 200 `CANCELLED_BY_SELLER`. Sem `service_variation_version`, 400. | Passou na prova anterior, direto na API. O cliente de prova foi apagado. |
@@ -69,8 +69,9 @@ Rodaram com Deno, 9 passaram. O nono cobre a busca que não começa no passado.
 ## O que este aceite não diz
 
 A Square desta ficha passou pela porta publicada da cliente e pelo formulário
-da Agenda. O aviso de volta não chegou, porque a Signature key ainda não foi
-salva. Acuity, Wix, Zenoti e Mindbody continuam sem conexão por esta tela.
+da Agenda. A Signature key está gravada. O teste que a Square mandou antes
+disso voltou não autorizado, como esperado. O reenvio ainda não chegou.
+Acuity, Wix, Zenoti e Mindbody continuam sem conexão por esta tela.
 Nenhuma agenda está homologada. A ficha Detox Pass não fica na busca da cliente.
 
 O salvamento pela tela, na versão que estava no ar, gravou `pending` de novo.

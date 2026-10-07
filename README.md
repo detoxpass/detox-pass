@@ -81,6 +81,7 @@ Toda a documentação do projeto está na pasta [`docs/`](./docs):
 - [Arquitetura](./docs/ARCHITECTURE.md) — o que já sabemos e o que ainda está pendente.
 - [Onboarding](./docs/ONBOARDING.md) — como um novo desenvolvedor entra no projeto.
 - [Decisões técnicas](./docs/DECISIONS.md) — decisões tomadas, pendentes e ownership/handover.
+- [Índice da documentação](./docs/README.md) — roadmaps, aceites, relatórios, guias e o template para módulos novos.
 
 Veja também:
 

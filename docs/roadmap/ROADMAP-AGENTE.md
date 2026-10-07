@@ -1,8 +1,8 @@
 # Agente de IA
 
-Data: 2026-10-06. Decisão em [`DECISIONS.md`](./DECISIONS.md), seção
+Data: 2026-10-06. Decisão em [`DECISIONS.md`](../DECISIONS.md), seção
 "O agente reserva pelo comando que a tela já usa". A norma curta continua em
-[`spec/10-chat-agente.md`](../spec/10-chat-agente.md).
+[`spec/10-chat-agente.md`](../../spec/10-chat-agente.md).
 
 A prova desta fase, quando a implementação existir, é a sequência da decisão
 "A prova desta fase é o app publicado": commit e push em `detoxpass/main`,
@@ -367,6 +367,6 @@ app publicado.
 ## O que ainda não está feito
 
 O corte publicado e o que ficou de fora estão em
-[`ROADMAP-AGENTE-ACEITE.md`](./ROADMAP-AGENTE-ACEITE.md). O microfone ao vivo
+[`ROADMAP-AGENTE-ACEITE.md`](../aceite/ROADMAP-AGENTE-ACEITE.md). O microfone ao vivo
 não transcreveu. Não há profissional com agenda externa neste banco, então
 esse caminho não foi exercido numa ficha real. Operação continua sem conta.

@@ -10,7 +10,7 @@ ficam atrás da Edge Function `chat`. O nome do modelo de conversa é variável
 da função. Trocar esse nome não muda as regras abaixo. A decisão está em
 [`docs/DECISIONS.md`](../docs/DECISIONS.md), seção "O agente reserva pelo
 comando que a tela já usa". O corte de implementação, os tetos e os testes
-estão em [`docs/ROADMAP-AGENTE.md`](../docs/ROADMAP-AGENTE.md).
+estão em [`docs/ROADMAP-AGENTE.md`](../docs/roadmap/ROADMAP-AGENTE.md).
 
 ## O que o agente pode usar
 

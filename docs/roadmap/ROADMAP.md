@@ -3,7 +3,7 @@
 Data: 2026-10-05.
 
 Este arquivo organiza o que falta para fechar a plataforma. A norma continua em
-[`spec/`](../spec/README.md) e em [`DECISIONS.md`](./DECISIONS.md). Este roadmap
+[`spec/`](../../spec/README.md) e em [`DECISIONS.md`](../DECISIONS.md). Este roadmap
 não cria módulo, não escolhe política em aberto e não marca integração como
 homologada.
 
@@ -80,7 +80,7 @@ Reviews, nota, milhas, filtro de gênero, bio inventada e horário desenhado na 
 
 ## Ordem
 
-A ordem comercial continua a das nove fases em [`spec/12-fases.md`](../spec/12-fases.md). O que já está publicado não reabre a fase. O que falta segue a dependência abaixo.
+A ordem comercial continua a das nove fases em [`spec/12-fases.md`](../../spec/12-fases.md). O que já está publicado não reabre a fase. O que falta segue a dependência abaixo.
 
 ```
 Base que ainda falta (router, staging, CI, URLs de auth, operador)

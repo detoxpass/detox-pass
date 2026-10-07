@@ -3,7 +3,7 @@
 Data da auditoria: 2026-10-05.
 
 Plano de execução das entregas 1 a 4 de [`ROADMAP.md`](./ROADMAP.md).
-A norma continua em [`spec/`](../spec/README.md) e em [`DECISIONS.md`](./DECISIONS.md).
+A norma continua em [`spec/`](../../spec/README.md) e em [`DECISIONS.md`](../DECISIONS.md).
 
 Este corte entrega a cliente capaz de achar uma profissional, ver horário que
 a Acuity devolveu, reservar, reagendar, cancelar e rever o histórico. A
@@ -20,7 +20,7 @@ Cada tela nova lista os componentes, os quatro estados obrigatórios e o que
 não pode aparecer. Cada automação lista o gatilho, a falha e o aceite. Tarefa
 sem componente ou sem estado de erro não está pronta.
 
-Estados obrigatórios, em todo módulo novo, como em [`spec/17-frontend.md`](../spec/17-frontend.md):
+Estados obrigatórios, em todo módulo novo, como em [`spec/17-frontend.md`](../../spec/17-frontend.md):
 
 | Estado | Componente | Quando |
 | ------ | ---------- | ------ |
@@ -41,7 +41,7 @@ nomear.
 
 ### Contrato da agenda que a função ainda não cumpre
 
-[`spec/11-integracoes.md`](../spec/11-integracoes.md) pede seis operações.
+[`spec/11-integracoes.md`](../../spec/11-integracoes.md) pede seis operações.
 Hoje `scheduling-acuity` tem quatro ações de produto mais o token:
 
 | Operação da spec | No código | Neste corte |
