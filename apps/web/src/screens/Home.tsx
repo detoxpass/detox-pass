@@ -192,7 +192,7 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
           </div>
         </section>
       </section>
-      <div className="page">
+      <div className="page home-find">
         <div className="section-title">
           <h2>Featured therapists</h2>
           {!loading && !error ? <p className="muted">{visible.length} {visible.length === 1 ? 'therapist' : 'therapists'}</p> : null}
@@ -204,17 +204,19 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
         ) : null}
         <div className="cards">
           {visible.map((item) => (
-            <article key={item.id} className="tcard" onClick={() => onOpen(item.id)}>
-              <img src={item.photo} alt="" />
-              <button type="button" className={loved.includes(item.id) ? 'heart on' : 'heart'} aria-label="Favorite" onClick={(event) => { event.stopPropagation(); toggleLove(item.id) }}>
-                <Icon name="heart" />
-              </button>
-              <div className="tmeta">
+            <article key={item.id} className="tcard pro-card" onClick={() => onOpen(item.id)}>
+              <span className="pro-shot">
+                <img src={item.photo} alt="" />
+                <button type="button" className={loved.includes(item.id) ? 'heart on' : 'heart'} aria-label="Favorite" onClick={(event) => { event.stopPropagation(); toggleLove(item.id) }}>
+                  <Icon name="heart" />
+                </button>
+                <span className="pro-place"><Icon name="pin" /> {item.city || 'City not set'}</span>
+              </span>
+              <span className="pro-main">
                 <strong>{item.name}</strong>
-                <span>{fromPrice(item.offers)}</span>
-              </div>
-              <div className="tags">{item.offers.map((offer) => <em key={offer.name}>{offer.name}</em>)}</div>
-              <small><Icon name="pin" /> {item.city || 'City not set'}</small>
+                {item.offers.length > 0 ? <span className="pro-line">{item.offers.map((offer) => offer.name).join(' · ')}</span> : null}
+                <span className="pro-price">{fromPrice(item.offers)}</span>
+              </span>
             </article>
           ))}
         </div>
