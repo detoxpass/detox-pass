@@ -27,6 +27,7 @@ As bases do projeto ficam na raiz desta pasta: [escopo](./PRODUCT_SCOPE.md),
 | Notificações | [ROADMAP-NOTIFICACOES](./roadmap/ROADMAP-NOTIFICACOES.md) | [aceite](./aceite/ROADMAP-NOTIFICACOES-ACEITE.md) |
 | Agente de IA | [ROADMAP-AGENTE](./roadmap/ROADMAP-AGENTE.md) | [aceite](./aceite/ROADMAP-AGENTE-ACEITE.md) |
 | Painel da operação | [ROADMAP-ADMIN](./roadmap/ROADMAP-ADMIN.md) | Parâmetros e roteiro de provas no roadmap. Sem resultado escrito. |
+| Stripe | [ROADMAP-STRIPE](./roadmap/ROADMAP-STRIPE.md) | Corte 1 validado em Sandbox. Connect e Transfer ainda não concluídos. |
 
 ## Módulo novo
 

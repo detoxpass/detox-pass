@@ -2,8 +2,8 @@
 
 Data: 2026-10-07. Este corte segue a Fase 05 e, só depois da evidência, a
 liberação da Fase 06. O Gusto permanece a Fase 08 e só existe se a cliente
-do contrato optar. A norma continua em [`PRODUCT_SCOPE.md`](./PRODUCT_SCOPE.md),
-[`DECISIONS.md`](./DECISIONS.md) e na seção 5 de [`ROADMAP.md`](./ROADMAP.md).
+do contrato optar. A norma continua em [`PRODUCT_SCOPE.md`](../PRODUCT_SCOPE.md),
+[`DECISIONS.md`](../DECISIONS.md) e na seção 5 de [`ROADMAP.md`](./ROADMAP.md).
 
 Este arquivo não escolhe o objeto Connect, não marca a Stripe como
 homologada e não liga o Gusto. Pagamento com liberação condicionada. A
@@ -84,7 +84,7 @@ Começa depois que o corte 1 tiver resultado nesta tabela. O candidato que
 combina com o payout pendente é cobrança na plataforma e Transfer só na
 autorização. Destination charge empurra o dinheiro na hora da cobrança.
 Os dois podem ser ensaiados em modo de teste. A frase que entra em
-[`DECISIONS.md`](./DECISIONS.md) sai do ensaio que mostrar o dinheiro parado
+[`DECISIONS.md`](../DECISIONS.md) sai do ensaio que mostrar o dinheiro parado
 até a autorização. Este arquivo não escreve essa frase antes.
 
 | # | Parâmetro | Esperado |
