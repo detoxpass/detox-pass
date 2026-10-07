@@ -573,8 +573,12 @@ async function cancelExternal(secret: Secret, bookingId: string, revision: unkno
 }
 
 async function getBooking(secret: Secret, bookingId: string) {
-  const response = await wix(secret, `/_api/bookings-service/v2/bookings/${bookingId}`)
-  const booking = asRecord(asRecord(response.payload)?.booking) ?? asRecord(response.payload)
+  const response = await wix(secret, '/bookings/v2/bookings/query', {
+    method: 'POST',
+    body: JSON.stringify({ query: { filter: { id: bookingId } } }),
+  })
+  const rows = asRecord(response.payload)?.bookings
+  const booking = Array.isArray(rows) ? asRecord(rows[0]) : null
   const slot = asRecord(asRecord(booking?.bookedEntity)?.slot)
   return {
     ok: response.ok && Boolean(booking),
@@ -582,7 +586,7 @@ async function getBooking(secret: Secret, bookingId: string) {
     status: text(booking?.status),
     start: text(slot?.startDate),
     timeZone: text(slot?.timezone),
-    error: response.error,
+    error: booking ? '' : response.ok ? 'Wix booking was not found.' : response.error,
   }
 }
 

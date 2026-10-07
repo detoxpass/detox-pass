@@ -53,8 +53,9 @@ cada passo. Criar não é confirmar.
 
 A conexão da ficha Detox Pass já existia, `pending`, com App ID e App secret
 no cofre. Em 2026-10-07 a instance do site Teste Detox Pass e a chave pública
-entraram nesse mesmo cofre. `external_resource_id` continua nulo. A Square
-segue `tested` e `is_source`. A função `scheduling-wix` cria e confirma. O status da conexão continua `pending`.
+entraram nesse mesmo cofre. A Square segue `tested` e `is_source`. A função
+`scheduling-wix` cria, confirma, reagenda e cancela. O ciclo dessa data
+deixou a conexão `tested`, sem origem, no serviço Detox Facial.
 
 O plano, a leitura e os parâmetros de aceite estão em
 [`ROADMAP-WIX.md`](./ROADMAP-WIX.md).

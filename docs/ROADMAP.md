@@ -243,7 +243,7 @@ Ordem fixa, depois da Acuity com evidência: Square, Wix, Zenoti, Mindbody. Cada
 
 Frontend e backend de cada uma reusam a mesma porta da reserva. A tela não ganha um cliente HTTP do provedor. Nenhuma das cinco é anunciada como homologada porque o adapter compila.
 
-A prova de 2026-10-06, na ficha Detox Pass, está em [`ROADMAP-AGENDAS.md`](./ROADMAP-AGENDAS.md). A Square dessa prova ficou `tested`. A Wix da mesma ficha está em [`ROADMAP-WIX.md`](./ROADMAP-WIX.md) e segue `pending`.
+A prova de 2026-10-06, na ficha Detox Pass, está em [`ROADMAP-AGENDAS.md`](./ROADMAP-AGENDAS.md). A Square dessa prova ficou `tested`. A Wix da mesma ficha fechou o ciclo em [`ROADMAP-WIX.md`](./ROADMAP-WIX.md) e ficou `tested`, sem virar origem.
 
 ---
 

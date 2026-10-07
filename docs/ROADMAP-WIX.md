@@ -1,18 +1,18 @@
 # Wix
 
-Data: 2026-10-07. A Wix é a próxima agenda externa desta ficha. A Square
-continua `tested` e `is_source`. Homologada continua fora. `scheduling-wix`
-cria, confirma, reagenda, cancela e lê. O webhook confere o JWT. O botão
-Connect with Wix abre a instalação. O status da conexão continua `pending`
-até o ciclo numa ficha ativa. Este arquivo é o plano e o relatório. A
-reserva da cliente nesta ficha continua na Square.
+Data: 2026-10-07. A Wix desta ficha fechou o ciclo na função publicada e
+ficou `tested`. A Square continua `tested` e `is_source`. Homologada
+continua fora. `scheduling-wix` cria, confirma, reagenda, cancela e lê. O
+webhook confere o JWT. O botão Connect with Wix abre a instalação. A
+reserva da cliente nesta ficha continua na Square, na ordem à frente da Wix.
 
 A conta é a mesma da Square: profissional Detox Pass,
 `9a038721-84f0-4584-bf91-6e6a341ad9e0`. A conexão Wix já existia,
 `80f2abd0-664d-4f8f-b410-27b62426234c`, com App ID e App secret no Vault e
 sem instance. A instance e a chave pública entraram nesse mesmo cofre. O
-status ficou `pending`. `is_source` ficou falso. `external_resource_id`
-ficou nulo, porque essa coluna é o serviço escolhido e esta conta tem três.
+status ficou `pending` e `is_source` ficou falso. O ciclo desta data
+escolheu o serviço Detox Facial e o status passou a `tested`. A Wix não
+virou origem.
 
 A ficha segue inativa. A leitura de hoje encontrou o serviço Therapeutic,
 USD 100, e a cidade Boston. Este corte não apaga os dois e não publica a
@@ -27,8 +27,8 @@ no Vault, na conexão acima. Não estão no Git.
 
 O token saiu de `POST https://www.wixapis.com/oauth2/token`, com
 `grant_type` `client_credentials`, o App ID, o App secret e a instance.
-HTTP 200, `expires_in` 14400. O access token não foi gravado. A função, quando
-existir, pede outro quando precisar.
+HTTP 200, `expires_in` 14400. O access token não foi gravado. A função pede
+outro a cada chamada.
 
 Permissões que a instance devolveu:
 
@@ -132,6 +132,9 @@ horário ainda não entra no calendário. Confirmar é que publica.
 | Cancelar | a chamada de cancel da Bookings | Os dois lados cancelados. Repetir não grava outro efeito. |
 | Ler | a leitura da mesma reserva | `diverged` falso. |
 
+`GET` em `/bookings/{id}` responde 404 nesta conta. A função lê a reserva
+com `POST /bookings/v2/bookings/query`.
+
 Detox Facial é o candidato da confirmação sem carrinho: o pagamento online
 está desligado e a opção presencial está ligada. Não tem preço fixo. A prova
 não inventa preço.
@@ -195,22 +198,22 @@ prova tiver precisado trocar.
 | 6 | Cofre da conexão `80f2abd0-664d-4f8f-b410-27b62426234c` | `appId`, `appSecret`, `instanceId`, `publicKeyPem`. Status `pending`. Fora da reserva | Passou. A Square segue `tested` e origem. |
 | 7 | Ficha | Inativa. Therapeutic e Boston permanecem | Passou, leitura. Nada foi apagado. |
 | 8 | Token sem instance, prova anterior | Serviços e instance recusam | 403, já registrado. O HTML de example.com não entrou no cofre. |
-| 9 | Horários de Detox Facial e de Corporal Detox | A mesma forma da Consultoria, ou o erro da API | Ainda não rodou. |
-| 10 | Criar na função publicada | `CREATED`, fora do calendário | Ainda não rodou. |
-| 11 | Confirmar Detox Facial com `NOT_PAID` | `CONFIRMED` no calendário | Ainda não rodou. |
-| 12 | Confirmar Consultoria ou Corporal sem carrinho | Se a Wix recusar, a recusa fica escrita e o ciclo não fecha nesses serviços | Ainda não rodou. |
-| 13 | Reagendar e cancelar pela função publicada | Os dois lados iguais. Segunda chamada de cancelar não grava outro efeito | Ainda não rodou. |
-| 14 | Leitura cruzada | `diverged` falso | Ainda não rodou. |
-| 15 | Horário nascido só na Wix | O aviso responde 200 e não cria reserva | Ainda não rodou. |
+| 9 | Horários de Detox Facial e de Corporal Detox | A mesma forma da Consultoria, ou o erro da API | Passou. Outubro tem 18 dias nos dois. Em 8 de outubro, Detox Facial devolveu 15 horários, o primeiro às 10:00 em São Paulo. Corporal Detox devolveu 14, até 16:30. |
+| 10 | Criar na função publicada | `CREATED`, fora do calendário | A função publicada cria e confirma na mesma chamada. A resposta foi `provider_confirmed`. O estado `CREATED` não ficou parado para leitura. |
+| 11 | Confirmar Detox Facial com `NOT_PAID` | `CONFIRMED` no calendário | Passou. A confirmação só devolve `provider_confirmed` quando a Wix responde `CONFIRMED`. A leitura ficou com `diverged` falso. |
+| 12 | Confirmar Consultoria ou Corporal sem carrinho | Se a Wix recusar, a recusa fica escrita e o ciclo não fecha nesses serviços | Passou na Consultoria. HTTP 422, a frase de pagamento na Wix, reserva local cancelada e a reserva na Wix também `CANCELED`. Corporal Detox só teve os horários lidos. |
+| 13 | Reagendar e cancelar pela função publicada | Os dois lados iguais. Segunda chamada de cancelar não grava outro efeito | Passou. Saiu de 10:00 para 17:00 em São Paulo. O cancelamento deixou os dois lados cancelados. A segunda chamada respondeu 200 e a contagem de eventos ficou em 4. |
+| 14 | Leitura cruzada | `diverged` falso | Passou depois de criar, reagendar e cancelar. |
+| 15 | Horário nascido só na Wix | O aviso responde 200 e não cria reserva | Passou no teste do painel, às 00:51. Três POST da Wix, HTTP 200, nenhuma reserva nova. |
 | 16 | `scheduling-wix-webhook` sem JWT, e com JWT de outra chave | 401, nada gravado | Passou na URL publicada. GET 405. Corpo vazio: 401 `assinatura ausente`. Corpo sem JWT: 401 `assinatura inválida`. |
 | 17 | JWT válido de id desconhecido | 200, nada gravado | Ainda não rodou. |
 | 18 | Booking Updated no mesmo instante, e Booking Canceled repetido | Ignora. Sem segundo efeito | Ainda não rodou. |
-| 19 | Agenda publicada | O cartão da Wix abre Connect with Wix. Sem serviço escolhido, o texto pede o login. Com serviço, fica salvo e `pending` | O botão está no código. A prova na tela publicada fica para o deploy. |
+| 19 | Agenda publicada | O cartão da Wix abre Connect with Wix. Sem serviço escolhido, o texto pede o login. Com serviço, fica salvo e `pending` | O botão foi publicado no commit `46f3f0f`. Depois deste ciclo o serviço gravado é Detox Facial e o status é `tested`. O clique em Connect nesta conta continua na linha 20. |
 | 20 | Connect with Wix neste site | Abre a Wix, volta com instance assinada, mostra os três serviços, não grava sozinho | A função `scheduling-wix-oauth` existe. O clique desta conta ainda não rodou. |
 | 21 | App unlisted | Se a Wix pedir `shareUrlId`, o id fica em secret do projeto | Ainda não rodou. |
 | 22 | Disconnect | Apaga o cofre desta conexão. Não devolve o token. Não desinstala a app | Ainda não rodou. |
 | 23 | Cliente chama gravar segredo | 403 | Ainda não rodou nesta função. A Wix ainda não tem essa ação. |
-| 24 | Status depois do ciclo, ficha de volta a inativa | `tested` na Wix. Homologada falso. Square continua a origem, salvo a prova ter devolvido a origem no fim | Ainda não rodou. |
+| 24 | Status depois do ciclo, ficha de volta a inativa | `tested` na Wix. Homologada falso. Square continua a origem, salvo a prova ter devolvido a origem no fim | Passou. Wix `tested`, `is_source` falso, serviço Detox Facial, posição 3. Square `tested` e origem, posição 2. A agenda interna segue na posição 1. Ficha inativa, `schedule_mode` `internal`. A reserva da Sarah Anderson não mudou. |
 
 ## Fora deste corte
 
