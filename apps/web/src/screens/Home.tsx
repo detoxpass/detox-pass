@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { catalog, type ProfessionalRow, type Session } from '../lib/supabase'
 import { readLoved, writeLoved } from '../lib/loved'
 import { money, type Offer, type Therapist } from './Professional'
 import { Button, Icon, LoadingBlock } from '../ui'
 
 type Portrait = { id: string; photo: string }
+type Specialty = { id: string; name: string }
+type HomeCard = Therapist & { specialties: Specialty[] }
+type Band = { id: string; title: string; total: number; items: HomeCard[] }
 
+const PAGE = 8
 const reelOffsets = [0, 2, 4, 1, 3]
 
 function reelHalf(photos: Portrait[], offset: number) {
@@ -35,7 +39,7 @@ function HeroReel({ photos }: { photos: Portrait[] }) {
   )
 }
 
-function toCard(row: ProfessionalRow): Therapist {
+function toCard(row: ProfessionalRow): HomeCard {
   const offers: Offer[] = (row.professional_services ?? []).flatMap((item) => item.services ? [{
     id: item.services.id,
     name: item.services.name,
@@ -43,6 +47,7 @@ function toCard(row: ProfessionalRow): Therapist {
     currency: item.services.currency,
   }] : [])
   const places = (row.professional_cities ?? []).flatMap((item) => item.cities ? [{ id: item.cities.id, name: item.cities.name }] : [])
+  const specialties = (row.professional_specialties ?? []).flatMap((item) => item.specialties ? [item.specialties] : [])
   return {
     id: row.id,
     name: row.display_name,
@@ -50,6 +55,7 @@ function toCard(row: ProfessionalRow): Therapist {
     offers,
     places,
     city: places.map((place) => place.name).join(', '),
+    specialties,
   }
 }
 
@@ -60,8 +66,63 @@ function fromPrice(offers: Offer[]) {
   return amounts.length > 1 ? `From ${money(lowest.price ?? 0, lowest.currency ?? 'USD')}` : money(lowest.price ?? 0, lowest.currency ?? 'USD')
 }
 
+function bandsOf(items: HomeCard[]): Band[] {
+  const groups = new Map<string, { title: string; items: HomeCard[] }>()
+  const loose: HomeCard[] = []
+  for (const item of items) {
+    if (item.specialties.length === 0) {
+      loose.push(item)
+      continue
+    }
+    for (const specialty of item.specialties) {
+      const group = groups.get(specialty.id) ?? { title: specialty.name, items: [] }
+      group.items.push(item)
+      groups.set(specialty.id, group)
+    }
+  }
+  const bands = [...groups.entries()].map(([id, group]) => ({
+    id,
+    title: group.title,
+    total: group.items.length,
+    items: group.items.slice(0, PAGE),
+  })).sort((a, b) => a.title.localeCompare(b.title))
+  if (loose.length > 0) {
+    bands.push({ id: 'more', title: 'More therapists', total: loose.length, items: loose.slice(0, PAGE) })
+  }
+  return bands
+}
+
+function ProCards({ items, loved, lazy, onOpen, onLove }: {
+  items: HomeCard[]
+  loved: string[]
+  lazy: boolean
+  onOpen: (id: string) => void
+  onLove: (id: string) => void
+}) {
+  return (
+    <div className="cards">
+      {items.map((item) => (
+        <article key={item.id} className="tcard pro-card" onClick={() => onOpen(item.id)}>
+          <span className="pro-shot">
+            <img src={item.photo} alt="" loading={lazy ? 'lazy' : 'eager'} decoding="async" />
+            <button type="button" className={loved.includes(item.id) ? 'heart on' : 'heart'} aria-label="Favorite" onClick={(event) => { event.stopPropagation(); onLove(item.id) }}>
+              <Icon name="heart" />
+            </button>
+            <span className="pro-place"><Icon name="pin" /> {item.city || 'City not set'}</span>
+          </span>
+          <span className="pro-main">
+            <strong>{item.name}</strong>
+            {item.offers.length > 0 ? <span className="pro-line">{item.offers.map((offer) => offer.name).join(' · ')}</span> : null}
+            <span className="pro-price">{fromPrice(item.offers)}</span>
+          </span>
+        </article>
+      ))}
+    </div>
+  )
+}
+
 export function Home({ session, onOpen }: { session: Session; onOpen: (id: string) => void }) {
-  const [cards, setCards] = useState<Therapist[]>([])
+  const [cards, setCards] = useState<HomeCard[]>([])
   const [loved, setLoved] = useState<string[]>(readLoved)
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
@@ -71,6 +132,8 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
   const [maxPrice, setMaxPrice] = useState<number | null>(null)
   const [sort, setSort] = useState<'name' | 'low' | 'high'>('name')
   const [savedOnly, setSavedOnly] = useState(false)
+  const [shown, setShown] = useState(PAGE)
+  const sentinel = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let alive = true
@@ -88,7 +151,9 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
     return () => { alive = false }
   }, [session])
 
-  const portraits = cards.filter((item, index) => item.photo && cards.findIndex((other) => other.photo === item.photo) === index)
+  const portraits = cards
+    .filter((item, index) => item.photo && cards.findIndex((other) => other.photo === item.photo) === index)
+    .slice(0, 10)
   const serviceOptions = [...new Set(cards.flatMap((item) => item.offers.map((offer) => offer.name)))].sort()
   const cityOptions = [...new Set(cards.flatMap((item) => item.places.map((place) => place.name)))].sort()
   const priceValues = cards.flatMap((item) => item.offers.map((offer) => offer.price)).filter((price): price is number => price != null).map((cents) => Math.round(cents / 100))
@@ -96,13 +161,13 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
   const priceCeil = priceValues.length ? Math.max(...priceValues) : 0
   const priceCap = maxPrice == null ? priceCeil : Math.min(maxPrice, priceCeil)
 
-  function lowest(item: Therapist) {
+  function lowest(item: HomeCard) {
     const amounts = item.offers.map((offer) => offer.price).filter((price): price is number => price != null)
     return amounts.length ? Math.min(...amounts) : Number.POSITIVE_INFINITY
   }
 
   const visible = cards.filter((item) => {
-    const blob = `${item.name} ${item.offers.map((offer) => offer.name).join(' ')} ${item.city}`.toLowerCase()
+    const blob = `${item.name} ${item.offers.map((offer) => offer.name).join(' ')} ${item.specialties.map((specialty) => specialty.name).join(' ')} ${item.city}`.toLowerCase()
     if (query.trim() && !blob.includes(query.trim().toLowerCase())) return false
     if (cities.length > 0 && !item.places.some((place) => cities.includes(place.name))) return false
     if (services.length > 0 && !item.offers.some((offer) => services.includes(offer.name))) return false
@@ -116,13 +181,33 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
   })
 
   const filtersOn = Boolean(query.trim()) || services.length > 0 || cities.length > 0 || savedOnly || (priceValues.length > 1 && priceCap < priceCeil)
+  const grouped = !filtersOn && visible.some((item) => item.specialties.length > 0)
+  const bands = grouped ? bandsOf(visible) : []
+  const openBands = grouped ? bands.slice(0, Math.max(1, Math.ceil(shown / PAGE))) : []
+  const openCards = grouped ? [] : visible.slice(0, shown)
+  const more = grouped ? openBands.length < bands.length : shown < visible.length
+  const filterKey = `${grouped}|${query}|${services.join('\u0001')}|${cities.join('\u0001')}|${savedOnly}|${priceCap}|${sort}`
+
+  useEffect(() => {
+    setShown(PAGE)
+  }, [filterKey])
+
+  useEffect(() => {
+    const node = sentinel.current
+    if (!node || !more || loading) return
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) setShown((count) => count + PAGE)
+    }, { rootMargin: '480px 0px' })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [more, shown, loading, filterKey])
 
   function serviceLabel(name: string) {
     const matches = cards.flatMap((item) => item.offers.filter((offer) => offer.name === name && offer.price != null && offer.currency))
     if (matches.length === 0) return name
-    const lowest = matches.reduce((best, offer) => ((offer.price ?? 0) < (best.price ?? 0) ? offer : best))
-    const priced = money(lowest.price ?? 0, lowest.currency ?? 'USD')
-    const same = matches.every((offer) => offer.price === lowest.price && offer.currency === lowest.currency)
+    const lowestOffer = matches.reduce((best, offer) => ((offer.price ?? 0) < (best.price ?? 0) ? offer : best))
+    const priced = money(lowestOffer.price ?? 0, lowestOffer.currency ?? 'USD')
+    const same = matches.every((offer) => offer.price === lowestOffer.price && offer.currency === lowestOffer.currency)
     return same ? `${name} · ${priced}` : `${name} · from ${priced}`
   }
 
@@ -193,33 +278,30 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
         </section>
       </section>
       <div className="page home-find">
-        <div className="section-title">
-          <h2>Featured therapists</h2>
-          {!loading && !error ? <p className="muted">{visible.length} {visible.length === 1 ? 'therapist' : 'therapists'}</p> : null}
-        </div>
         {loading ? <LoadingBlock kind="cards" text="Loading the catalog." /> : null}
         {error ? <p className="error">{error}</p> : null}
         {!loading && !error && visible.length === 0 ? (
           <p className="finder-empty">No therapists match these filters. <button type="button" className="link" onClick={clearFilters}>Clear filters</button></p>
         ) : null}
-        <div className="cards">
-          {visible.map((item) => (
-            <article key={item.id} className="tcard pro-card" onClick={() => onOpen(item.id)}>
-              <span className="pro-shot">
-                <img src={item.photo} alt="" />
-                <button type="button" className={loved.includes(item.id) ? 'heart on' : 'heart'} aria-label="Favorite" onClick={(event) => { event.stopPropagation(); toggleLove(item.id) }}>
-                  <Icon name="heart" />
-                </button>
-                <span className="pro-place"><Icon name="pin" /> {item.city || 'City not set'}</span>
-              </span>
-              <span className="pro-main">
-                <strong>{item.name}</strong>
-                {item.offers.length > 0 ? <span className="pro-line">{item.offers.map((offer) => offer.name).join(' · ')}</span> : null}
-                <span className="pro-price">{fromPrice(item.offers)}</span>
-              </span>
-            </article>
-          ))}
-        </div>
+        {grouped ? openBands.map((band, index) => (
+          <section className="home-band" key={band.id}>
+            <div className="section-title">
+              <h2>{band.title}</h2>
+              <p className="muted">{band.items.length < band.total ? `${band.items.length} of ${band.total}` : band.total} {band.total === 1 ? 'therapist' : 'therapists'}</p>
+            </div>
+            <ProCards items={band.items} loved={loved} lazy={index > 0} onOpen={onOpen} onLove={toggleLove} />
+          </section>
+        )) : null}
+        {!grouped && !loading && !error && openCards.length > 0 ? (
+          <section className="home-band">
+            <div className="section-title">
+              <h2>Featured therapists</h2>
+              <p className="muted">{visible.length} {visible.length === 1 ? 'therapist' : 'therapists'}</p>
+            </div>
+            <ProCards items={openCards} loved={loved} lazy={shown > PAGE} onOpen={onOpen} onLove={toggleLove} />
+          </section>
+        ) : null}
+        {more && !loading && !error ? <div className="home-sentinel" ref={sentinel} /> : null}
       </div>
     </>
   )

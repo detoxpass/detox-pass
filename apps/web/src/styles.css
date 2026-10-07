@@ -316,6 +316,8 @@ input[type='range'] { accent-color: #ffb9b9; width: 100%; }
 .tmeta strong { min-width: 0; }
 .tmeta span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; background: var(--pink-soft); border-radius: 999px; padding: 4px 8px; font-size: 13px; font-weight: 800; }
 .page.home-find { container-type: inline-size; }
+.home-band + .home-band { margin-top: 28px; }
+.home-sentinel { height: 1px; }
 .home-find .cards { gap: 12px; }
 .pro-card { display: flex; flex-direction: column; align-items: stretch; overflow: visible; border: 1px solid var(--line); padding: 12px; height: 100%; text-align: left; }
 .pro-shot { position: relative; display: block; height: 120px; margin-bottom: 22px; }

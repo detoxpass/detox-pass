@@ -324,6 +324,7 @@ export async function catalog(session: Session) {
     'slot_minutes',
     'professional_services(service_id,services(id,name,price_cents,currency))',
     'professional_cities(city_id,cities(id,name))',
+    'professional_specialties(specialty_id,specialties(id,name))',
     'schedule_connections(provider,is_source)',
   ].join(',')
   const response = await fetch(`${url}/rest/v1/professionals?select=${encodeURIComponent(select)}&active=eq.true&order=display_name.asc`, {
@@ -345,6 +346,7 @@ export type ProfessionalRow = {
   slot_minutes: number | null
   professional_services: { service_id: string; services: { id: string; name: string; price_cents: number | null; currency: string | null } | null }[] | null
   professional_cities: { city_id: string; cities: { id: string; name: string } | null }[] | null
+  professional_specialties: { specialty_id: string; specialties: { id: string; name: string } | null }[] | null
   schedule_connections: { provider: string; is_source: boolean }[] | null
 }
 
