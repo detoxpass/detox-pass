@@ -74,7 +74,6 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(() => new URLSearchParams(window.location.search))
   const [page, setPage] = useState(0)
-  const [loved, setLoved] = useState<string[]>(readLoved)
   const [showUpcoming, setShowUpcoming] = useState(false)
   const [showPast, setShowPast] = useState(false)
 
@@ -146,10 +145,12 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
 
   const body = (
     <>
-      <header className="page-head">
-        <h1>{title}</h1>
-        <p>{hint}</p>
-      </header>
+      {ops || bare ? (
+        <header className="page-head">
+          <h1>{title}</h1>
+          <p>{hint}</p>
+        </header>
+      ) : null}
       {loading ? <LoadingBlock text="Loading sessions…" /> : null}
       {error ? <ErrorBlock text={error} /> : null}
       {!ops && bare && shown.length > 0 ? (
@@ -164,11 +165,7 @@ export function SessionList({ session, title, hint, bare = false, ops = false, o
             <article><Mark name="clock" /><span><em>Past</em><strong>{pastCount}</strong><small>{pastCount === 1 ? 'session' : 'sessions'}</small></span></article>
             <article><Mark name="close" /><span><em>Cancelled</em><strong>{cancelledCount}</strong><small>{cancelledCount === 1 ? 'session' : 'sessions'}</small></span></article>
           </div>
-          {next ? <NextSession row={next} saved={loved.includes(next.professional_id)} onOpen={onOpen} onLove={() => {
-            const nextLoved = loved.includes(next.professional_id) ? loved.filter((item) => item !== next.professional_id) : [...loved, next.professional_id]
-            writeLoved(nextLoved)
-            setLoved(nextLoved)
-          }} /> : <EmptyBlock title="No upcoming session" text="A future reservation appears here after the calendar confirms it." />}
+          {next ? <NextSession row={next} onOpen={onOpen} /> : <EmptyBlock title="No upcoming session" text="A future reservation appears here after the calendar confirms it." />}
           <section className="session-block">
             <div className="sess-head"><h2>Upcoming sessions</h2>{later.length > 5 ? <button type="button" onClick={() => setShowUpcoming((value) => !value)}>{showUpcoming ? 'Show less' : 'See all'} <Icon name="back" /></button> : null}</div>
             {laterShown.length === 0 ? <p className="muted">Other future reservations show up here.</p> : (
@@ -256,16 +253,15 @@ function sessionStamp(value: string) {
   }
 }
 
-function NextSession({ row, saved, onOpen, onLove }: { row: BookingRow; saved: boolean; onOpen: (id: string) => void; onLove: () => void }) {
+function NextSession({ row, onOpen }: { row: BookingRow; onOpen: (id: string) => void }) {
   const stamp = sessionStamp(row.starts_at)
   const length = lengthOf(row.starts_at, row.ends_at)
-  const name = row.professionals?.display_name || 'Therapist'
   return (
-    <article className="next-card">
+    <button type="button" className="next-card" onClick={() => onOpen(row.id)}>
       <img src={photoOf(row)} alt="" />
-      <button type="button" className="next-copy" onClick={() => onOpen(row.id)}>
+      <span className="next-copy">
         <em>Next session</em>
-        <strong>{name}</strong>
+        <strong>{row.professionals?.display_name || 'Therapist'}</strong>
         <span>{row.services?.name || 'Service'} · {row.cities?.name || 'City'}</span>
         <span className="next-meta">
           <span><Icon name="calendar" /> {stamp.date}</span>
@@ -273,12 +269,8 @@ function NextSession({ row, saved, onOpen, onLove }: { row: BookingRow; saved: b
           {length ? <span><Mark name="length" /> {length}</span> : null}
         </span>
         <SagaStatus status={row.saga_status} />
-      </button>
-      <div className="next-side">
-        <button type="button" className={`next-heart${saved ? ' on' : ''}`} aria-pressed={saved} aria-label={saved ? `Remove ${name} from favorites` : `Save ${name}`} onClick={onLove}><Icon name="heart" /></button>
-        {row.saga_status === 'provider_confirmed' ? <button type="button" className="next-go" onClick={() => onOpen(row.id)}><Icon name="calendar" /> Reschedule</button> : null}
-      </div>
-    </article>
+      </span>
+    </button>
   )
 }
 
