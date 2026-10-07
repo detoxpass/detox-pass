@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { catalog, type ProfessionalRow, type Session } from '../lib/supabase'
 import { readLoved, writeLoved } from '../lib/loved'
 import { money, type Offer, type Therapist } from './Professional'
@@ -10,31 +10,50 @@ type HomeCard = Therapist & { specialties: Specialty[] }
 type Band = { id: string; title: string; total: number; items: HomeCard[] }
 
 const PAGE = 8
-const reelOffsets = [0, 2, 4, 1, 3]
+const REEL_COLUMNS = 6
+const REEL_CHUNK = 4
 
-function reelHalf(photos: Portrait[], offset: number) {
-  const start = offset % photos.length
-  const rotated = [...photos.slice(start), ...photos.slice(0, start)]
-  if (rotated.length >= 4) return rotated
-  const half: Portrait[] = []
-  while (half.length < 4) half.push(...rotated)
-  return half
+function shufflePortraits(photos: Portrait[], seed: number) {
+  const copy = [...photos]
+  let state = seed >>> 0
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+    const swap = state % (index + 1)
+    const current = copy[index]
+    copy[index] = copy[swap]
+    copy[swap] = current
+  }
+  return copy
+}
+
+function reelWindow(photos: Portrait[], start: number, count: number) {
+  const window: Portrait[] = []
+  if (photos.length === 0) return window
+  for (let index = 0; index < count; index += 1) window.push(photos[(start + index) % photos.length])
+  return window
+}
+
+function HeroColumn({ photos, seed }: { photos: Portrait[]; seed: number }) {
+  const deck = useMemo(() => shufflePortraits(photos, seed), [photos, seed])
+  const [cursor, setCursor] = useState(0)
+  const loop = [...reelWindow(deck, cursor, REEL_CHUNK), ...reelWindow(deck, cursor + REEL_CHUNK, REEL_CHUNK)]
+
+  return (
+    <div className="hero-col" onAnimationIteration={() => setCursor((current) => (current + REEL_CHUNK) % deck.length)}>
+      {loop.map((photo, index) => (
+        <img key={index} src={photo.photo} alt="" width={480} height={640} decoding="async" draggable={false} />
+      ))}
+    </div>
+  )
 }
 
 function HeroReel({ photos }: { photos: Portrait[] }) {
   if (photos.length === 0) return null
   return (
     <div className="hero-reel" aria-hidden="true">
-      {reelOffsets.map((offset, column) => {
-        const loop = [...reelHalf(photos, offset), ...reelHalf(photos, offset)]
-        return (
-          <div className="hero-col" key={column}>
-            {loop.map((photo, index) => (
-              <img key={`${photo.id}-${index}`} src={photo.photo} alt="" width={240} height={320} decoding="async" draggable={false} />
-            ))}
-          </div>
-        )
-      })}
+      {Array.from({ length: REEL_COLUMNS }, (_, column) => (
+        <HeroColumn key={column} photos={photos} seed={(column + 1) * 997} />
+      ))}
     </div>
   )
 }
@@ -151,9 +170,16 @@ export function Home({ session, onOpen }: { session: Session; onOpen: (id: strin
     return () => { alive = false }
   }, [session])
 
-  const portraits = cards
-    .filter((item, index) => item.photo && cards.findIndex((other) => other.photo === item.photo) === index)
-    .slice(0, 10)
+  const portraits = useMemo(() => {
+    const seen = new Set<string>()
+    const unique: Portrait[] = []
+    for (const item of cards) {
+      if (!item.photo || seen.has(item.photo)) continue
+      seen.add(item.photo)
+      unique.push({ id: item.id, photo: item.photo })
+    }
+    return unique
+  }, [cards])
   const serviceOptions = [...new Set(cards.flatMap((item) => item.offers.map((offer) => offer.name)))].sort()
   const cityOptions = [...new Set(cards.flatMap((item) => item.places.map((place) => place.name)))].sort()
   const priceValues = cards.flatMap((item) => item.offers.map((offer) => offer.price)).filter((price): price is number => price != null).map((cents) => Math.round(cents / 100))
