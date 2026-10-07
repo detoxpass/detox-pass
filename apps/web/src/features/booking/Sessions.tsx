@@ -250,17 +250,19 @@ function NextSession({ row, onOpen }: { row: BookingRow; onOpen: (id: string) =>
   const cityName = row.cities?.name || 'City'
   return (
     <button type="button" className="sd-hero next-hero" onClick={() => onOpen(row.id)}>
-      <span className="sd-shot">
-        <img className="sd-photo" src={photoOf(row)} alt="" />
-        <span className="sd-chip"><Icon name="pin" /> {cityName}</span>
+      <span className="next-face">
+        <span className="sd-shot">
+          <img className="sd-photo" src={photoOf(row)} alt="" />
+          <span className="sd-chip"><Icon name="pin" /> {cityName}</span>
+        </span>
+        <span className="sd-id">
+          <p className="sd-city"><Icon name="pin" /> {cityName}</p>
+          <h1>{row.professionals?.display_name || 'Therapist'}</h1>
+          <p>{row.services?.name || 'Service'}</p>
+          <SagaStatus status={row.saga_status} />
+        </span>
+        <Countdown at={row.starts_at} />
       </span>
-      <span className="sd-id">
-        <p className="sd-city"><Icon name="pin" /> {cityName}</p>
-        <h1>{row.professionals?.display_name || 'Therapist'}</h1>
-        <p>{row.services?.name || 'Service'}</p>
-        <SagaStatus status={row.saga_status} />
-      </span>
-      <Countdown at={row.starts_at} />
     </button>
   )
 }
