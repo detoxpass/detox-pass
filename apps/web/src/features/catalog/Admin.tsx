@@ -30,6 +30,7 @@ import {
   type Session,
 } from '../../lib/supabase'
 import { Button, EmptyBlock, ErrorBlock, Field, LoadingBlock, Notice, PendingBlock } from '../../ui'
+import { PaymentSetupCard } from '../payments/PaymentSetup'
 
 function slugify(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -597,6 +598,7 @@ export function TherapistEditor({ session, id }: { session: Session; id: string 
 
   return (
     <div className="page stack">
+      <PaymentSetupCard session={session} professionalId={id} />
       <form className="account-card" key={`${row.updated_at}-${row.bio ?? ''}-${row.active}`} onSubmit={saveProfile}>
         <h2>{row.display_name}</h2>
         <p className="muted">{row.active ? 'Published' : 'Hidden'}</p>

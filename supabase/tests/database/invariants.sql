@@ -236,14 +236,20 @@ reset role;
 
 select is(
   (select count(*)::int from private.ledger_entries where booking_id = :'booking_id'::uuid and kind = 'payout_released'),
+  0,
+  'aprovar não marca o repasse como pago'
+);
+
+select is(
+  (select count(*)::int from private.payout_approvals where booking_id = :'booking_id'::uuid),
   1,
-  'autorizar duas vezes não duplica o repasse'
+  'aprovar duas vezes grava uma aprovação'
 );
 
 select is(
   (select saga_status from public.bookings where id = :'booking_id'::uuid),
-  'payout_released',
-  'operação libera o repasse depois da confirmação'
+  'paid',
+  'aprovação deixa a reserva paga'
 );
 
 reset role;

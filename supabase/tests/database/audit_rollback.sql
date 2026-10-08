@@ -286,8 +286,8 @@ begin
   select count(*) into v_released
   from private.ledger_entries
   where booking_id = v_booking and kind = 'payout_released';
-  if v_released <> 1 then
-    raise exception 'AUDIT_FAIL repasses liberados: %', v_released;
+  if v_released <> 0 then
+    raise exception 'AUDIT_FAIL repasse marcado como pago sem provedor: %', v_released;
   end if;
 
   execute 'reset role';

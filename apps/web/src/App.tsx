@@ -5,6 +5,7 @@ import { AgendaManager } from './features/scheduling/Agenda'
 import { Integrations } from './features/scheduling/Integrations'
 import { BookingPanel } from './features/booking/BookingPanel'
 import { SessionDetail, SessionList } from './features/booking/Sessions'
+import { PaymentSetupScreen } from './features/payments/PaymentSetup'
 import { ServicesScreen, SpecialtiesScreen, CitiesScreen, TherapistEditor, TherapistsScreen, UsersScreen } from './features/catalog/Admin'
 import { AdminHome, CalendarsScreen, ClientEditor, ClientsScreen, MoneyScreen, PeopleHub, RewardsScreen } from './features/catalog/AdminDesk'
 import { avatarUrl, completeAuthCallback, displayName, loadEntryState, loadProfile, loadSession, loadUnreadCount, roleOf, signOut, type Session } from './lib/supabase'
@@ -186,7 +187,7 @@ function Screen({ path, role, session, go, onSession, onName, onAvatar, onUnread
   if (path === '/integrations') return <div className="page"><Integrations session={session} /></div>
   if (path.startsWith('/agenda/')) return <SessionDetail session={session} id={path.split('/')[2]} canChange={false} canRead={false} onBack={() => go('/agenda')} />
   if (path === '/rewards') return <EmptyBlock title="Rewards" text="Points show up only after a confirmed visit. Nothing here is a reward yet." />
-  if (path === '/payments') return <EmptyBlock title="Payments" text="There is no payout to release from this account." />
+  if (path === '/payments') return <PaymentSetupScreen session={session} />
   if (path === '/dashboard') return <PartnerHome session={session} go={go} />
   if (path === '/admin') return <AdminHome session={session} go={go} />
   if (path === '/admin/people') return <PeopleHub go={go} />
