@@ -469,6 +469,12 @@ verify_jwt = true
 [functions.gusto]
 verify_jwt = true
 
+[functions.gusto-contractor-sync]
+verify_jwt = true
+
+[functions.gusto-bank-account-sync]
+verify_jwt = true
+
 [functions.partner-apply]
 verify_jwt = false
 

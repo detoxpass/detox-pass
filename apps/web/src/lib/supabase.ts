@@ -588,13 +588,63 @@ export async function loadFinanceReport(session: Session) {
 
 export async function authorizePayout(session: Session, bookingId: string) {
   const result = await callFunction(session, 'commands', { action: 'authorize_payout', booking_id: bookingId })
-  if (result.status >= 400) throw new Error(messageOf(result.body) || 'Could not release the payout.')
+  if (result.status >= 400) throw new Error(messageOf(result.body) || 'Could not approve the payout.')
 }
 
-export type AttendanceRow = { booking_id: string; confirmed_at: string }
+export type AttendanceRow = { booking_id: string; confirmed_at: string; response?: 'confirmed' | 'issue_reported' | null }
 
-export function loadAttendance(session: Session) {
-  return rows<AttendanceRow>(session, 'attendance_confirmations?select=booking_id,confirmed_at')
+export async function loadAttendance(session: Session) {
+  try {
+    return await rows<AttendanceRow>(session, 'attendance_confirmations?select=booking_id,confirmed_at,response')
+  } catch {
+    const legacy = await rows<{ booking_id: string; confirmed_at: string }>(session, 'attendance_confirmations?select=booking_id,confirmed_at')
+    return legacy.map((row) => ({ ...row, response: 'confirmed' as const }))
+  }
+}
+
+export async function answerVisit(session: Session, bookingId: string, response: 'confirmed' | 'issue_reported') {
+  await callRpc(session, 'answer_visit', { p_booking_id: bookingId, p_response: response })
+}
+
+export type PaymentSetup = {
+  professional_id: string
+  display_name?: string
+  setup_status: 'not_configured' | 'pending' | 'ready' | 'error'
+  payment_ready: boolean
+  bank_account_configured: boolean
+  bank_account_display: string | null
+  last_sync_at: string | null
+  last_error: string | null
+}
+
+export type ReleaseDecision = {
+  eligible: boolean
+  blockers: string[]
+  customer_response: 'pending' | 'confirmed' | 'issue_reported'
+  admin_status: 'pending' | 'approved'
+}
+
+export function loadMyPaymentSetup(session: Session) {
+  return callRpc(session, 'my_payment_setup', {}) as Promise<PaymentSetup>
+}
+
+export function loadPaymentSetup(session: Session, professionalId: string) {
+  return callRpc(session, 'payment_setup_of', { p_professional_id: professionalId }) as Promise<PaymentSetup>
+}
+
+export function loadReleaseDecision(session: Session, bookingId: string) {
+  return callRpc(session, 'can_release_professional_payment', { p_booking_id: bookingId }) as Promise<ReleaseDecision>
+}
+
+async function callRpc(session: Session, name: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: authHeaders(session, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  })
+  const body = await readJson(response)
+  if (!response.ok) throw new Error(messageOf(body) || 'Could not load payment setup.')
+  return body
 }
 
 export async function insertRow(session: Session, table: string, payload: Record<string, unknown>) {

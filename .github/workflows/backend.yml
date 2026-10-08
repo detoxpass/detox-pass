@@ -28,4 +28,4 @@ jobs:
         with:
           deno-version: v2.x
       - name: Revalidação de horário e do agente
-        run: deno test supabase/functions/_shared/slot_test.ts supabase/functions/_shared/agent_test.ts supabase/functions/_shared/square_test.ts
+        run: deno test supabase/functions/_shared/slot_test.ts supabase/functions/_shared/agent_test.ts supabase/functions/_shared/square_test.ts supabase/functions/_shared/gusto/config_test.ts

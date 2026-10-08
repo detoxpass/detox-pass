@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { readLoved, writeLoved } from '../../lib/loved'
-import { authorizePayout, calendarDoor, callFunction, loadAdminBookings, loadAttendance, loadBookingEvents, loadBookings, loadFinanceReport, type BookingEvent, type BookingRow, type Session } from '../../lib/supabase'
+import { answerVisit, authorizePayout, calendarDoor, callFunction, loadAdminBookings, loadAttendance, loadBookingEvents, loadBookings, loadReleaseDecision, type BookingEvent, type BookingRow, type ReleaseDecision, type Session } from '../../lib/supabase'
 import { Button, EmptyBlock, ErrorBlock, Icon, LoadingBlock, Notice, SagaStatus } from '../../ui'
 import { DateStep, TimeStep } from './BookingPanel'
 import { appointmentParts, formatWhen, monthOf, shiftMonth } from './when'
@@ -15,6 +15,9 @@ const eventLabels: Record<string, string> = {
   paid: 'Marked paid',
   compensation_required: 'Needs review',
   payout_released: 'Payout released',
+  payout_approved: 'Payout approved',
+  attendance_confirmed: 'Visit confirmed',
+  attendance_issue: 'Problem reported',
 }
 
 function eventLabel(type: string) {
@@ -345,7 +348,6 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [rows, setRows] = useState<BookingRow[]>([])
   const [events, setEvents] = useState<BookingEvent[]>([])
   const [confirmedAt, setConfirmedAt] = useState('')
-  const [pendingCents, setPendingCents] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
@@ -365,19 +367,21 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
   const [datesReload, setDatesReload] = useState(0)
   const [external, setExternal] = useState('')
   const [loved, setLoved] = useState<string[]>(readLoved)
+  const [visitResponse, setVisitResponse] = useState<'pending' | 'confirmed' | 'issue_reported'>('pending')
+  const [release, setRelease] = useState<ReleaseDecision | null>(null)
 
   function refresh() {
     setLoading(true)
     const bookings = ops ? loadAdminBookings(session) : loadBookings(session)
-    const attendance = ops ? loadAttendance(session) : Promise.resolve([])
-    const finance = ops ? loadFinanceReport(session).catch(() => []) : Promise.resolve([])
-    return Promise.all([bookings, loadBookingEvents(session, id), attendance, finance])
-      .then(([bookings, timeline, visits, report]) => {
+    const decision = ops ? loadReleaseDecision(session, id).catch(() => null) : Promise.resolve(null)
+    return Promise.all([bookings, loadBookingEvents(session, id), loadAttendance(session), decision])
+      .then(([bookings, timeline, visits, nextRelease]) => {
         setRows(bookings)
         setEvents(timeline)
-        setConfirmedAt(visits.find((row) => row.booking_id === id)?.confirmed_at ?? '')
-        const line = report.find((row) => row.booking_id === id)
-        setPendingCents(line ? line.pending_cents : null)
+        const visit = visits.find((row) => row.booking_id === id)
+        setConfirmedAt(visit?.confirmed_at ?? '')
+        setVisitResponse(visit?.response === 'issue_reported' || visit?.response === 'confirmed' ? visit.response : 'pending')
+        setRelease(nextRelease)
       })
       .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Could not load this session.'))
       .finally(() => setLoading(false))
@@ -463,6 +467,20 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
     setTimes([])
     setNextTime('')
     setMoveStep('date')
+  }
+
+  async function respond(response: 'confirmed' | 'issue_reported') {
+    setBusy(true)
+    setError('')
+    try {
+      await answerVisit(session, id, response)
+      setNotice(response === 'confirmed' ? 'Visit marked as done. This does not send a payment.' : 'Problem recorded. This does not send a payment.')
+      await refresh()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not save your answer.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function pay() {
@@ -634,6 +652,18 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
           <code>{booking.external_charge_ref}</code>
         </p>
       ) : null}
+      {client && paid && visitResponse === 'pending' ? (
+        <section className="account-card">
+          <h2>Was this visit completed?</h2>
+          <p className="muted">Your answer does not send a payment.</p>
+          <div className="visit-actions">
+            <Button disabled={busy} onClick={() => void respond('confirmed')}>Yes, it was done</Button>
+            <Button kind="ghost" disabled={busy} onClick={() => void respond('issue_reported')}>I had a problem</Button>
+          </div>
+        </section>
+      ) : null}
+      {client && paid && visitResponse === 'confirmed' ? <p className="muted">You confirmed this visit.</p> : null}
+      {client && paid && visitResponse === 'issue_reported' ? <p className="muted">You reported a problem. The team will review it.</p> : null}
       {payable ? (
         <div className="visit-actions">
           <Button disabled={busy} busy={busy} onClick={() => void pay()}>{catalogPrice ? `Pay ${catalogPrice}` : 'Pay with card'}</Button>
@@ -751,21 +781,29 @@ export function SessionDetail({ session, id, canChange, canRead, ops = false, on
         <section className="account-card">
           <h2>Payout</h2>
           <p className="muted">
-            {!confirmedAt ? 'The client has not confirmed this visit.' : booking.saga_status !== 'paid' ? 'This reservation is not paid.' : pendingCents == null || pendingCents <= 0 ? 'There is no pending payout.' : 'The client confirmed the visit and a payout is pending.'}
+            {release == null
+              ? 'Payment approval is waiting for the database update.'
+              : visitResponse === 'issue_reported'
+              ? 'The client reported a problem. Payment stays blocked.'
+              : release.admin_status === 'approved'
+                ? 'Approved. Payment stays pending until the provider confirms it.'
+                : visitResponse === 'pending'
+                  ? 'The client has not answered. You can still approve. Nothing is paid yet.'
+                  : 'The client confirmed the visit. Approval does not pay the professional yet.'}
           </p>
-          <Button disabled={busy || !confirmedAt || booking.saga_status !== 'paid' || pendingCents == null || pendingCents <= 0} onClick={async () => {
+          <Button disabled={busy || booking.saga_status !== 'paid' || visitResponse === 'issue_reported' || release == null || release.admin_status === 'approved'} onClick={async () => {
             setBusy(true)
             setError('')
             try {
               await authorizePayout(session, id)
-              setNotice('Payout released.')
+              setNotice('Approved. Payment stays pending until the provider confirms it.')
               await refresh()
             } catch (caught) {
-              setError(caught instanceof Error ? caught.message : 'Could not release the payout.')
+              setError(caught instanceof Error ? caught.message : 'Could not approve the payout.')
             } finally {
               setBusy(false)
             }
-          }}>Release payout</Button>
+          }}>Approve payout</Button>
         </section>
       ) : null}
       {canRead && door ? <Button kind="ghost" disabled={busy} onClick={readExternal}>Check the calendar</Button> : null}

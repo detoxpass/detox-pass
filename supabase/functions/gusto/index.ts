@@ -1,16 +1,24 @@
-import { json, preflight } from '../_shared/supabase.ts'
+import { json, preflight, requireUser } from '../_shared/supabase.ts'
+import { NOT_CONFIGURED } from '../_shared/gusto/config.ts'
+import { createGustoContractorPayment } from '../_shared/gusto/payment.ts'
 
-Deno.serve((req) => {
+Deno.serve(async (req) => {
   const early = preflight(req)
   if (early) return early
-  if (Deno.env.get('GUSTO_ENABLED') !== 'true') {
-    return json({
-      status: 'optional_not_enabled',
-      detail: 'Gusto só entra se a cliente do contrato optar, e nunca no checkout.',
-    }, 501)
+  if (req.method !== 'POST') return json({ status: 'not_configured', message: NOT_CONFIGURED })
+
+  const auth = await requireUser(req)
+  if (auth.error) return auth.error
+
+  let body: { booking_id?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'json inválido' }, 400)
   }
-  return json({
-    status: 'pending',
-    detail: 'Estrutura final do Gusto ainda não foi aprovada. Não faz split da cobrança Stripe.',
-  }, 501)
+
+  if (!body.booking_id) return json({ status: 'not_configured', message: NOT_CONFIGURED })
+
+  const result = await createGustoContractorPayment(body.booking_id)
+  return json({ status: result.status, message: result.message }, result.ok ? 200 : 400)
 })
