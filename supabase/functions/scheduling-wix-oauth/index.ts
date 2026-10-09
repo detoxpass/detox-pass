@@ -46,15 +46,11 @@ Deno.serve(async (req) => {
   return page(back(services.length > 1 ? 'choose' : 'error'))
 })
 
+// Supabase serves function HTML as text/plain, so the return must be an HTTP redirect.
 function page(location: string) {
-  const safe = JSON.stringify(location)
-  const html = `<!doctype html><html lang="en"><meta charset="utf-8"><title>Detox Pass</title><p>Returning to Detox Pass.</p><p><a href=${safe}>Continue</a></p><script>location.replace(${safe})</script>`
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'no-store',
-    },
+  return new Response(null, {
+    status: 303,
+    headers: { location, 'cache-control': 'no-store' },
   })
 }
 
